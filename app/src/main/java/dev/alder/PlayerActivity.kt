@@ -723,6 +723,7 @@ class PlayerActivity : Screen() {
                 videoId = videoId,
                 metaId = metaId,
                 authKey = key,
+                profileId = libraryProfile.id,
                 onReady = { best ->
                     resolvingStreams = null
                     if (isFinishing || isDestroyed) return@resolve
