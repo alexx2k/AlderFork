@@ -13,7 +13,9 @@ import org.json.JSONObject
 internal object ProfileAvatars {
     fun attach(context: Context, profile: Profile, host: FrameLayout, sizePx: Int,
                placeholder: TextView? = null): ImageView? {
-        val url = profile.avatarUrl?.takeIf { it.startsWith("https://") } ?: return null
+        val url = profile.avatarUrl?.takeIf {
+            it.startsWith("https://") || LocalProfileAvatars.isLocal(it)
+        } ?: return null
         val picture = AvatarPortraitImage(context).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             isFocusable = false
