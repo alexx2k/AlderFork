@@ -26,7 +26,7 @@ class ProfilesActivity : Screen() {
     private var signingIn = false
     private var relinkLocalId: String? = null
     private var draftName = ""
-    private var draftColor = Profiles.COLORS[0]
+    private var draftColor = Profiles.COLORS.random()
     private var draftAvatarUrl: String? = null
     private var uploadingDraftAvatar = false
     private var pickerGeneration = 0
@@ -328,7 +328,7 @@ class ProfilesActivity : Screen() {
 
     private fun discardDraftSetup() {
         draftName = ""
-        draftColor = Profiles.COLORS[0]
+        draftColor = Profiles.COLORS.random()
         draftAvatarUrl = null
         LocalProfileAvatars.delete(this, DRAFT_AVATAR_ID)
     }
@@ -868,39 +868,13 @@ class ProfilesActivity : Screen() {
         }
         name.setOnEditorActionListener { _, _, _ -> go(); true }
         next.setOnClickListener { go() }
-        val swatches = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-        val marks = mutableListOf<TextView>()
-        Profiles.COLORS.forEachIndexed { index, color ->
-            val mark = text(if (draftColor == color) "✓" else "", SMALL, bold = true, color = BASE).apply {
-                gravity = Gravity.CENTER
-                isFocusable = true
-                fun face(focused: Boolean) = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL; setColor(color)
-                    if (focused) setStroke(dp(2), TUNGSTEN)
-                }
-                background = face(false)
-                setOnFocusChangeListener { view, focused -> view.background = face(focused) }
-                setOnClickListener {
-                    draftColor = color
-                    avatar.background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) }
-                    marks.forEachIndexed { i, view -> view.text = if (i == index) "✓" else "" }
-                }
-            }
-            marks += mark
-            swatches.addView(mark, LinearLayout.LayoutParams(dp(30), dp(30)).apply { marginEnd = dp(8) })
-        }
         val copy = column(Gravity.START,
             text(if (first) R.string.profiles_welcome else R.string.profiles_new, SERIF_TITLE, serif = true),
             text(R.string.profiles_name_colour, BODY, color = TEXT_2).marginTop(4),
             name.apply { layoutParams = LinearLayout.LayoutParams(-1, dp(38)).apply { topMargin = dp(16) } },
             keyboard.apply { layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) } },
-            caps(R.string.profiles_portrait_colour, TUNGSTEN).marginTop(13),
-            swatches.marginTop(7),
-            chip(R.string.profiles_avatar_setup).apply {
-                setOnClickListener { showAvatarOptions(draftProfile()) }
-            }.marginTop(10),
             error.marginTop(5),
-            next.marginTop(7),
+            next.marginTop(12),
         ).apply { gravity = Gravity.CENTER_VERTICAL }
         val preview = column(Gravity.CENTER,
             portrait,
