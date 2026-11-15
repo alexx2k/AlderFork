@@ -605,4 +605,8 @@
     <string name="profiles_remove_owner_blocked">الحساب لا يزال قيد الاستخدام</string>
     <string name="profiles_remove_owner_blocked_desc">أزل الملفات الشخصية المحلية التي تشارك حساب Stremio هذا قبل حذف الحساب الأساسي.</string>
     <string name="profiles_remove_local_desc">هل تريد إزالة %1$s وحذف سجل المشاهدة وقائمتي الخاصة به نهائيًا من هذا التلفزيون؟</string>
+    <string name="player_auto_next_in">التشغيل التلقائي خلال %1$d ثانية</string>
+    <string name="player_watch_credits">مشاهدة شارة النهاية</string>
+    <string name="autoplay_fallback">الوقت البديل لشارة النهاية</string>
+    <string name="autoplay_fallback_hint">إذا لم يتوفر توقيت شارة النهاية، فاعرض الحلقة التالية قبل النهاية بهذا العدد من الثواني.</string>
 </resources>
