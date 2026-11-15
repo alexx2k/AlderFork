@@ -555,6 +555,7 @@
 
     <!-- Profile and avatar features (v1.1.0) -->
     <string name="profiles_avatar">प्रोफ़ाइल फ़ोटो बदलें</string>
+    <string name="profiles_avatar_setup">प्रोफ़ाइल फ़ोटो चुनें</string>
     <string name="profiles_avatar_choose">पहले से उपलब्ध अवतार देखें</string>
     <string name="profiles_avatar_upload">अपने मोबाइल फ़ोन से अपलोड करें</string>
     <string name="profiles_avatar_upload_scan">तस्वीर चुनने और अपलोड करने के लिए अपने फ़ोन से यह कोड स्कैन करें।</string>
