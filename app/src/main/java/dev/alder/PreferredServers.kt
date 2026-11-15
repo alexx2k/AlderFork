@@ -26,7 +26,7 @@ internal object PreferredServers {
     fun forgetProfile(context: Context, profileId: String) {
         val prefs = context.getSharedPreferences(STORE, Context.MODE_PRIVATE)
         val edit = prefs.edit()
-        prefs.all.keys.filter { it.startsWith("$profileId:") }.forEach(edit::remove)
+        prefs.all.keys.filter { it.startsWith("$profileId:") }.forEach { edit.remove(it) }
         edit.apply()
     }
 
