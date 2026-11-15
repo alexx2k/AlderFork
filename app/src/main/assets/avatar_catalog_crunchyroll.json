@@ -1,0 +1,625 @@
+{
+  "source": "https://github.com/eueueue292/Fusion-Profile-Avatars",
+  "sourceAuthor": "eueueue292",
+  "sourceLicense": "Images belong to their respective rights holders; the archive does not grant redistribution rights.",
+  "notes": "URL references only, not bundled image files. Images load on demand, are cached locally and may become unavailable.",
+  "sourcePacks": [
+    {
+      "group": "Naruto",
+      "path": "Naruto/pack.json",
+      "manifestBlobSha": "c04656d605a019fe7777774db6dc730b66f423c7"
+    },
+    {
+      "group": "Dragon Ball DAIMA",
+      "path": "Dragon Ball DAIMA/json.pack",
+      "manifestBlobSha": "e13a802ad76e425d64a7d08dcbc51352772794d7"
+    },
+    {
+      "group": "Jujutsu Kaisen",
+      "path": "Jujutsu Kaisen/pack.json",
+      "manifestBlobSha": "d3cb725c9dc14bf8d28cbac572f4a2e9c2d3d369"
+    },
+    {
+      "group": "One Piece",
+      "path": "One Piece/pack.json",
+      "manifestBlobSha": "c327414b2372ed6d22f9662eb55dc885757a4f91"
+    }
+  ],
+  "icons": [
+    {
+      "service": "Crunchyroll",
+      "group": "Naruto",
+      "season": "Collection",
+      "name": "Gaara",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Naruto/Gaara.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Naruto",
+      "season": "Collection",
+      "name": "Hinata",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Naruto/Hinata.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Naruto",
+      "season": "Collection",
+      "name": "Itachi",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Naruto/Itachi.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Naruto",
+      "season": "Collection",
+      "name": "Jiraiya",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Naruto/Jiraiya.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Naruto",
+      "season": "Collection",
+      "name": "Kakashi",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Naruto/Kakashi.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Naruto",
+      "season": "Collection",
+      "name": "Madara",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Naruto/Madara.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Naruto",
+      "season": "Collection",
+      "name": "Minato",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Naruto/Minato.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Naruto",
+      "season": "Collection",
+      "name": "Naruto",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Naruto/Naruto.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Naruto",
+      "season": "Collection",
+      "name": "Pain",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Naruto/Pain.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Naruto",
+      "season": "Collection",
+      "name": "Sasuke",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Naruto/Sasuke.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Dragon Ball DAIMA",
+      "season": "Collection",
+      "name": "Degesu",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Dragon%20Ball%20DAIMA/Degesu.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Dragon Ball DAIMA",
+      "season": "Collection",
+      "name": "Dende Mini",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Dragon%20Ball%20DAIMA/Dende%20Mini.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Dragon Ball DAIMA",
+      "season": "Collection",
+      "name": "Goku Mini",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Dragon%20Ball%20DAIMA/Goku%20Mini.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Dragon Ball DAIMA",
+      "season": "Collection",
+      "name": "Goku Mini 2",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Dragon%20Ball%20DAIMA/Goku%20Mini%202.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Dragon Ball DAIMA",
+      "season": "Collection",
+      "name": "Kibito",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Dragon%20Ball%20DAIMA/Kibito.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Dragon Ball DAIMA",
+      "season": "Collection",
+      "name": "King Gomah",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Dragon%20Ball%20DAIMA/King%20Gomah.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Dragon Ball DAIMA",
+      "season": "Collection",
+      "name": "Panzy",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Dragon%20Ball%20DAIMA/Panzy.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Dragon Ball DAIMA",
+      "season": "Collection",
+      "name": "Supreme Kai Mini",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Dragon%20Ball%20DAIMA/Supreme%20Kai%20Mini.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Jujutsu Kaisen",
+      "season": "Collection",
+      "name": "Megumi Fushiguro",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/refs/heads/main/Jujutsu%20Kaisen/Megumi%20Fushigoro.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Jujutsu Kaisen",
+      "season": "Collection",
+      "name": "Nobara Kugisaki",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/refs/heads/main/Jujutsu%20Kaisen/Nobara%20Kugisaki.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Jujutsu Kaisen",
+      "season": "Collection",
+      "name": "Ryomen Sukuna",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/refs/heads/main/Jujutsu%20Kaisen/Ryomen%20Sukuna.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Jujutsu Kaisen",
+      "season": "Collection",
+      "name": "Satoru Gojo",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/refs/heads/main/Jujutsu%20Kaisen/Satoru%20Gojo.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "Jujutsu Kaisen",
+      "season": "Collection",
+      "name": "Yuji Itadori",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/refs/heads/main/Jujutsu%20Kaisen/Yuji%20Itadori.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Big Mom",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Big%20Mom.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Brook",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Brook.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Brook 2",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Brook%202.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Brook 3",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Brook%203.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Chopper",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Chopper.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Chopper 2",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Chopper%202.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Chopper 3",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Chopper%203.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Chopper 4",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Chopper%204.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Chopper 5",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Chopper%205.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Chopper 6",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Chopper%206.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Eustass Kid",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Eustass.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Franky",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Franky.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Franky 2",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Franky%202.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Franky 3",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Franky%203.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Franky 4",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Franky%204.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Franky 5",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Franky%205.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Franky 6",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Franky%206.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Jimbei",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Jimbei.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Jimbei 2",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Jimbei%202.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Jimbei 3",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Jimbei%203.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Jimbei 4",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Jimbei%204.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Jimbei 5",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Jimbei%205.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Jimbei 6",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Jimbei%206.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Jimbei 7",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Jimbei%207.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Kaido",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Kaido.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Luffy",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Luffy.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Luffy 2",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Luffy%202.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Luffy 3",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Luffy%203.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Luffy 4",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Luffy%204.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Luffy 5",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Luffy%205.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Luffy 6",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Luffy%206.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Luffy 7",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Luffy%207.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Luffy 8",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Luffy%208.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Nami",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Nami.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Nami 2",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Nami%202.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Nami 3",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Nami%203.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Perona",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Perona.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Robin",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Robin.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Robin 2",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Robin%202.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Robin 3",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Robin%203.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Robin 4",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Robin%204.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Robin 5",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Robin%205.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Robin 6",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Robin%206.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Sanji",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Sanji.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Sanji 2",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Sanji%202.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Sanji 3",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Sanji%203.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Sanji 4",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Sanji%204.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Sanji 5",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Sanji%205.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Sanji 6",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Sanji%206.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Shanks",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Shanks.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Trafalgar Law",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Trafalgar.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Usopp",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Usopp.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Usopp 2",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Usopp%202.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Usopp 3",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Usopp%203.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Usopp 4",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Usopp%204.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Usopp 5",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Usopp%205.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Yamato",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Yamato.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Zoro",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Zoro.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Zoro 2",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Zoro%202.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Zoro 3",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Zoro%203.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Zoro 4",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Zoro%204.PNG"
+    },
+    {
+      "service": "Crunchyroll",
+      "group": "One Piece",
+      "season": "Collection",
+      "name": "Zoro 5",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/One%20Piece/Zoro%205.PNG"
+    }
+  ]
+}
