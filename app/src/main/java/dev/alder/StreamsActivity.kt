@@ -249,6 +249,11 @@ class StreamsActivity : Screen() {
                 val ready = readyStreams(answers, allowGaps)
                 val best = rank(ready.filter { it.isVideo && it.playableOn(tv) && wanted(it) }, videoId)
                 if (best.isEmpty() && answers.any { it == null }) return
+                // If the remembered add-on replied first, allow a brief window for an automatic
+                // fallback from another add-on to join the player's retry list.
+                if (!allowGaps && preferredProviderId != null && answers.any { it == null } &&
+                    best.any { it.providerId == preferredProviderId } &&
+                    best.none { it.providerId != preferredProviderId }) return
                 if (best.isEmpty()) return showList()
                 started = true
                 startActivity(Intent(this, PlayerActivity::class.java).putExtras(intent)
