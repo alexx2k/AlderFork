@@ -584,4 +584,8 @@
     <string name="profiles_remove_owner_blocked">Account ancora in uso</string>
     <string name="profiles_remove_owner_blocked_desc">Rimuovi i profili locali che condividono questo account Stremio prima di eliminare il proprietario.</string>
     <string name="profiles_remove_local_desc">Rimuovere %1$s ed eliminare definitivamente cronologia e La mia lista da questa TV?</string>
+    <string name="player_auto_next_in">Riproduzione automatica tra %1$d s</string>
+    <string name="player_watch_credits">Guarda i titoli di coda</string>
+    <string name="autoplay_fallback">Tempo alternativo dei titoli di coda</string>
+    <string name="autoplay_fallback_hint">Se non è disponibile il tempo dei titoli di coda, proponi il prossimo episodio questo numero di secondi prima della fine.</string>
 </resources>
