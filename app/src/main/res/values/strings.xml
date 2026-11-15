@@ -482,6 +482,10 @@
     </string-array>
 
     <!-- Profiles -->
+    <string name="profiles_avatar">Change profile picture</string>
+    <string name="profiles_avatar_title">Choose a picture for %1$s</string>
+    <string name="profiles_avatar_initials">Use initials instead</string>
+    <string name="profiles_avatar_load_failed">Could not load the icon catalogue.</string>
     <string name="profiles_account_mode_title">How should this profile stream?</string>
     <string name="profiles_share_account">Use an existing Stremio account (local profile)</string>
     <string name="profiles_separate_account">Sign in to a separate Stremio account</string>
