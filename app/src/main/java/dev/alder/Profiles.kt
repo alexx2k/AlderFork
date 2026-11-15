@@ -5,7 +5,20 @@ import android.content.SharedPreferences
 import org.json.JSONArray
 import org.json.JSONObject
 
-class Profile(val id: String, val name: String, val color: Int, val authKey: String, val pin: String? = null)
+enum class LibraryMode {
+    STREMIO,
+    LOCAL
+}
+
+class Profile(
+    val id: String,
+    val name: String,
+    val color: Int,
+    val authKey: String,
+    val pin: String? = null,
+    val libraryMode: LibraryMode = LibraryMode.STREMIO,
+    val accountOwnerId: String? = null
+)
 
 /**
  * The profiles on this TV, kept in app storage. Each one is its own Stremio account, so history, Continue Watching,
@@ -18,10 +31,25 @@ object Profiles {
     fun all(context: Context): List<Profile> {
         val prefs = prefs(context)
         migrate(prefs)
-        return JSONArray(prefs.getString("profiles", "[]")).objects()
-            .map { Profile(it.getString("id"), it.getString("name"), it.getInt("color").takeIf { c -> c in COLORS } ?: COLORS[0],
-                // "credential": profiles saved by a newer build (modular accounts) after a downgrade; reading only "authKey" crashed launch.
-                it.optString("authKey").ifEmpty { it.getString("credential") }, it.optString("pin").ifEmpty { null }) }
+        return JSONArray(prefs.getString("profiles", "[]"))
+            .objects()
+            .map {
+                Profile(
+                    id = it.getString("id"),
+                    name = it.getString("name"),
+                    color = it.getInt("color")
+                        .takeIf { c -> c in COLORS } ?: COLORS[0],
+                    authKey = it.optString("authKey")
+                        .ifEmpty { it.optString("credential") },
+                    pin = it.optString("pin").ifEmpty { null },
+                    libraryMode = when (it.optString("libraryMode")) {
+                        "local" -> LibraryMode.LOCAL
+                        else -> LibraryMode.STREMIO
+                    },
+                    accountOwnerId = it.optString("accountOwnerId")
+                        .ifEmpty { null }
+                )
+            }
     }
 
     /** The profile in use: the one picked last, or the only one there is. */
@@ -60,7 +88,10 @@ object Profiles {
 
     /** A fresh sign-in for an existing profile: its new auth key, everything else kept. */
     fun signIn(context: Context, id: String, authKey: String) {
-        save(prefs(context), all(context).map { if (it.id != id) it else Profile(it.id, it.name, it.color, authKey, it.pin) })
+        save(prefs(context), all(context).map { if (it.id != id) it else Profile(
+            it.id, it.name, it.color, authKey, it.pin,
+            it.libraryMode, it.accountOwnerId
+        ) })
         prefs(context).edit().remove("signedOut:$id").apply()
     }
 
@@ -79,15 +110,39 @@ object Profiles {
     fun update(context: Context, id: String, name: String? = null, pin: String? = null, clearPin: Boolean = false, color: Int? = null) {
         save(prefs(context), all(context).map {
             if (it.id != id) it
-            else Profile(it.id, name ?: it.name, color ?: it.color, it.authKey, if (clearPin) null else pin ?: it.pin)
+            else Profile(
+                it.id,
+                name ?: it.name,
+                color ?: it.color,
+                it.authKey,
+                if (clearPin) null else pin ?: it.pin,
+                it.libraryMode,
+                it.accountOwnerId
+            )
         })
     }
 
     private fun save(prefs: SharedPreferences, list: List<Profile>) {
-        val json = JSONArray(list.map {
-            JSONObject().put("id", it.id).put("name", it.name).put("color", it.color).put("authKey", it.authKey).put("pin", it.pin ?: "")
+        val json = JSONArray(list.map { profile ->
+            JSONObject()
+                .put("id", profile.id)
+                .put("name", profile.name)
+                .put("color", profile.color)
+                .put("authKey", profile.authKey)
+                .put("pin", profile.pin ?: "")
+                .put(
+                    "libraryMode",
+                    when (profile.libraryMode) {
+                        LibraryMode.STREMIO -> "stremio"
+                        LibraryMode.LOCAL -> "local"
+                    }
+                )
+                .put("accountOwnerId", profile.accountOwnerId ?: "")
         })
-        prefs.edit().putString("profiles", json.toString()).apply()
+
+        prefs.edit()
+            .putString("profiles", json.toString())
+            .apply()
     }
 
     // Before profiles there was one sign-in; it becomes the first profile.
