@@ -15,6 +15,19 @@ Write every entry in ASD-STE100 Simplified Technical English (STE):
 
 Put changes that are not released under `## Unreleased`. Before each release, read all of `## Unreleased` again and rewrite each entry that does not obey these rules. Then rename that heading to the version number.
 
+
+## 1.1.1
+
+### Easier to use
+<!-- Spotlight -->
+- **Profile picture setup.** Select the portrait as you make a profile. Choose an avatar, send a phone photo or use initials.
+- **Automatic portrait colour.** Alder selects a random background colour for each new profile. You do not need to choose one.
+
+### Fixes
+<!-- Spotlight -->
+- **Continue in profile setup.** The Continue button is visible below the keyboard so you can finish the first step.
+- **Profile picture selection.** An avatar that you select before you make a profile stays with that profile.
+
 ## 1.1.0
 
 ### New
