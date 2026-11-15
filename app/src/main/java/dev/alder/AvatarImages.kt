@@ -3,6 +3,7 @@ package dev.alder
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.LruCache
@@ -35,6 +36,7 @@ internal object AvatarImages {
     // and streaming artwork. Fresh visible requests jump ahead of old queued ones.
     private val visible = Images.newestFirst(3)
     private val ahead = Images.newestFirst(1)
+    private val writer = Images.newestFirst(1)
     private val main = Handler(Looper.getMainLooper())
     private val inFlight = ConcurrentHashMap<String, FutureTask<Bitmap?>>()
     private val prefetchGeneration = AtomicInteger()
@@ -136,13 +138,24 @@ internal object AvatarImages {
                     })?.also { file.setLastModified(System.currentTimeMillis()) }
                 } else null
 
-                if (software == null) {
+                val downloaded = software == null
+                if (downloaded) {
                     if (file.exists()) file.delete() // Invalid or truncated thumbnail.
                     software = decode(Http.bytes(url, strict = true), width)
-                    software?.let { writeThumbnail(directory, file, it) }
                 }
 
-                software?.toGpu()?.also { memory.put(key, it) }
+                software?.let { original ->
+                    // A GPU copy is ready to render before WebP compression. Keep
+                    // the software source alive only until the disk writer finishes.
+                    val display = if (Build.VERSION.SDK_INT >= 26)
+                        original.copy(Bitmap.Config.HARDWARE, false) else original
+                    memory.put(key, display)
+                    if (downloaded) writer.execute {
+                        try { writeThumbnail(directory, file, original) }
+                        finally { if (display !== original) original.recycle() }
+                    }
+                    display
+                }
             }.getOrNull()
         }
         val task = inFlight.putIfAbsent(key, mine) ?: mine
@@ -194,7 +207,7 @@ internal object AvatarImages {
     }
 
     private fun trim(directory: File) {
-        val oldest = directory.listFiles()?.filter { it.isFile }?.sortedBy { it.lastModified() } ?: return
+        val oldest = directory.listFiles()?.filter { it.isFile && it.extension == "webp" }?.sortedBy { it.lastModified() } ?: return
         var bytes = oldest.sumOf { it.length() }
         for (file in oldest) {
             if (bytes <= DISK_LIMIT) break
