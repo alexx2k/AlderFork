@@ -28,6 +28,7 @@ class ProfilesActivity : Screen() {
     private var draftName = ""
     private var draftColor = Profiles.COLORS[0]
     private var pickerGeneration = 0
+    private var galleryScrollY = 0
     private var signInGeneration = 0
     private var nameInput: EditText? = null
     // Where Back goes from the profile menu's screens (PIN, rename); null elsewhere.
@@ -195,6 +196,7 @@ class ProfilesActivity : Screen() {
         val circle = FrameLayout(this).apply {
             clipChildren = false
             addView(face, FrameLayout.LayoutParams(dp(100), dp(100), Gravity.CENTER))
+            if (profile?.avatarUrl != null) ProfileAvatars.attach(this@ProfilesActivity, profile, this, dp(100))
         }
         // No ring: like the top bar, a dot under the name marks the remote's portrait.
         val dot = View(this).apply {
@@ -224,6 +226,7 @@ class ProfilesActivity : Screen() {
 
     private fun showMenu(p: Profile) {
         val items = listOfNotNull(
+            getString(R.string.profiles_avatar) to { withPin(p) { showAvatarGallery(p) } },
             getString(R.string.profiles_rename) to { withPin(p) { rename(p) } },
             getString(if (p.pin == null) R.string.profiles_set_pin else R.string.profiles_change_pin) to { withPin(p) { setPin(p) } },
             getString(R.string.profiles_colour) to { withPin(p) {
@@ -239,6 +242,164 @@ class ProfilesActivity : Screen() {
             getString(R.string.profiles_remove) to { withPin(p) { showPicker(); confirmRemove(p) } },
         )
         choose(p.name, items.map { it.first }) { i -> items[i].second() }
+    }
+
+
+    /**
+     * TV remote-friendly catalogue. Categories are alphabetical, then sorted seasons,
+     * with the source's icon order preserved. Only visible portraits are decoded.
+     */
+    private fun showAvatarGallery(profile: Profile) {
+        val generation = ++pickerGeneration
+        backTo = ::showPicker
+        nameInput = null
+        val backdrop = onboardingBackdrop(false).apply { alpha = 0.42f }
+        val content = FrameLayout(this)
+        val title = text(getString(R.string.profiles_avatar_title, profile.name), SERIF_TITLE, serif = true)
+        content.addView(title, FrameLayout.LayoutParams(-1, dp(65), Gravity.TOP).apply {
+            leftMargin = dp(PAD); topMargin = dp(34)
+        })
+
+        val scroll = android.widget.ScrollView(this).apply {
+            isFillViewport = false
+            isVerticalScrollBarEnabled = false
+            clipToPadding = false
+        }
+        val groups = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            clipChildren = false
+            clipToPadding = false
+            setPadding(dp(42), dp(10), dp(42), dp(20))
+        }
+        scroll.addView(groups)
+        content.addView(scroll, FrameLayout.LayoutParams(-1, -1).apply {
+            topMargin = dp(105); bottomMargin = dp(70)
+        })
+
+        val back = chip(R.string.profiles_back).apply { setOnClickListener { showPicker() } }
+        content.addView(back, FrameLayout.LayoutParams(-2, dp(32), Gravity.BOTTOM or Gravity.START).apply {
+            leftMargin = dp(PAD); bottomMargin = dp(23)
+        })
+        val reset = chip(R.string.profiles_avatar_initials).apply {
+            setOnClickListener {
+                Profiles.update(this@ProfilesActivity, profile.id, clearAvatar = true)
+                showPicker()
+            }
+        }
+        content.addView(reset, FrameLayout.LayoutParams(-2, dp(32), Gravity.BOTTOM or Gravity.END).apply {
+            rightMargin = dp(PAD); bottomMargin = dp(23)
+        })
+        setWindowed(content, backdrop)
+
+        val pictures = mutableListOf<Pair<ImageView, String>>()
+        var refreshScheduled = false
+        fun refreshVisible() {
+            if (generation != pickerGeneration || isDestroyed) return
+            val rectangle = android.graphics.Rect()
+            for ((image, url) in pictures) {
+                val visible = image.getGlobalVisibleRect(rectangle)
+                if (visible && image.tag != url) {
+                    image.visibility = View.INVISIBLE
+                    Images.load(url, image, dp(90),
+                        done = { image.visibility = View.VISIBLE },
+                        failed = { image.visibility = View.INVISIBLE })
+                } else if (!visible && image.tag != null) {
+                    // Remove offscreen references; the size-limited image cache can reuse bitmaps.
+                    image.tag = null
+                    image.setImageDrawable(null)
+                    image.visibility = View.INVISIBLE
+                }
+            }
+        }
+        fun scheduleVisible() {
+            if (refreshScheduled) return
+            refreshScheduled = true
+            main.postDelayed({ refreshScheduled = false; refreshVisible() }, 80L)
+        }
+        scroll.setOnScrollChangeListener { _, _, y, _, _ ->
+            galleryScrollY = y
+            scheduleVisible()
+        }
+
+        background({ AvatarCatalog.all(applicationContext) }) { result ->
+            if (generation != pickerGeneration) return@background
+            val icons = result.getOrNull()
+            if (icons.isNullOrEmpty()) {
+                groups.addView(text(R.string.profiles_avatar_load_failed, BODY, color = TEXT_2))
+                back.requestFocus()
+                return@background
+            }
+            var firstCard: View? = null
+            for ((show, collection) in icons.groupBy { it.group }) {
+                groups.addView(text(show, BODY, bold = true).apply {
+                    setPadding(0, dp(13), 0, dp(7))
+                })
+                for ((season, entries) in collection.groupBy { it.season }) {
+                    if (season != "Collection") groups.addView(text(season, SMALL, color = TEXT_2).apply {
+                        setPadding(0, dp(4), 0, dp(8))
+                    })
+                    entries.chunked(7).forEach { iconsRow ->
+                        val row = LinearLayout(this@ProfilesActivity).apply {
+                            orientation = LinearLayout.HORIZONTAL
+                            clipChildren = false
+                            clipToPadding = false
+                        }
+                        for (icon in iconsRow) {
+                            val cell = LinearLayout(this@ProfilesActivity).apply {
+                                orientation = LinearLayout.VERTICAL
+                                gravity = Gravity.CENTER_HORIZONTAL
+                                clipChildren = false
+                            }
+                            val portrait = FrameLayout(this@ProfilesActivity).apply { clipChildren = false }
+                            val fallback = text(icon.name.take(1).uppercase(), BODY, bold = true, color = BASE).apply {
+                                gravity = Gravity.CENTER
+                                background = GradientDrawable().apply {
+                                    shape = GradientDrawable.OVAL
+                                    setColor(Profiles.COLORS[(icon.name.hashCode() and Int.MAX_VALUE) % Profiles.COLORS.size])
+                                }
+                            }
+                            portrait.addView(fallback, FrameLayout.LayoutParams(dp(90), dp(90), Gravity.CENTER))
+                            val picture = ImageView(this@ProfilesActivity).apply {
+                                scaleType = ImageView.ScaleType.CENTER_CROP
+                                visibility = View.INVISIBLE
+                                background = GradientDrawable().apply {
+                                    shape = GradientDrawable.OVAL
+                                    setColor(GLASS)
+                                }
+                                clipToOutline = true
+                            }
+                            portrait.addView(picture, FrameLayout.LayoutParams(dp(90), dp(90), Gravity.CENTER))
+                            pictures.add(picture to icon.url)
+                            cell.addView(portrait, LinearLayout.LayoutParams(dp(90), dp(90)))
+                            cell.addView(text(icon.name, SMALL, color = TEXT_2).apply {
+                                gravity = Gravity.CENTER
+                                maxLines = 2
+                                ellipsize = android.text.TextUtils.TruncateAt.END
+                            }, LinearLayout.LayoutParams(-1, dp(36)).apply { topMargin = dp(4) })
+                            cell.rowFocus(9, also = { focused ->
+                                portrait.grow(focused, 1.07f).start()
+                                if (focused) scheduleVisible()
+                            })
+                            cell.contentDescription = "${icon.name}, ${icon.group}"
+                            cell.setOnClickListener {
+                                Profiles.update(this@ProfilesActivity, profile.id, avatarUrl = icon.url)
+                                showPicker()
+                            }
+                            row.addView(cell, LinearLayout.LayoutParams(dp(112), dp(135)).apply { marginEnd = dp(5) })
+                            if (firstCard == null) firstCard = cell
+                        }
+                        groups.addView(row, LinearLayout.LayoutParams(-1, dp(140)))
+                    }
+                }
+            }
+            scroll.post {
+                if (generation == pickerGeneration) {
+                    scroll.scrollTo(0, galleryScrollY.coerceAtMost(maxOf(0, groups.height - scroll.height)))
+                    (firstCard ?: back).requestFocus()
+                    scheduleVisible()
+                }
+            }
+        }
     }
 
     /** Runs [then] straight away, or once the profile's PIN is typed, so a locked profile can't be changed around it. */
