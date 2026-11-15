@@ -47,8 +47,12 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             // -PdebugKey: an optimised build that installs over a debug one on a test TV (same key, data kept).
-            signingConfig = signingConfigs.findByName("release")?.takeUnless { project.hasProperty("debugKey") }
-                ?: signingConfigs.getByName("debug")
+            signingConfig = if (project.hasProperty("debugKey")) {
+                signingConfigs.getByName("debug")
+            } else {
+                signingConfigs.findByName("release")
+                    ?: error("Release signing key is missing!")
+            }
         }
     }
 }
