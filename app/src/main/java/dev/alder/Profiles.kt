@@ -17,7 +17,8 @@ class Profile(
     val authKey: String,
     val pin: String? = null,
     val libraryMode: LibraryMode = LibraryMode.STREMIO,
-    val accountOwnerId: String? = null
+    val accountOwnerId: String? = null,
+    val avatarUrl: String? = null
 )
 
 /**
@@ -39,7 +40,8 @@ object Profiles {
                 authKey = it.optString("authKey").ifEmpty { it.optString("credential") },
                 pin = it.optString("pin").ifEmpty { null },
                 libraryMode = if (it.optString("libraryMode") == "local") LibraryMode.LOCAL else LibraryMode.STREMIO,
-                accountOwnerId = it.optString("accountOwnerId").ifEmpty { null }
+                accountOwnerId = it.optString("accountOwnerId").ifEmpty { null },
+                avatarUrl = it.optString("avatarUrl").ifEmpty { null }
             )
         }
         // A local profile stores no copy of the credential. Always resolve its owner's
@@ -48,7 +50,7 @@ object Profiles {
             if (p.libraryMode != LibraryMode.LOCAL) p
             else {
                 val owner = stored.firstOrNull { it.id == p.accountOwnerId && it.libraryMode == LibraryMode.STREMIO }
-                Profile(p.id, p.name, p.color, owner?.authKey.orEmpty(), p.pin, p.libraryMode, p.accountOwnerId)
+                Profile(p.id, p.name, p.color, owner?.authKey.orEmpty(), p.pin, p.libraryMode, p.accountOwnerId, p.avatarUrl)
             }
         }
     }
@@ -125,7 +127,7 @@ object Profiles {
         }
         save(prefs(context), all(context).map { if (it.id != id) it else Profile(
             it.id, it.name, it.color, authKey, it.pin,
-            it.libraryMode, it.accountOwnerId
+            it.libraryMode, it.accountOwnerId, it.avatarUrl
         ) })
         prefs(context).edit().remove("signedOut:$id").apply()
     }
@@ -142,7 +144,8 @@ object Profiles {
     }
 
     /** Rename or set the PIN of a profile (clearPin removes it), keeping its place in the list. */
-    fun update(context: Context, id: String, name: String? = null, pin: String? = null, clearPin: Boolean = false, color: Int? = null) {
+    fun update(context: Context, id: String, name: String? = null, pin: String? = null, clearPin: Boolean = false, color: Int? = null,
+               avatarUrl: String? = null, clearAvatar: Boolean = false) {
         save(prefs(context), all(context).map {
             if (it.id != id) it
             else Profile(
@@ -152,7 +155,8 @@ object Profiles {
                 it.authKey,
                 if (clearPin) null else pin ?: it.pin,
                 it.libraryMode,
-                it.accountOwnerId
+                it.accountOwnerId,
+                if (clearAvatar) null else avatarUrl ?: it.avatarUrl
             )
         })
     }
@@ -173,6 +177,7 @@ object Profiles {
                     }
                 )
                 .put("accountOwnerId", profile.accountOwnerId ?: "")
+                .put("avatarUrl", profile.avatarUrl ?: "")
         })
 
         prefs.edit()
