@@ -483,6 +483,12 @@
 
     <!-- Profiles -->
     <string name="profiles_avatar">Change profile picture</string>
+    <string name="profiles_avatar_choose">Browse Netflix profile pictures</string>
+    <string name="profiles_avatar_upload">Upload a photo from your phone</string>
+    <string name="profiles_avatar_upload_scan">Scan this code with your phone to choose and upload a picture.</string>
+    <string name="profiles_avatar_upload_wifi">Your phone and Fire Stick must be on the same Wi-Fi network.</string>
+    <string name="profiles_avatar_upload_waiting">Waiting for your photo…</string>
+    <string name="profiles_avatar_upload_unavailable">Could not start the upload server. Connect the Fire Stick to your home network and try again.</string>
     <string name="profiles_avatar_title">Choose a picture for %1$s</string>
     <string name="profiles_avatar_browse_help">Choose a show or collection to browse its pictures.</string>
     <string name="profiles_avatar_initials">Use initials instead</string>
