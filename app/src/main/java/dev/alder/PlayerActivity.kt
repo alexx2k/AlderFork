@@ -331,6 +331,7 @@ class PlayerActivity : Screen() {
     // episode to the next, and to another source), and the sleep choices: stop when this one ends, or pause at sleepAt.
     private lateinit var stillPanel: FrameLayout
     private var quiet = 0
+    private lateinit var libraryProfile: Profile
     private var stopAfter = false
     private var sleepAt = 0L
     // The pill's other use: a source that keeps stalling (three times in a minute) is offered a lower quality once.
@@ -352,7 +353,8 @@ class PlayerActivity : Screen() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val key = authKey ?: return finish()
+        libraryProfile = Profiles.active(this) ?: return finish()
+        val key = libraryProfile.authKey
         val sourcesJson = intent.getStringExtra("sources")
         if (!sourcesJson.isNullOrBlank()) {
             sources = JSONArray(sourcesJson).objects().map(Stream::read)
@@ -742,7 +744,7 @@ class PlayerActivity : Screen() {
         // The stream starts at once from what's known here (the intent, or the library saved on the TV) instead of
         // waiting a round trip to Stremio for the resume point; Stremio's answer corrects it if it moved elsewhere.
         if (known != null) begin(known)
-        background({ Stremio.savedLibrary(key)?.firstOrNull { it.optString("_id") == metaId } }) { r ->
+        background({ ProfileLibrary.savedLibrary(applicationContext, libraryProfile)?.firstOrNull { it.optString("_id") == metaId } }) { r ->
             val cached = r.getOrNull()
             if (cached != null && (item == null || provisionalProgress)) {
                 item = cached
@@ -750,7 +752,7 @@ class PlayerActivity : Screen() {
                 if (known == null) begin(Library.resumeAt(cached, videoId))
             }
         }
-        background({ Stremio.library(key, listOf(metaId)).firstOrNull() }) { result ->
+        background({ ProfileLibrary.library(applicationContext, libraryProfile, listOf(metaId)).firstOrNull() }) { result ->
             val fresh = result.getOrNull()
             if (fresh != null && newerProgress(fresh, item)) item = fresh
             if (item == null) {
@@ -1367,10 +1369,9 @@ class PlayerActivity : Screen() {
 
     private fun push() {
         if (isTrailer || !watched || player.isCurrentMediaItemLive || isLiveType(type)) return
-        val key = authKey ?: return
         val snapshot = item?.let { JSONObject(it.toString()) } ?: return
-        ProgressSaves.keep(key, snapshot, provisionalProgress)
-        background({ syncWatchProgress(key) }) { result ->
+        ProfileLibrary.keepProgress(applicationContext, libraryProfile, snapshot, provisionalProgress)
+        background({ ProfileLibrary.syncProgress(libraryProfile) }) { result ->
             result.getOrNull()?.let { failure ->
                 android.widget.Toast.makeText(this, failureMessage(R.string.progress_saved_on_tv, failure),
                     android.widget.Toast.LENGTH_LONG).show()
