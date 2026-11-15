@@ -16,8 +16,8 @@ android {
         minSdk = 23
         targetSdk = 36
 
-        versionCode = 101
-        versionName = "1.0.1"
+        versionCode = 110
+        versionName = "1.1.0"
         // TVs are ARM; the x86 builds of ffmpeg's native code would only add size.
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
     }
@@ -42,6 +42,10 @@ android {
     }
 
     buildTypes {
+        // Installs alongside the release app, so development doesn't overwrite family profiles.
+        debug {
+            applicationIdSuffix = ".dev"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true

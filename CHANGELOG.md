@@ -15,6 +15,26 @@ Write every entry in ASD-STE100 Simplified Technical English (STE):
 
 Put changes that are not released under `## Unreleased`. Before each release, read all of `## Unreleased` again and rewrite each entry that does not obey these rules. Then rename that heading to the version number.
 
+## 1.1.0
+
+### New
+<!-- Spotlight -->
+- **Local profiles.** Share one Stremio account for streams. Each local profile has its own watch history and My List on this TV.
+<!-- Spotlight -->
+- **Phone photo upload.** Select **Upload from your mobile phone**. Scan the code and send a JPG photo from a phone on the same Wi-Fi.
+<!-- Spotlight -->
+- **More avatars.** Select **Browse pre-loaded avatars** to see Netflix, Disney+, HBO Max, Prime Video and Crunchyroll pictures.
+
+### Easier to use
+<!-- Spotlight -->
+- **Faster avatar gallery.** The gallery loads pictures as you move through the list. It keeps recent pictures in a cache.
+- **Avatar collections.** Select **Collection** to show one service or all services. Classic Netflix icons appear first.
+- **Clear picture choices.** Select **Use initials instead** to show letters in place of a photo.
+
+### Fixes
+- **Avatar gallery display.** Pictures no longer show a second image behind them. The gallery has a black background.
+- **Profile picture after restart.** Alder keeps the profile picture you select when you close and open the app.
+
 ## Unreleased
 
 ### New

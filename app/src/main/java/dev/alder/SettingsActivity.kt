@@ -686,13 +686,13 @@ class SettingsActivity : Screen() {
         val all = Settings.hidden(this)
         val ids = all.keys().asSequence().toList()
         if (ids.isEmpty()) return choose(getString(R.string.nothing_hidden), listOf(getString(R.string.action_ok)), getString(R.string.nothing_hidden_desc)) {}
-        val key = authKey ?: return
+        val profile = Profiles.active(this) ?: return
         choose(getString(R.string.hidden_continue), ids.map { all.getJSONObject(it).optString("name", it) }, getString(R.string.unhide_title_hint)) { i ->
             val id = ids[i]
             background({
-                val item = Stremio.library(key, listOf(id)).firstOrNull() ?: error("not in the library")
+                val item = ProfileLibrary.library(applicationContext, profile, listOf(id)).firstOrNull() ?: error("not in the library")
                 Library.unhide(item, all.getJSONObject(id).optLong("timeOffset"))
-                Stremio.saveLibrary(key, listOf(item))
+                ProfileLibrary.saveLibrary(applicationContext, profile, listOf(item))
             }) { result ->
                 result.fold({
                     all.remove(id)

@@ -24,9 +24,13 @@ class ProfilesActivity : Screen() {
     // The sign-in code being waited on; anything else stops its polling loop.
     private var waitingCode: String? = null
     private var signingIn = false
+    private var relinkLocalId: String? = null
     private var draftName = ""
     private var draftColor = Profiles.COLORS[0]
     private var pickerGeneration = 0
+    private var avatarUpload: AvatarUpload? = null
+    private var avatarUploadInterrupted = false
+    private var galleryScrollY = 0
     private var signInGeneration = 0
     private var nameInput: EditText? = null
     // Where Back goes from the profile menu's screens (PIN, rename); null elsewhere.
@@ -49,7 +53,27 @@ class ProfilesActivity : Screen() {
 
     override fun onDestroy() {
         waitingCode = null
+        stopAvatarUpload()
+        AvatarImages.stopPrefetch()
         super.onDestroy()
+    }
+
+    // A Home-button exit must also close the LAN server; on return the expired
+    // QR screen is replaced by the profile picker rather than showing a dead link.
+    override fun onStop() {
+        if (avatarUpload != null) {
+            avatarUploadInterrupted = true
+            stopAvatarUpload()
+        }
+        super.onStop()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (avatarUploadInterrupted) {
+            avatarUploadInterrupted = false
+            showPicker()
+        }
     }
 
     @Deprecated("Android back callback")
@@ -72,7 +96,18 @@ class ProfilesActivity : Screen() {
     }
 
     /** Opens a profile, asking for its PIN first when it has one; a signed-out one signs in again first. */
-    private fun enter(p: Profile) = withPin(p) { if (Profiles.signedOut(this, p.id)) showSignIn(p.name, p) else openHome(p) }
+    private fun enter(p: Profile) = withPin(p) {
+        val owner = Profiles.accountOwner(this, p)
+        when {
+            owner == null -> choose(getString(R.string.profiles_missing_owner),
+                listOf(getString(R.string.action_ok)), getString(R.string.profiles_missing_owner_desc)) {}
+            Profiles.signedOut(this, p.id) -> {
+                relinkLocalId = p.id.takeIf { p.libraryMode == LibraryMode.LOCAL }
+                showSignIn(owner.name, owner)
+            }
+            else -> openHome(p)
+        }
+    }
 
     private fun openHome(profile: Profile) {
         Profiles.setActive(this, profile.id)
@@ -88,6 +123,8 @@ class ProfilesActivity : Screen() {
     // ---------- who's watching ----------
 
     private fun showPicker() {
+        stopAvatarUpload()
+        AvatarImages.stopPrefetch()
         // Opened from inside a profile (Switch profile, Manage profiles): Back returns to it instead of leaving Alder.
         val current = Profiles.active(this)?.takeIf { intent.getBooleanExtra("pick", false) }
         backTo = current?.let { { openHome(it) } }
@@ -95,50 +132,23 @@ class ProfilesActivity : Screen() {
         // Left a sign-in: stop its polling, or approving the abandoned code would still change the profile.
         signingIn = false
         waitingCode = null
-        val generation = ++pickerGeneration
+        relinkLocalId = null
+        ++pickerGeneration
         val profiles = Profiles.all(this)
-        val art = onboardingBackdrop(false).apply { alpha = 0.42f }
-        var selected = profiles.firstOrNull { it.id == Profiles.active(this)?.id } ?: profiles.first()
+        // Temporary flat-black test mode: no faded film/series banner behind profiles.
+        val selected = profiles.firstOrNull { it.id == Profiles.active(this)?.id } ?: profiles.first()
         // Top-aligned, so Add (no "last watched" line) sits level with the portraits; padding above for the 10% lift.
         val tiles = LinearLayout(this).apply {
             gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP; clipChildren = false; clipToPadding = false
             setPadding(0, dp(LIFT_ROOM), 0, 0)
         }
-        fun showArt(p: Profile, item: org.json.JSONObject?) {
-            if (generation != pickerGeneration || selected.id != p.id) return
-            val url = item?.optString("_id")?.let(Images::backgroundFor) ?: return
-            Images.load(url, art, resources.displayMetrics.widthPixels, urgent = true) {
-                val bitmap = (art.drawable as? BitmapDrawable)?.bitmap ?: return@load
-                background({ Images.frost(bitmap, 160) }) { result ->
-                    if (generation == pickerGeneration && selected.id == p.id && art.tag == url)
-                        result.getOrNull()?.let { art.setImageBitmap(it); art.alpha = 0.5f }
-                }
-            }
-        }
-        val recent = mutableMapOf<String, org.json.JSONObject?>()
-        fun focus(p: Profile) {
-            selected = p
-            if (p.id !in recent) { art.tag = null; art.setImageResource(R.drawable.onboarding_scene); art.alpha = 0.42f }
-            else showArt(p, recent[p.id])
-        }
         profiles.forEach { p ->
             val signedOut = Profiles.signedOut(this, p.id).takeIf { it }
                 ?.let { text(R.string.profiles_sign_in_again, SMALL, color = TUNGSTEN).apply { gravity = Gravity.CENTER } }
-            tiles.addView(tile(p, signedOut) { focus(p) }.apply {
+            tiles.addView(tile(p, signedOut) {}.apply {
                 setOnClickListener { enter(p) }
                 setOnLongClickListener { showMenu(p); true }
             }, LinearLayout.LayoutParams(dp(124), -2).apply { marginStart = dp(10); marginEnd = dp(10) })
-            background({
-                val items = Stremio.savedLibrary(p.authKey) ?: Stremio.library(p.authKey)
-                Library.continueWatching(items).firstOrNull()
-                    ?: items.filter { !it.optJSONObject("state")?.optString("lastWatched").isNullOrBlank() }
-                        .maxByOrNull { it.optJSONObject("state")?.optString("lastWatched").orEmpty() }
-            }) { result ->
-                if (generation != pickerGeneration) return@background
-                val item = result.getOrNull()
-                recent[p.id] = item
-                showArt(p, item)
-            }
         }
         if (profiles.size < Profiles.MAX) {
             tiles.addView(tile(null, null) {}.apply { setOnClickListener { showName() } },
@@ -164,7 +174,9 @@ class ProfilesActivity : Screen() {
             addView(keyHint(getString(R.string.profiles_hold_ok), getString(R.string.profiles_hold_ok_does)),
                 FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = dp(20) })
         }
-        setWindowed(content, art)
+        // Avoid Screen.setWindowed(): it layers translucent gradients over the entire UI.
+        content.setBackgroundColor(Color.BLACK)
+        setContentView(content)
         tiles.getChildAt(profiles.indexOf(selected)).requestFocus()
     }
 
@@ -173,7 +185,7 @@ class ProfilesActivity : Screen() {
         val face = text(if (add) "+" else profile?.name?.take(1)?.uppercase().orEmpty(), if (add) 42f else 48f,
             serif = !add, color = if (add) TEXT_2 else BASE).apply {
             gravity = Gravity.CENTER
-            alpha = 0.6f
+            alpha = 1f
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL; setColor(profile?.color ?: GLASS)
                 if (add) setStroke(dp(1), GLASS_EDGE, dp(2).toFloat(), dp(3).toFloat())
@@ -182,6 +194,7 @@ class ProfilesActivity : Screen() {
         val circle = FrameLayout(this).apply {
             clipChildren = false
             addView(face, FrameLayout.LayoutParams(dp(100), dp(100), Gravity.CENTER))
+            if (profile?.avatarUrl != null) ProfileAvatars.attach(this@ProfilesActivity, profile, this, dp(100), face)
         }
         // No ring: like the top bar, a dot under the name marks the remote's portrait.
         val dot = View(this).apply {
@@ -200,7 +213,6 @@ class ProfilesActivity : Screen() {
             setOnFocusChangeListener { _, has ->
                 dot.visibility = if (has) View.VISIBLE else View.INVISIBLE
                 circle.grow(has, 1.1f).start()
-                face.alpha = if (has) 1f else 0.6f
                 name.setTextColor(if (has) TEXT else TEXT_2)
                 if (has) focused()
             }
@@ -211,6 +223,7 @@ class ProfilesActivity : Screen() {
 
     private fun showMenu(p: Profile) {
         val items = listOfNotNull(
+            getString(R.string.profiles_avatar) to { withPin(p) { showAvatarOptions(p) } },
             getString(R.string.profiles_rename) to { withPin(p) { rename(p) } },
             getString(if (p.pin == null) R.string.profiles_set_pin else R.string.profiles_change_pin) to { withPin(p) { setPin(p) } },
             getString(R.string.profiles_colour) to { withPin(p) {
@@ -226,6 +239,418 @@ class ProfilesActivity : Screen() {
             getString(R.string.profiles_remove) to { withPin(p) { showPicker(); confirmRemove(p) } },
         )
         choose(p.name, items.map { it.first }) { i -> items[i].second() }
+    }
+
+
+    /**
+     * TV remote-friendly catalogue. Categories are alphabetical, then sorted seasons,
+     * with the source's icon order preserved. Only visible portraits are decoded.
+     */
+
+
+    /** A gallery list row: only visible rows are made into Android views. */
+    private sealed class AvatarGalleryRow {
+        data class Heading(val label: String) : AvatarGalleryRow()
+        data class Icons(val pictures: List<AvatarIcon>) : AvatarGalleryRow()
+    }
+
+    /** Keep the scrollable gallery fast, with Netflix Classics first within Netflix. */
+    private fun avatarGalleryRows(
+        icons: List<AvatarIcon>,
+        serviceFilter: String? = null
+    ): List<AvatarGalleryRow> = buildList {
+        val byService = icons.filter { serviceFilter == null || it.service == serviceFilter }
+            .groupBy { it.service }
+        val priority = listOf("Netflix", "Disney+", "HBO Max", "Prime Video", "Crunchyroll")
+        val providers = priority + byService.keys.filterNot { it in priority }.sorted()
+        for (service in providers.distinct()) {
+            val serviceIcons = byService[service] ?: continue
+            add(AvatarGalleryRow.Heading(service))
+            val groups = serviceIcons.groupBy { it.group }
+            val sorted = groups.keys.sortedWith(String.CASE_INSENSITIVE_ORDER)
+            val ordered = if (service == "Netflix")
+                listOf("Netflix Classic Icons") + sorted.filterNot { it == "Netflix Classic Icons" }
+                else sorted
+            for (show in ordered) {
+                val collection = groups[show] ?: continue
+                add(AvatarGalleryRow.Heading(show))
+                for ((season, pictures) in collection.groupBy { it.season }) {
+                    if (season != "Collection") add(AvatarGalleryRow.Heading("    $season"))
+                    pictures.chunked(7).forEach { add(AvatarGalleryRow.Icons(it)) }
+                }
+            }
+        }
+    }
+
+    /** One extra choice before entering the large gallery. */
+    private fun showAvatarOptions(profile: Profile) {
+        choose(getString(R.string.profiles_avatar_title, profile.name), listOf(
+            getString(R.string.profiles_avatar_upload),
+            getString(R.string.profiles_avatar_choose),
+            getString(R.string.profiles_avatar_initials)
+        )) { selected ->
+            when (selected) {
+                0 -> showAvatarUpload(profile)
+                1 -> showAvatarGallery(profile)
+                2 -> {
+                    Profiles.update(this, profile.id, clearAvatar = true)
+                    showPicker()
+                }
+            }
+        }
+    }
+
+    private fun stopAvatarUpload() {
+        avatarUpload?.close()
+        avatarUpload = null
+    }
+
+    /**
+     * The TV temporarily hosts a private upload page on its LAN address.
+     * Scanning the QR opens a phone file picker; a successful photo is saved
+     * locally, the one-time server closes, and the profile picker returns.
+     */
+    private fun showAvatarUpload(profile: Profile) {
+        stopAvatarUpload()
+        AvatarImages.stopPrefetch()
+        nameInput = null
+        val generation = ++pickerGeneration
+        backTo = {
+            stopAvatarUpload()
+            showPicker()
+            showAvatarOptions(profile)
+        }
+        val session = runCatching {
+            AvatarUpload(applicationContext, profile.id) { localUrl ->
+                main.post {
+                    if (generation != pickerGeneration || avatarUpload == null || isFinishing) return@post
+                    stopAvatarUpload()
+                    Profiles.update(this, profile.id, avatarUrl = localUrl)
+                    showPicker()
+                }
+            }
+        }.getOrNull()
+        avatarUpload = session
+
+        val content = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
+        content.addView(brand(), FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.START).apply {
+            leftMargin = dp(PAD); topMargin = dp(31)
+        })
+        val middle = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+        }
+        middle.addView(text(getString(R.string.profiles_avatar_upload),
+            SERIF_TITLE, serif = true).apply { gravity = Gravity.CENTER },
+            LinearLayout.LayoutParams(-1, -2))
+        middle.addView(text(getString(R.string.profiles_avatar_upload_scan),
+            BODY, color = TEXT_2).apply { gravity = Gravity.CENTER },
+            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+
+        if (session != null) {
+            middle.addView(ImageView(this).apply {
+                setImageBitmap(qrBitmap(session.url, dp(220)))
+                setPadding(dp(7), dp(7), dp(7), dp(7))
+                setBackgroundColor(Color.WHITE)
+            }, LinearLayout.LayoutParams(dp(238), dp(238)).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+                topMargin = dp(18)
+            })
+            middle.addView(text(session.url, SMALL, color = TEXT_2).apply {
+                gravity = Gravity.CENTER
+            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+            middle.addView(text(getString(R.string.profiles_avatar_upload_wifi),
+                SMALL, color = TEXT_2).apply { gravity = Gravity.CENTER },
+                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+            middle.addView(text(getString(R.string.profiles_avatar_upload_waiting),
+                SMALL, color = TUNGSTEN).apply { gravity = Gravity.CENTER },
+                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        } else {
+            middle.addView(text(getString(R.string.profiles_avatar_upload_unavailable),
+                BODY, color = TUNGSTEN).apply { gravity = Gravity.CENTER },
+                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(22) })
+        }
+        content.addView(middle, FrameLayout.LayoutParams(-1, -2, Gravity.CENTER).apply {
+            leftMargin = dp(PAD); rightMargin = dp(PAD)
+        })
+        val back = chip(R.string.profiles_back).apply {
+            setOnClickListener {
+                stopAvatarUpload()
+                showPicker()
+                showAvatarOptions(profile)
+            }
+        }
+        content.addView(back, FrameLayout.LayoutParams(-2, dp(32), Gravity.BOTTOM or Gravity.START).apply {
+            leftMargin = dp(PAD); bottomMargin = dp(18)
+        })
+        setContentView(content)
+        back.requestFocus()
+    }
+
+    /**
+     * One continuous gallery organised alphabetically by show and then season.
+     *
+     * ListView recycles rows as the user scrolls. Unlike the previous ScrollView,
+     * it never creates ~1,000 image/text views, and each portrait has exactly one
+     * opaque circular ImageView (no fallback initials beneath transparent PNGs).
+     */
+    private fun showAvatarGallery(profile: Profile, serviceFilter: String? = null) {
+        AvatarImages.stopPrefetch()
+        val generation = ++pickerGeneration
+        nameInput = null
+        val goBack: () -> Unit = {
+            if (serviceFilter == null) showPicker() else showAvatarGallery(profile)
+        }
+        backTo = goBack
+
+        // Solid-black gallery for the performance test: no translucent show banner,
+        // onboarding art, film overlay, side shade or edge vignette.
+        val content = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
+        content.addView(text(getString(R.string.profiles_avatar_title, profile.name),
+            SERIF_TITLE, serif = true), FrameLayout.LayoutParams(-1, dp(65), Gravity.TOP).apply {
+            leftMargin = dp(PAD)
+            topMargin = dp(28)
+        })
+
+        val gallery = object : android.widget.ListView(this) {
+            // No animated scroll path: jump immediately to the requested offset/row.
+            override fun smoothScrollBy(distance: Int, duration: Int) {
+                scrollListBy(distance)
+            }
+
+            override fun smoothScrollToPosition(position: Int) {
+                setSelection(position)
+            }
+
+            override fun smoothScrollToPosition(position: Int, boundPosition: Int) {
+                setSelection(position)
+            }
+
+            override fun smoothScrollToPositionFromTop(position: Int, offset: Int, duration: Int) {
+                setSelectionFromTop(position, offset)
+            }
+        }.apply {
+            divider = null
+            dividerHeight = 0
+            isVerticalScrollBarEnabled = false
+            itemsCanFocus = true
+            descendantFocusability = android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS
+            clipChildren = true
+            clipToPadding = true
+            setSelector(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
+            setCacheColorHint(Color.TRANSPARENT)
+            overScrollMode = View.OVER_SCROLL_NEVER
+        }
+        content.addView(gallery, FrameLayout.LayoutParams(-1, -1).apply {
+            topMargin = dp(98)
+            bottomMargin = dp(65)
+        })
+        content.addView(chip(R.string.profiles_back).apply {
+            setOnClickListener { goBack() }
+        }, FrameLayout.LayoutParams(-2, dp(32), Gravity.BOTTOM or Gravity.START).apply {
+            leftMargin = dp(PAD)
+            bottomMargin = dp(18)
+        })
+        content.addView(chip(R.string.profiles_avatar_initials).apply {
+            setOnClickListener {
+                Profiles.update(this@ProfilesActivity, profile.id, clearAvatar = true)
+                showPicker()
+            }
+        }, FrameLayout.LayoutParams(-2, dp(32), Gravity.BOTTOM or Gravity.END).apply {
+            rightMargin = dp(PAD)
+            bottomMargin = dp(18)
+        })
+        setContentView(content)
+
+        background({
+            val allIcons = AvatarCatalog.all(applicationContext)
+            Pair(avatarGalleryRows(allIcons, serviceFilter), allIcons.map { it.service }.distinct())
+        }) { outcome ->
+            if (generation != pickerGeneration) return@background
+            val data = outcome.getOrNull()
+            val rows = data?.first
+            if (rows.isNullOrEmpty()) {
+                choose(getString(R.string.profiles_avatar_title, profile.name),
+                    listOf(getString(R.string.action_ok)), getString(R.string.profiles_avatar_load_failed)) {}
+                return@background
+            }
+
+            val services = data?.second.orEmpty()
+            content.addView(chip(getString(R.string.profiles_avatar_filter,
+                serviceFilter ?: getString(R.string.profiles_avatar_all))).apply {
+                setOnClickListener {
+                    val options = listOf(getString(R.string.profiles_avatar_all)) + services
+                    choose(getString(R.string.profiles_avatar_filter_title), options,
+                        checked = if (serviceFilter == null) 0 else services.indexOf(serviceFilter) + 1
+                    ) { selected ->
+                        showAvatarGallery(profile, if (selected == 0) null else services[selected - 1])
+                    }
+                }
+            }, FrameLayout.LayoutParams(-2, dp(32), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
+                bottomMargin = dp(18)
+            })
+
+            class Cell(val holder: LinearLayout, val image: ImageView, val name: TextView,
+                       var boundUrl: String? = null)
+            class IconRow(val cells: List<Cell>)
+
+            fun newRow(): LinearLayout {
+                val row = LinearLayout(this@ProfilesActivity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    clipChildren = true
+                    clipToPadding = true
+                    setPadding(dp(38), 0, dp(38), 0)
+                    descendantFocusability = android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS
+                }
+                val cells = (0 until 7).map {
+                    val cell = LinearLayout(this@ProfilesActivity).apply {
+                        orientation = LinearLayout.VERTICAL
+                        gravity = Gravity.CENTER_HORIZONTAL
+                        clipChildren = true
+                    }
+                    val image = AvatarPortraitImage(this@ProfilesActivity).apply {
+                        scaleType = ImageView.ScaleType.CENTER_CROP
+                        background = GradientDrawable().apply {
+                            shape = GradientDrawable.OVAL
+                            setColor(Color.BLACK)
+                        }
+                        alpha = 1f
+                        clipToOutline = true
+                        isFocusable = false
+                    }
+                    cell.addView(image, LinearLayout.LayoutParams(dp(88), dp(88)))
+                    val label = text("", SMALL, color = TEXT_2).apply {
+                        gravity = Gravity.CENTER
+                        maxLines = 2
+                        ellipsize = android.text.TextUtils.TruncateAt.END
+                    }
+                    cell.addView(label, LinearLayout.LayoutParams(-1, dp(35)).apply {
+                        topMargin = dp(4)
+                    })
+                    // Opaque focus background instead of the usual translucent tint.
+                    val focusedBackground = GradientDrawable().apply {
+                        setColor(0xFF292929.toInt())
+                        cornerRadius = dp(9).toFloat()
+                    }
+                    cell.isFocusable = true
+                    cell.setBackgroundColor(Color.BLACK)
+                    cell.setOnFocusChangeListener { view, hasFocus ->
+                        view.background = if (hasFocus) focusedBackground
+                            else android.graphics.drawable.ColorDrawable(Color.BLACK)
+                    }
+                    row.addView(cell, LinearLayout.LayoutParams(0, dp(134), 1f).apply {
+                        marginEnd = dp(4)
+                    })
+                    Cell(cell, image, label)
+                }
+                row.tag = IconRow(cells)
+                return row
+            }
+
+            gallery.adapter = object : android.widget.BaseAdapter() {
+                override fun getCount() = rows.size
+                override fun getItem(position: Int): Any = rows[position]
+                override fun getItemId(position: Int) = position.toLong()
+                override fun getViewTypeCount() = 2
+                override fun getItemViewType(position: Int) =
+                    if (rows[position] is AvatarGalleryRow.Heading) 0 else 1
+
+                override fun isEnabled(position: Int) = rows[position] is AvatarGalleryRow.Icons
+
+                override fun getView(position: Int, convertView: View?,
+                                     parent: android.view.ViewGroup): View {
+                    return when (val row = rows[position]) {
+                        is AvatarGalleryRow.Heading -> {
+                            val label = (convertView as? TextView)
+                                ?: text("", BODY, bold = true).apply {
+                                    setPadding(dp(40), dp(17), dp(15), dp(9))
+                                    isFocusable = false
+                                }
+                            label.text = row.label
+                            label
+                        }
+
+                        is AvatarGalleryRow.Icons -> {
+                            val grid = (convertView as? LinearLayout) ?: newRow()
+                            val cells = (grid.tag as IconRow).cells
+                            for (index in cells.indices) {
+                                val cell = cells[index]
+                                val icon = row.pictures.getOrNull(index)
+                                if (icon == null) {
+                                    if (cell.boundUrl != null) {
+                                        cell.holder.visibility = View.INVISIBLE
+                                        cell.holder.isFocusable = false
+                                        cell.holder.setOnClickListener(null)
+                                        cell.name.text = ""
+                                        cell.boundUrl = null
+                                        AvatarImages.cancel(cell.image)
+                                        cell.image.setImageDrawable(null)
+                                    }
+                                    continue
+                                }
+                                // Labels and listeners only change when a recycled cell
+                                // represents a different icon. A detached row still
+                                // rebinds its image so canceled requests can restart.
+                                if (cell.boundUrl != icon.url) {
+                                    cell.holder.visibility = View.VISIBLE
+                                    cell.holder.isFocusable = true
+                                    cell.name.text = icon.name
+                                    cell.holder.contentDescription = "${icon.name}, ${icon.group}, ${icon.service}"
+                                    cell.holder.setOnClickListener {
+                                        Profiles.update(this@ProfilesActivity, profile.id, avatarUrl = icon.url)
+                                        showPicker()
+                                    }
+                                    cell.boundUrl = icon.url
+                                }
+                                AvatarImages.bind(applicationContext, icon.url, cell.image, dp(100))
+                            }
+                            grid
+                        }
+                    }
+                }
+            }
+
+            // Only prefetch one row immediately beyond the viewport, in the
+            // direction of travel. Never queue the entire multi-service catalogue.
+            var previousFirst = 0
+            var movingDown = true
+            var prefetchedRow = -1
+            gallery.setOnScrollListener(object : android.widget.AbsListView.OnScrollListener {
+                override fun onScrollStateChanged(
+                    view: android.widget.AbsListView?, scrollState: Int
+                ) = Unit
+
+                override fun onScroll(
+                    view: android.widget.AbsListView?,
+                    firstVisibleItem: Int,
+                    visibleItemCount: Int,
+                    totalItemCount: Int
+                ) {
+                    if (visibleItemCount == 0) return
+                    if (firstVisibleItem != previousFirst) movingDown = firstVisibleItem > previousFirst
+                    previousFirst = firstVisibleItem
+                    val visibleEnd = firstVisibleItem + visibleItemCount
+                    val candidates = if (movingDown) visibleEnd until rows.size
+                        else (firstVisibleItem - 1 downTo 0)
+                    val next = candidates.firstOrNull { rows[it] is AvatarGalleryRow.Icons } ?: -1
+                    if (next == prefetchedRow) return
+                    prefetchedRow = next
+                    val urls = (rows.getOrNull(next) as? AvatarGalleryRow.Icons)
+                        ?.pictures?.map { it.url }.orEmpty()
+                    AvatarImages.prefetchRow(applicationContext, urls, dp(100))
+                }
+            })
+
+            val firstIcons = rows.indexOfFirst { it is AvatarGalleryRow.Icons }
+            if (firstIcons >= 0) {
+                gallery.setSelection(firstIcons)
+                gallery.post {
+                    if (generation != pickerGeneration) return@post
+                    val row = gallery.getChildAt(firstIcons - gallery.firstVisiblePosition)
+                    ((row as? LinearLayout)?.getChildAt(0))?.requestFocus()
+                }
+            }
+        }
     }
 
     /** Runs [then] straight away, or once the profile's PIN is typed, so a locked profile can't be changed around it. */
@@ -339,8 +764,16 @@ class ProfilesActivity : Screen() {
     }
 
     private fun confirmRemove(p: Profile) {
+        if (Profiles.all(this).any { it.libraryMode == LibraryMode.LOCAL && it.accountOwnerId == p.id }) {
+            choose(getString(R.string.profiles_remove_owner_blocked),
+                listOf(getString(R.string.action_ok)), getString(R.string.profiles_remove_owner_blocked_desc)) {}
+            return
+        }
+        val warning = if (p.libraryMode == LibraryMode.LOCAL)
+            getString(R.string.profiles_remove_local_desc, p.name)
+        else getString(R.string.profiles_remove_desc, p.name)
         choose(getString(R.string.profiles_remove_title, p.name), listOf(getString(R.string.action_cancel), getString(R.string.action_remove)),
-            getString(R.string.profiles_remove_desc, p.name)) { i ->
+            warning) { i ->
             if (i == 0) return@choose
             Profiles.remove(this, p.id)
             background({ Http.forget() }) {}
@@ -372,7 +805,7 @@ class ProfilesActivity : Screen() {
         val next = onboardingButton(getString(R.string.profiles_continue))
         val go = {
             name.text.toString().trim().takeIf { it.isNotEmpty() }?.replaceFirstChar { it.titlecase() }
-                ?.let { draftName = it; showSignIn(it) }
+                ?.let { draftName = it; showAccountChoice(it) }
                 ?: run { error.text = getString(R.string.profiles_name_to_continue) }
         }
         name.setOnEditorActionListener { _, _, _ -> go(); true }
@@ -416,6 +849,29 @@ class ProfilesActivity : Screen() {
         setWindowed(content, onboardingBackdrop())
         window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
         firstKey.requestFocus()
+    }
+
+    /** Choose shared local history by default, or allow the original separate Stremio sign-in. */
+    private fun showAccountChoice(name: String) {
+        val owners = Profiles.all(this).filter { it.libraryMode == LibraryMode.STREMIO }
+        if (owners.isEmpty()) return showSignIn(name)
+
+        choose(getString(R.string.profiles_account_mode_title),
+            listOf(getString(R.string.profiles_share_account), getString(R.string.profiles_separate_account)),
+            getString(R.string.profiles_share_account_desc), focus = 0) { choice ->
+            if (choice == 1) showSignIn(name)
+            else if (owners.size == 1) createLocalProfile(name, owners.first())
+            else choose(getString(R.string.profiles_select_account), owners.map { it.name }) { selected ->
+                createLocalProfile(name, owners[selected])
+            }
+        }
+    }
+
+    private fun createLocalProfile(name: String, owner: Profile) {
+        val profile = Profiles.addLocal(this, name, owner.id, draftColor)
+        draftName = ""
+        draftColor = Profiles.COLORS[0]
+        showReady(profile)
     }
 
     /**
@@ -600,7 +1056,7 @@ class ProfilesActivity : Screen() {
         // background, so a see-through backdrop would show the last frame instead of darkening.
         if (useLastFilm) setColorFilter(android.graphics.Color.argb(166, 14, 12, 10), android.graphics.PorterDuff.Mode.SRC_ATOP)
         if (useLastFilm) Profiles.active(this@ProfilesActivity)?.let { profile ->
-            background({ Stremio.savedLibrary(profile.authKey)?.let(Library::continueWatching)?.firstOrNull()?.optString("_id") }) { result ->
+            background({ ProfileLibrary.savedLibrary(applicationContext, profile)?.let(Library::continueWatching)?.firstOrNull()?.optString("_id") }) { result ->
                 result.getOrNull()?.let(Images::backgroundFor)?.let { url -> Images.load(url, this, resources.displayMetrics.widthPixels) }
             }
         }
@@ -675,7 +1131,7 @@ class ProfilesActivity : Screen() {
      * the other person), say so before going on. Each sign-in has its own key, so the accounts are compared by user id.
      */
     private fun approved(name: String, key: String, again: Profile?) {
-        val others = Profiles.all(this).filter { it.id != again?.id }
+        val others = Profiles.all(this).filter { it.id != again?.id && it.libraryMode == LibraryMode.STREMIO }
         background({
             others.firstOrNull { it.authKey == key } ?: Stremio.userId(key).let { account ->
                 others.firstOrNull { runCatching { Stremio.userId(it.authKey) }.getOrNull() == account }
@@ -693,7 +1149,9 @@ class ProfilesActivity : Screen() {
     private fun signedIn(name: String, key: String, again: Profile?) {
         if (again != null) {
             Profiles.signIn(this, again.id, key)
-            return openHome(Profiles.all(this).first { it.id == again.id })
+            val destination = relinkLocalId ?: again.id
+            relinkLocalId = null
+            return openHome(Profiles.all(this).first { it.id == destination })
         }
         val others = Profiles.all(this)
         val profile = Profiles.add(this, name, key, draftColor)
@@ -732,8 +1190,9 @@ class ProfilesActivity : Screen() {
 
     private fun showReady(profile: Profile) {
         backTo = { openHome(profile) }
+        val total = if (profile.libraryMode == LibraryMode.LOCAL) 2 else 3
         val done = onboardingButton(getString(R.string.profiles_continue_to_alder)).apply { setOnClickListener { openHome(profile) } }
-        setWindowed(onboardingFrame(step(3, 3), 3, 3, column(Gravity.CENTER,
+        setWindowed(onboardingFrame(step(total, total), total, total, column(Gravity.CENTER,
             onboardingAvatar(profile.name.take(1).uppercase(), 100, profile.color),
             text(profile.name, SERIF_TITLE, serif = true).marginTop(12)
         ).apply { gravity = Gravity.CENTER }, column(Gravity.START,

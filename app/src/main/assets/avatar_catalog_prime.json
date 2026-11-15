@@ -1,0 +1,375 @@
+{
+  "source": "https://github.com/eueueue292/Fusion-Profile-Avatars",
+  "sourceAuthor": "eueueue292",
+  "sourceLicense": "Images belong to their respective rights holders; the archive does not grant redistribution rights.",
+  "notes": "URL references only, not bundled image files. Images load on demand, are cached locally and may become unavailable.",
+  "sourcePacks": [
+    {
+      "group": "Fallout",
+      "path": "Fallout/pack.json",
+      "manifestBlobSha": "6d0ab1762a08fc87a717db110dcd073a31c3d694"
+    },
+    {
+      "group": "The Boys",
+      "path": "The Boys/pack.json",
+      "manifestBlobSha": "263800811dcbf9e205fe2ef3e74291f3c6f89771"
+    },
+    {
+      "group": "Invincible",
+      "path": "Invincible/pack.json",
+      "manifestBlobSha": "807d9d05ee3ce5faca2424d90ec8e874f3b85c9c"
+    }
+  ],
+  "icons": [
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Barb",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Barb.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Betty",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Betty.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "CX404",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/CX404.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Chet",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Chet.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Cooper Howard",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Cooper.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Dane",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Dane.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Deathclaw",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/DeathClaw.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Hank MacLean",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Hank.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Legate",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Legate.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Ma June",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Ma%20June.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Maximus",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Maximus.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Lee Moldaver",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Moldaver.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Mr. House",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Mr.%20House.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "NCR Ranger",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/NCR%20Ranger.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Norm MacLean",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Norm.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Power Armor",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Power%20Armor.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Reg",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Reg.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Snip Snip",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Snip%20Snip.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Steph",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Steph.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Thaddeus",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Thaddeus.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "The Ghoul",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/The%20Ghoul.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Vault Boy",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Vault%20Boy.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Victor",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Victor.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Dr. Wilzig",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Wilzig.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Woody",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Woody.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Fallout",
+      "season": "Collection",
+      "name": "Xander",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Fallout/Xander.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "The Boys",
+      "season": "Collection",
+      "name": "A-Train",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/The%20Boys/A-Train.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "The Boys",
+      "season": "Collection",
+      "name": "Starlight",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/The%20Boys/Annie.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "The Boys",
+      "season": "Collection",
+      "name": "Ashley Barrett",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/The%20Boys/Ashley.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "The Boys",
+      "season": "Collection",
+      "name": "Billy Butcher",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/The%20Boys/Billy%20Butcher.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "The Boys",
+      "season": "Collection",
+      "name": "Black Noir",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/The%20Boys/Black%20Noir.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "The Boys",
+      "season": "Collection",
+      "name": "Firecracker",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/The%20Boys/Firecracker.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "The Boys",
+      "season": "Collection",
+      "name": "Frenchie",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/The%20Boys/Frenchie.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "The Boys",
+      "season": "Collection",
+      "name": "Homelander",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/The%20Boys/Homelander.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "The Boys",
+      "season": "Collection",
+      "name": "Hughie Campbell",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/The%20Boys/Hughie%20Campbell.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "The Boys",
+      "season": "Collection",
+      "name": "Kimiko",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/The%20Boys/Kimiko.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "The Boys",
+      "season": "Collection",
+      "name": "Mother's Milk",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/refs/heads/main/The%20Boys/Mothers%20Milk.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "The Boys",
+      "season": "Collection",
+      "name": "Sister Sage",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/The%20Boys/Sister%20Sage.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "The Boys",
+      "season": "Collection",
+      "name": "Soldier Boy",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/The%20Boys/Soldier%20Boy.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "The Boys",
+      "season": "Collection",
+      "name": "The Deep",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/The%20Boys/The%20Deep.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Invincible",
+      "season": "Collection",
+      "name": "Amber",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Invincible/Amber.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Invincible",
+      "season": "Collection",
+      "name": "Atom Eve",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Invincible/Atom%20Eve.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Invincible",
+      "season": "Collection",
+      "name": "Black Samson",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Invincible/Black%20Samson.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Invincible",
+      "season": "Collection",
+      "name": "Cecil Stedman",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Invincible/Cecil%20Stedman.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Invincible",
+      "season": "Collection",
+      "name": "Debbie Grayson",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Invincible/Debbie%20Grayson.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Invincible",
+      "season": "Collection",
+      "name": "Invincible",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Invincible/Invincible.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Invincible",
+      "season": "Collection",
+      "name": "Monster Girl",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Invincible/Monster%20Girl.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Invincible",
+      "season": "Collection",
+      "name": "Omni-Man",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Invincible/Omni-Man.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Invincible",
+      "season": "Collection",
+      "name": "Rex Splode",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Invincible/Rex%20Splode.PNG"
+    },
+    {
+      "service": "Prime Video",
+      "group": "Invincible",
+      "season": "Collection",
+      "name": "Robot",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Invincible/Robot.PNG"
+    }
+  ]
+}
