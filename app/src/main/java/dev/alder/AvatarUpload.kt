@@ -80,9 +80,11 @@ internal class AvatarUpload(
                     return
                 }
                 if (completed.compareAndSet(false, true)) {
-                    respond(socket, 200, "Photo received. You can return to your TV.")
-                    received(localUrl)
-                    runCatching { server.close() }
+                    // Once saved, update the TV even if the phone closes its
+                    // connection before it can read our success response.
+                    runCatching { respond(socket, 200, "Photo received. You can return to your TV.") }
+                    try { received(localUrl) }
+                    finally { runCatching { server.close() } }
                 } else respond(socket, 410, "Upload expired")
             }
             else -> respond(socket, 405, "Method not allowed")
