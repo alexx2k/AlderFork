@@ -42,6 +42,10 @@ android {
     }
 
     buildTypes {
+        // Installs alongside the release app, so development doesn't overwrite family profiles.
+        debug {
+            applicationIdSuffix = ".dev"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
