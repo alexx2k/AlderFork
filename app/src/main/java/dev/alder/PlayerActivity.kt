@@ -1254,7 +1254,8 @@ class PlayerActivity : Screen() {
     }
 
     private fun showUpNext() {
-        if (episodic && !plausibleEpisode(player.duration)) return
+        if (nextTransitionStarted || upNextDismissed || upNextPanel.visibility == View.VISIBLE ||
+            isTrailer || !episodic || player.isCurrentMediaItemLive || !plausibleEpisode(player.duration)) return
         if (stopAfter || stillPanel.visibility == View.VISIBLE) return // Sleep: After this episode
         val next = nextVideo() ?: return
         if (offeringLower) dismissStall()
@@ -1262,44 +1263,123 @@ class PlayerActivity : Screen() {
         options.visibility = View.GONE
         hideLoading()
         upNextPanel.removeAllViews()
-        val playNext = pill(R.string.player_next_episode, R.drawable.ic_play).apply { setOnClickListener { playNext() } }
+
+        val play = pill(R.string.player_next_episode, R.drawable.ic_play).apply {
+            id = View.generateViewId()
+            setOnClickListener { playNext(EpisodeAdvanceOrigin.MANUAL) }
+        }
+        val watchCredits = chip(getString(R.string.player_watch_credits)).apply {
+            id = View.generateViewId()
+            setOnClickListener { dismissUpNext() }
+        }
+        // Explicit focus links avoid Android TV navigating into the controls beneath the overlay.
+        play.nextFocusDownId = watchCredits.id
+        watchCredits.nextFocusUpId = play.id
+        upNextCountdown = EpisodeAutoplayCountdown()
+        countdownLabel = text(getString(R.string.player_auto_next_in, 5), SMALL, color = TUNGSTEN).onArt()
+
         val content = column(Gravity.START).apply {
             setPadding(dp(18), dp(14), dp(18), dp(14))
-            // Video can't be frosted: a dark base under the glass keeps it readable over white end cards.
             background = videoGlass(14)
             addView(caps(R.string.player_up_next, TUNGSTEN).onArt())
-            addView(text(next.title.ifBlank { getString(R.string.episode_number, next.episode) }, SERIF_TITLE, serif = true).onArt(),
+            addView(text(next.title.ifBlank { getString(R.string.episode_number, next.episode) },
+                SERIF_TITLE, serif = true).onArt().apply { maxLines = 2; ellipsize = TextUtils.TruncateAt.END },
                 wrap().apply { topMargin = dp(6) })
-            addView(text("S${next.season} E${next.episode}", SMALL, color = TEXT_2).onArt(), wrap().apply { topMargin = dp(5) })
-            addView(playNext, wrap().apply { topMargin = dp(16) })
+            addView(text("S${next.season} E${next.episode}", SMALL, color = TEXT_2).onArt(),
+                wrap().apply { topMargin = dp(5) })
+            addView(countdownLabel, wrap().apply { topMargin = dp(8) })
+            addView(play, wrap().apply { topMargin = dp(12) })
+            addView(watchCredits, wrap().apply { topMargin = dp(8) })
         }
         upNextPanel.addView(content, FrameLayout.LayoutParams(dp(360), -2, Gravity.BOTTOM or Gravity.END).apply {
             rightMargin = dp(PAD); bottomMargin = dp(68)
         })
         upNextPanel.visibility = View.VISIBLE
-        playNext.requestFocus()
+        play.requestFocus()
+        prepareNextEpisode(next)
+        main.removeCallbacks(upNextCountdownTask)
+        main.postDelayed(upNextCountdownTask, 1_000L)
+    }
+
+    /**
+     * Resolve the next episode's source list while the credits continue. No MediaSource is prepared,
+     * no video bytes are downloaded, and no second decoder/torrent engine is opened.
+     * The resolver uses the same profile, provider preference and ranked fallback sources as Play.
+     */
+    private fun prepareNextEpisode(next: Video) {
+        if (nextPrefetchFor == next.id) return
+        cancelNextPreparation()
+        nextPrefetchFor = next.id
+        nextPrefetch = StreamsResolver.resolve(
+            context = applicationContext,
+            type = type,
+            videoId = next.id,
+            metaId = metaId,
+            authKey = libraryProfile.authKey,
+            profileId = libraryProfile.id,
+            onReady = { ready ->
+                if (!isFinishing && !isDestroyed && !nextTransitionStarted && nextPrefetchFor == next.id) {
+                    nextPrefetch = null
+                    preparedNextSources = ready
+                }
+            },
+            onFallback = {
+                // The ordinary source screen can still retry and explain add-on/network failures.
+                if (nextPrefetchFor == next.id) nextPrefetch = null
+            }
+        )
+    }
+
+    private fun cancelNextPreparation() {
+        nextPrefetch?.cancel()
+        nextPrefetch = null
+        nextPrefetchFor = null
+        preparedNextSources = null
+    }
+
+    private fun stopNextCountdown() {
+        main.removeCallbacks(upNextCountdownTask)
+        upNextCountdown = null
+        countdownLabel = null
     }
 
     private fun dismissUpNext() {
         upNextDismissed = true
         upNextPanel.visibility = View.GONE
+        upNextPanel.removeAllViews()
+        stopNextCountdown()
+        cancelNextPreparation()
     }
 
-    /** Hands the next episode to the sources page, which starts it (preferring this release's group) and finishes here.
-     *  [quietly]: episodes in a row that ended with no key pressed (0 when the viewer chose it). */
-    private fun playNext(quietly: Int = 0) {
+    /**
+     * Move straight into PlayerActivity when candidates have been resolved, skipping StreamsActivity's
+     * redundant source lookup. Expired/unavailable sources still use the player's existing retry logic.
+     * Origin is explicit for a later per-session inactivity policy.
+     */
+    private fun playNext(origin: EpisodeAdvanceOrigin = EpisodeAdvanceOrigin.MANUAL) {
+        if (nextTransitionStarted) return
         val next = nextVideo() ?: return finish()
+        if (Profiles.active(this)?.id != libraryProfile.id) return finish() // never autoplay into a different profile
+        nextTransitionStarted = true
+        main.removeCallbacks(upNextCountdownTask)
+        upNextPanel.visibility = View.GONE
         val videos = meta!!.videos
         val after = videos.getOrNull(videos.indexOf(next) + 1)?.takeIf { it.season != 0 }
         val name = intent.getStringExtra("name") ?: ""
-        startActivity(Intent(this, StreamsActivity::class.java)
+        val ready = preparedNextSources?.takeIf { nextPrefetchFor == next.id && it.isNotEmpty() }
+        val destination = if (ready != null) PlayerActivity::class.java else StreamsActivity::class.java
+        val upcoming = Intent(this, destination)
             .putExtra("type", type).putExtra("id", metaId).putExtra("name", name)
             .putExtra("poster", intent.getStringExtra("poster")).putExtra("background", intent.getStringExtra("background"))
             .putExtra("videoId", next.id).putExtra("nextVideoId", after?.id)
             .putExtra("label", "$name  ·  S${next.season} E${next.episode}")
             .putExtra("logo", meta?.logo).putExtra("still", next.thumbnail).putExtra("runtime", meta?.runtime)
             .putExtra("episode", "S${next.season} E${next.episode}  ·  ${next.title}")
-            .putExtra("quiet", quietly).putExtra("sleepAt", sleepAt))
+            .putExtra("quiet", if (origin == EpisodeAdvanceOrigin.AUTOPLAY) quiet + 1 else 0)
+            .putExtra("sleepAt", sleepAt)
+        if (ready != null) upcoming.putExtra("sources", JSONArray(ready.map { it.toJson() }).toString())
+        completingForNextVideoId = next.id
+        startActivity(upcoming)
         finish()
     }
 
