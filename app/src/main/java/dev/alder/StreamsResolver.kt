@@ -192,7 +192,9 @@ object StreamsResolver {
             addons.forEachIndexed { i, addon ->
                 executor.execute {
                     if (canceled) return@execute
-                    val streamsResult = runCatching { addon.streams(type, videoId, allowTorrents = supportsTorrentPlayback) }
+                    // Retain the existing direct-play P2P policy unless the viewer explicitly chose this provider.
+                    val streamsResult = runCatching { addon.streams(type, videoId,
+                        allowTorrents = supportsTorrentPlayback && addon.id == preferredProviderId) }
                     mainHandler.post {
                         if (canceled) return@post
                         answers[i] = streamsResult.getOrNull()?.playable.orEmpty()
