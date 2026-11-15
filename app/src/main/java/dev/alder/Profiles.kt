@@ -101,6 +101,7 @@ object Profiles {
         val prefs = prefs(context)
         save(prefs, list.filterNot { it.id == id })
         LocalLibrary.clear(context, id)
+        PreferredServers.forgetProfile(context, id)
         LocalProfileAvatars.delete(context, id)
         if (prefs.getString("active", null) == id) prefs.edit().remove("active").apply()
         prefs.edit().remove("shareStreams:$id").remove("signedOut:$id").apply()

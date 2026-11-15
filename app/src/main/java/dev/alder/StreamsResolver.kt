@@ -20,14 +20,17 @@ object StreamsResolver {
         streams: List<Stream>,
         videoId: String,
         metaId: String?,
-        maxHeight: Int = 0
+        maxHeight: Int = 0,
+        profileId: String? = null
     ): List<Stream> {
         val prefs = context.getSharedPreferences("sources", Context.MODE_PRIVATE)
         val file = prefs.getString("file:$videoId", null)
         val binge = metaId?.let { prefs.getString("binge:$it", null) }
         val tv = Device.of(context)
         val preferResolution = Settings.release(context) == "remux" && Settings.hdrPref(context) == "dv"
-        return rank(streams, tv, Settings.displayHeight(context), file, binge, maxHeight > 0, preference(context), preferResolution)
+        val preferred = PreferredServers.forEpisode(context, profileId, metaId, videoId)
+        return rank(streams, tv, Settings.displayHeight(context), file, binge, maxHeight > 0,
+            preference(context), preferResolution, preferred)
     }
 
     internal fun rank(
@@ -38,12 +41,13 @@ object StreamsResolver {
         binge: String?,
         lower: Boolean,
         prefer: (Stream) -> Int,
-        preferResolution: Boolean
+        preferResolution: Boolean,
+        preferredProviderId: String? = null
     ): List<Stream> {
         val displayHeight = if (displayOverride > 0) displayOverride else tv.height
         // P2P after every direct or debrid source: peers start slower and can't be checked first.
         // A P2P source its add-on says nobody shares (👤 0) can't start: after every other.
-        return streams.sortedWith(compareBy<Stream> { it.torrent != null }
+        val ranked = streams.sortedWith(compareBy<Stream> { it.torrent != null }
             .thenBy { it.torrent != null && it.seeders == 0 }
             .thenByDescending { if (lower) it.height else 0 }
             .thenByDescending { file != null && it.filename == file }
@@ -54,6 +58,27 @@ object StreamsResolver {
             .thenByDescending(prefer)
             .thenByDescending { if (preferResolution && it.height <= displayHeight) it.height else 0 }
             .thenByDescending { if (it.torrent != null) it.seeders ?: 0 else 0 })
+        return preferProvider(ranked, preferredProviderId)
+    }
+
+    /** Preserve quality ranking inside each group; never choose a known zero-seed P2P stream as preferred. */
+    internal fun preferProvider(ranked: List<Stream>, preferredProviderId: String?): List<Stream> {
+        if (preferredProviderId.isNullOrBlank()) return ranked
+        val (preferred, other) = ranked.partition {
+            it.providerId == preferredProviderId && (it.torrent == null || it.seeders != 0)
+        }
+        return preferred + other
+    }
+
+    /** Keep one automatic alternative in the three-source retry list whenever possible. */
+    internal fun playbackCandidates(ranked: List<Stream>, preferredProviderId: String?): List<Stream> {
+        if (preferredProviderId.isNullOrBlank()) return ranked.take(TRY)
+        val (preferred, other) = ranked.partition {
+            it.providerId == preferredProviderId && (it.torrent == null || it.seeders != 0)
+        }
+        if (preferred.isEmpty() || other.isEmpty()) return ranked.take(TRY)
+        val first = preferred.take(TRY - 1) + other.take(1)
+        return (first + ranked).distinct().take(TRY)
     }
 
     @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
@@ -97,6 +122,7 @@ object StreamsResolver {
         videoId: String,
         metaId: String,
         authKey: String?,
+        profileId: String? = null,
         maxHeight: Int = 0,
         executor: Executor = Screen.pool,
         mainHandler: Handler = Handler(Looper.getMainLooper()),
@@ -120,6 +146,7 @@ object StreamsResolver {
         }
 
         val lenders = Profiles.streamLenders(context)
+        val preferredProviderId = PreferredServers.forEpisode(context, profileId, metaId, videoId)
 
         executor.execute {
             if (canceled) return@execute
@@ -134,7 +161,7 @@ object StreamsResolver {
                 household + own.filter { it.serves("stream", type, videoId) }.filterNot { mine -> household.any { it.id == mine.id } }
             }
 
-            val addons = res.getOrNull().orEmpty()
+            val addons = res.getOrNull().orEmpty().sortedByDescending { it.id == preferredProviderId }
             if (addons.isEmpty()) {
                 mainHandler.post { if (!canceled) onFallback() }
                 return@execute
@@ -145,21 +172,29 @@ object StreamsResolver {
             fun tryStart(allowGaps: Boolean = false) {
                 if (canceled || started) return
                 val ready = readyStreams(answers, allowGaps)
-                val best = rank(context, ready.filter { it.isVideo && it.playableOn(tv) && wanted(context, it, maxHeight) }, videoId, metaId, maxHeight)
+                val best = rank(context, ready.filter { it.isVideo && it.playableOn(tv) && wanted(context, it, maxHeight) },
+                    videoId, metaId, maxHeight, profileId)
                 if (best.isEmpty() && answers.any { it == null }) return
+                // If the remembered add-on replied first, allow a brief window for an automatic
+                // fallback from another add-on to join the player's retry list.
+                if (!allowGaps && preferredProviderId != null && answers.any { it == null } &&
+                    best.any { it.providerId == preferredProviderId } &&
+                    best.none { it.providerId != preferredProviderId }) return
                 if (best.isEmpty()) {
                     started = true
                     onFallback()
                     return
                 }
                 started = true
-                onReady(best.take(TRY))
+                onReady(playbackCandidates(best, preferredProviderId))
             }
 
             addons.forEachIndexed { i, addon ->
                 executor.execute {
                     if (canceled) return@execute
-                    val streamsResult = runCatching { addon.streams(type, videoId) }
+                    // Retain the existing direct-play P2P policy unless the viewer explicitly chose this provider.
+                    val streamsResult = runCatching { addon.streams(type, videoId,
+                        allowTorrents = supportsTorrentPlayback && addon.id == preferredProviderId) }
                     mainHandler.post {
                         if (canceled) return@post
                         answers[i] = streamsResult.getOrNull()?.playable.orEmpty()
@@ -169,7 +204,10 @@ object StreamsResolver {
                             tryStart(allowGaps = false)
                             if (!started && !waitingForEarlier && readyStreams(answers, true).any { it.isVideo && it.playableOn(tv) && wanted(context, it, maxHeight) }) {
                                 waitingForEarlier = true
-                                mainHandler.postDelayed({ tryStart(allowGaps = true) }, 800)
+                                val awaitingPreference = addons.indices.any { j ->
+                                    addons[j].id == preferredProviderId && answers[j] == null
+                                }
+                                mainHandler.postDelayed({ tryStart(allowGaps = true) }, if (awaitingPreference) 3_000 else 800)
                             }
                         }
                     }

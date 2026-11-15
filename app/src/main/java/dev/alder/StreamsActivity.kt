@@ -23,6 +23,7 @@ internal fun readyStreams(answers: Array<List<Stream>?>, allowGaps: Boolean): Li
 
 class StreamsActivity : Screen() {
     private val pick by lazy { intent.getBooleanExtra("pick", false) || Settings.alwaysList(this) }
+    private lateinit var viewerProfile: Profile
 
     private lateinit var art: ImageView
     private lateinit var addonText: android.widget.TextView
@@ -35,9 +36,11 @@ class StreamsActivity : Screen() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        viewerProfile = Profiles.active(this) ?: return finish()
         val key = authKey ?: return finish()
         val type = intent.getStringExtra("type") ?: "movie"
         val videoId = intent.getStringExtra("videoId")!!
+        val preferredProviderId = PreferredServers.forEpisode(this, viewerProfile.id, intent.getStringExtra("id"), videoId)
         val name = intent.getStringExtra("name") ?: ""
         val episode = intent.getStringExtra("episode") ?: intent.getStringExtra("label")?.removePrefix(name)?.trim(' ', '·')
         val where = episode?.split("·")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
@@ -169,10 +172,11 @@ class StreamsActivity : Screen() {
             (household + own.filter { it.serves("stream", type, videoId) }.filterNot { mine -> household.any { it.id == mine.id } }) to
                 (own.any { !it.official } || lent.isNotEmpty())
         }) { result ->
-            val (addons, anyStreams) = result.getOrElse {
+            val (foundAddons, anyStreams) = result.getOrElse {
                 status.text = failureMessage(R.string.streams_load_failed, failureOf(it))
                 return@background tryAgain()
             }
+            val addons = foundAddons.sortedByDescending { it.id == preferredProviderId }
             if (addons.isEmpty()) {
                 status.text = getString(if (anyStreams) R.string.streams_none_for_kind else R.string.streams_no_addons)
                 return@background tryAgain()
@@ -245,10 +249,16 @@ class StreamsActivity : Screen() {
                 val ready = readyStreams(answers, allowGaps)
                 val best = rank(ready.filter { it.isVideo && it.playableOn(tv) && wanted(it) }, videoId)
                 if (best.isEmpty() && answers.any { it == null }) return
+                // If the remembered add-on replied first, allow a brief window for an automatic
+                // fallback from another add-on to join the player's retry list.
+                if (!allowGaps && preferredProviderId != null && answers.any { it == null } &&
+                    best.any { it.providerId == preferredProviderId } &&
+                    best.none { it.providerId != preferredProviderId }) return
                 if (best.isEmpty()) return showList()
                 started = true
                 startActivity(Intent(this, PlayerActivity::class.java).putExtras(intent)
-                    .putExtra("sources", JSONArray(best.take(TRY).map { it.toJson() }).toString()))
+                    .putExtra("sources", JSONArray(StreamsResolver.playbackCandidates(best, preferredProviderId)
+                        .map { it.toJson() }).toString()))
                 finish()
             }
 
@@ -267,7 +277,10 @@ class StreamsActivity : Screen() {
                         tryStart()
                         if (!started && !waitingForEarlier && readyStreams(answers, true).any { it.isVideo && it.playableOn(tv) && wanted(it) }) {
                             waitingForEarlier = true
-                            main.postDelayed({ tryStart(allowGaps = true) }, 800)
+                            val awaitingPreference = addons.indices.any { j ->
+                                addons[j].id == preferredProviderId && answers[j] == null
+                            }
+                            main.postDelayed({ tryStart(allowGaps = true) }, if (awaitingPreference) 3_000 else 800)
                         }
                     }
                 }
@@ -346,7 +359,8 @@ class StreamsActivity : Screen() {
      * stream preferences. The sort is stable, so ties keep the addon's order.
      */
     private fun rank(streams: List<Stream>, videoId: String): List<Stream> =
-        StreamsResolver.rank(this, streams, videoId, intent.getStringExtra("id"), intent.getIntExtra("maxHeight", 0))
+        StreamsResolver.rank(this, streams, videoId, intent.getStringExtra("id"),
+            intent.getIntExtra("maxHeight", 0), viewerProfile.id)
 
     private fun preference(): (Stream) -> Int = StreamsResolver.preference(this)
 
@@ -372,6 +386,11 @@ class StreamsActivity : Screen() {
             }
             alpha = if (s.height in 1..719) 0.48f else 1f
             setOnClickListener {
+                val metaId = intent.getStringExtra("id")
+                val videoId = intent.getStringExtra("videoId")
+                if (metaId != null && videoId != null && metaId != videoId && s.providerId != null) {
+                    PreferredServers.remember(this@StreamsActivity, viewerProfile.id, metaId, s.providerId)
+                }
                 val chosen = JSONArray(listOf(s.toJson())).toString()
                 // Opened from the player (Change stream): it's still there, paused, and plays this from the same second.
                 if (intent.getBooleanExtra("fromPlayer", false)) {

@@ -63,6 +63,46 @@ class StreamsResolverTest {
         assertFalse(nonCam.cam)
     }
 
+
+    @Test
+    fun streamProviderSurvivesPlayerIntentSerialization() {
+        val chosen = stream("Torrentio 1080p").withProvider("com.torrentio")
+        assertEquals("com.torrentio", Stream.read(chosen.toJson()).providerId)
+        assertEquals(chosen.title, Stream.read(chosen.toJson()).title)
+    }
+
+    @Test
+    fun preferredProviderTakesPriorityWithinNormalQualityRanking() {
+        val favoriteHd = stream("Favorite 1080p", bingeGroup = "new").withProvider("com.torrentio")
+        val alternative4k = stream("Alternative 2160p", bingeGroup = "old").withProvider("com.comet")
+        val device = Device(hevc = true, av1 = true, dolbyVision = true, hdr = true, height = 2160)
+        val candidates = listOf(alternative4k, favoriteHd)
+
+        // Without a manual preference, the earlier binge group and release ranking still apply.
+        assertEquals(alternative4k, StreamsResolver.rank(candidates, device, 0, null,
+            "old", false, { 0 }, true).first())
+        assertEquals(favoriteHd, StreamsResolver.rank(candidates, device, 0, null,
+            "old", false, { 0 }, true, "com.torrentio").first())
+        // If the preferred add-on has no suitable streams, use normal automatic selection.
+        assertEquals(StreamsResolver.rank(candidates, device, 0, null, "old", false, { 0 }, true),
+            StreamsResolver.rank(candidates, device, 0, null, "old", false, { 0 }, true, "missing"))
+    }
+
+    @Test
+    fun automaticRetriesIncludeAnotherProviderWheneverAvailable() {
+        val preferred = (1..4).map { stream("Preferred $it").withProvider("com.torrentio") }
+        val automatic = (1..2).map { stream("Alternative $it").withProvider("com.comet") }
+        val ranked = StreamsResolver.preferProvider(automatic + preferred, "com.torrentio")
+        val chosen = StreamsResolver.playbackCandidates(ranked, "com.torrentio")
+
+        assertEquals(StreamsResolver.TRY, chosen.size)
+        assertEquals(preferred.take(2), chosen.take(2))
+        assertEquals(automatic.first(), chosen.last())
+        assertEquals(automatic.take(2), StreamsResolver.playbackCandidates(automatic, "com.torrentio"))
+        assertEquals((automatic + preferred).take(3),
+            StreamsResolver.playbackCandidates(automatic + preferred, null))
+    }
+
     @Test
     fun cancellableCanBeCanceled() {
         var canceled = false

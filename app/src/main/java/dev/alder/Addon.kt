@@ -169,7 +169,7 @@ class Addon(val descriptor: JSONObject) {
         } catch (e: HttpError) {
             if (e.code == 404) emptyList<JSONObject>() else throw e
         }
-        val playable = all.mapNotNull { Stream.from(it, allowTorrents) }
+        val playable = all.mapNotNull { Stream.from(it, allowTorrents)?.withProvider(id) }
         return Streams(playable,
             all.count { stream -> stream.text("url")?.let(TorrentSource::isTorrentUrl) ?: (stream.text("infoHash") != null) } -
                 playable.count { it.torrent != null },
@@ -375,6 +375,7 @@ class Stream(
     val title: String, val description: String, val url: String, val headers: Map<String, String>,
     val size: Long, val filename: String?, val bingeGroup: String?,
     val torrent: TorrentSource? = null,
+    val providerId: String? = null,
 ) {
     /**
      * False for addon "actions" dressed up as streams, such as MyTrakt's "Mark Watched" (a 27 KB placeholder file).
@@ -382,6 +383,9 @@ class Stream(
      * hid real short videos (a 7-minute cartoon, a 480p anime episode) with no reason given.
      */
     val isVideo get() = size == 0L || size >= 5L * 1024 * 1024
+
+    /** Installed add-on that supplied this result; unlike a stream URL, this holds across episodes. */
+    fun withProvider(id: String): Stream = Stream(title, description, url, headers, size, filename, bingeGroup, torrent, id)
 
     /**
      * The addon's name for it on one line: "Torrentio (2160p)" becomes "Torrentio  ·  2160p". A debrid tag ("[RD+]")
@@ -461,6 +465,7 @@ class Stream(
 
     fun toJson(): JSONObject = JSONObject().put("name", title).put("description", description).put("url", url)
         .put("headers", JSONObject(headers)).put("size", size).put("filename", filename).put("binge", bingeGroup)
+        .put("providerId", providerId)
         .apply { torrent?.let { put("torrent", it.toJson()) } }
 
     companion object {
@@ -488,7 +493,8 @@ class Stream(
             val headers = json.optJSONObject("headers") ?: JSONObject()
             return Stream(json.optString("name"), json.optString("description"), json.getString("url"),
                 headers.keys().asSequence().associateWith { headers.getString(it) }, json.optLong("size"),
-                json.text("filename"), json.text("binge"), json.optJSONObject("torrent")?.let(TorrentSource::from))
+                json.text("filename"), json.text("binge"), json.optJSONObject("torrent")?.let(TorrentSource::from),
+                json.text("providerId"))
         }
     }
 }
