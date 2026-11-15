@@ -196,7 +196,7 @@ class ProfilesActivity : Screen() {
         val circle = FrameLayout(this).apply {
             clipChildren = false
             addView(face, FrameLayout.LayoutParams(dp(100), dp(100), Gravity.CENTER))
-            if (profile?.avatarUrl != null) ProfileAvatars.attach(this@ProfilesActivity, profile, this, dp(100))
+            if (profile?.avatarUrl != null) ProfileAvatars.attach(this@ProfilesActivity, profile, this, dp(100), face)
         }
         // No ring: like the top bar, a dot under the name marks the remote's portrait.
         val dot = View(this).apply {
@@ -263,12 +263,13 @@ class ProfilesActivity : Screen() {
         val scroll = android.widget.ScrollView(this).apply {
             isFillViewport = false
             isVerticalScrollBarEnabled = false
-            clipToPadding = false
+            clipChildren = true
+            clipToPadding = true
         }
         val groups = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            clipChildren = false
-            clipToPadding = false
+            clipChildren = true
+            clipToPadding = true
             setPadding(dp(42), dp(10), dp(42), dp(20))
         }
         scroll.addView(groups)
@@ -291,23 +292,34 @@ class ProfilesActivity : Screen() {
         })
         setWindowed(content, backdrop)
 
-        val pictures = mutableListOf<Pair<ImageView, String>>()
+        // Visibility belongs to the focusable card, never to the hidden image.
+        val pictures = mutableListOf<Triple<View, ImageView, String>>()
         var refreshScheduled = false
         fun refreshVisible() {
             if (generation != pickerGeneration || isDestroyed) return
             val rectangle = android.graphics.Rect()
-            for ((image, url) in pictures) {
-                val visible = image.getGlobalVisibleRect(rectangle)
+            for ((cell, image, url) in pictures) {
+                val visible = cell.getGlobalVisibleRect(rectangle)
+                val placeholder = (image.parent as? FrameLayout)?.getChildAt(0)
                 if (visible && image.tag != url) {
+                    placeholder?.visibility = View.VISIBLE
                     image.visibility = View.INVISIBLE
                     Images.load(url, image, dp(90),
-                        done = { image.visibility = View.VISIBLE },
-                        failed = { image.visibility = View.INVISIBLE })
+                        done = {
+                            // Hide the original placeholder. Some PNGs contain transparency,
+                            // so leaving it underneath creates ghosted/overlapping pictures.
+                            placeholder?.visibility = View.INVISIBLE
+                            image.visibility = View.VISIBLE
+                        },
+                        failed = {
+                            placeholder?.visibility = View.VISIBLE
+                            image.visibility = View.INVISIBLE
+                        })
                 } else if (!visible && image.tag != null) {
-                    // Remove offscreen references; the size-limited image cache can reuse bitmaps.
                     image.tag = null
                     image.setImageDrawable(null)
                     image.visibility = View.INVISIBLE
+                    placeholder?.visibility = View.VISIBLE
                 }
             }
         }
@@ -341,16 +353,16 @@ class ProfilesActivity : Screen() {
                     entries.chunked(7).forEach { iconsRow ->
                         val row = LinearLayout(this@ProfilesActivity).apply {
                             orientation = LinearLayout.HORIZONTAL
-                            clipChildren = false
-                            clipToPadding = false
+                            clipChildren = true
+                            clipToPadding = true
                         }
                         for (icon in iconsRow) {
                             val cell = LinearLayout(this@ProfilesActivity).apply {
                                 orientation = LinearLayout.VERTICAL
                                 gravity = Gravity.CENTER_HORIZONTAL
-                                clipChildren = false
+                                clipChildren = true
                             }
-                            val portrait = FrameLayout(this@ProfilesActivity).apply { clipChildren = false }
+                            val portrait = FrameLayout(this@ProfilesActivity).apply { clipChildren = true }
                             val fallback = text(icon.name.take(1).uppercase(), BODY, bold = true, color = BASE).apply {
                                 gravity = Gravity.CENTER
                                 background = GradientDrawable().apply {
@@ -369,7 +381,7 @@ class ProfilesActivity : Screen() {
                                 clipToOutline = true
                             }
                             portrait.addView(picture, FrameLayout.LayoutParams(dp(90), dp(90), Gravity.CENTER))
-                            pictures.add(picture to icon.url)
+                            pictures.add(Triple(cell, picture, icon.url))
                             cell.addView(portrait, LinearLayout.LayoutParams(dp(90), dp(90)))
                             cell.addView(text(icon.name, SMALL, color = TEXT_2).apply {
                                 gravity = Gravity.CENTER
@@ -377,7 +389,7 @@ class ProfilesActivity : Screen() {
                                 ellipsize = android.text.TextUtils.TruncateAt.END
                             }, LinearLayout.LayoutParams(-1, dp(36)).apply { topMargin = dp(4) })
                             cell.rowFocus(9, also = { focused ->
-                                portrait.grow(focused, 1.07f).start()
+                                // Highlight the card, not a scaled copy of its artwork.
                                 if (focused) scheduleVisible()
                             })
                             cell.contentDescription = "${icon.name}, ${icon.group}"
