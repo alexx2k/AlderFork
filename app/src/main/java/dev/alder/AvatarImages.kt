@@ -3,6 +3,8 @@ package dev.alder
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -24,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 internal object AvatarImages {
     private const val DISK_LIMIT = 96L * 1024 * 1024
-    private const val DISK_VERSION = "avatar_thumbnails_v1"
+    private const val DISK_VERSION = "avatar_thumbnails_opaque_v2"
 
     private val memoryBudget = (Runtime.getRuntime().maxMemory() / 12)
         .coerceIn(4L * 1024 * 1024, 16L * 1024 * 1024).toInt()
@@ -180,12 +182,22 @@ internal object AvatarImages {
                 inSampleSize = sample
                 inPreferredConfig = Bitmap.Config.ARGB_8888
             }) ?: return null
-        if (original.width == width) return original
-
         val height = (original.height.toLong() * width / original.width).toInt().coerceAtLeast(1)
-        return Bitmap.createScaledBitmap(original, width, height, true).also {
-            if (it !== original) original.recycle()
+        val resized = if (original.width == width) original
+            else Bitmap.createScaledBitmap(original, width, height, true).also {
+                if (it !== original) original.recycle()
+            }
+
+        // Netflix's PNG portraits can contain translucent/transparent pixels.
+        // Permanently flatten each decoded thumbnail on a solid dark surface:
+        // no artwork or banner can show through, even after row recycling.
+        val opaque = Bitmap.createBitmap(resized.width, resized.height, Bitmap.Config.ARGB_8888)
+        Canvas(opaque).apply {
+            drawColor(Color.rgb(32, 32, 32))
+            drawBitmap(resized, 0f, 0f, null)
         }
+        resized.recycle()
+        return opaque
     }
 
     /** Keep a bounded on-disk cache of already-resized images, independent of HTTP's raw image cache. */
