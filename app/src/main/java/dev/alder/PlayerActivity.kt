@@ -376,6 +376,7 @@ class PlayerActivity : Screen() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         libraryProfile = Profiles.active(this) ?: return finish()
+        if (intent.getStringExtra("playbackProfileId")?.let { it != libraryProfile.id } == true) return finish()
         val key = libraryProfile.authKey
         val sourcesJson = intent.getStringExtra("sources")
         if (!sourcesJson.isNullOrBlank()) {
@@ -1259,7 +1260,7 @@ class PlayerActivity : Screen() {
     }
 
     private fun showUpNext() {
-        if (nextTransitionStarted || upNextDismissed || upNextPanel.visibility == View.VISIBLE ||
+        if (stopped || nextTransitionStarted || upNextDismissed || upNextPanel.visibility == View.VISIBLE ||
             isTrailer || !episodic || player.isCurrentMediaItemLive || !plausibleEpisode(player.duration)) return
         if (stopAfter || stillPanel.visibility == View.VISIBLE) return // Sleep: After this episode
         val next = nextVideo() ?: return
@@ -1383,6 +1384,7 @@ class PlayerActivity : Screen() {
         }
         val destination = if (ready != null) PlayerActivity::class.java else StreamsActivity::class.java
         val upcoming = Intent(this, destination)
+            .putExtra("playbackProfileId", libraryProfile.id)
             .putExtra("type", type).putExtra("id", metaId).putExtra("name", name)
             .putExtra("poster", intent.getStringExtra("poster")).putExtra("background", intent.getStringExtra("background"))
             .putExtra("videoId", next.id).putExtra("nextVideoId", after?.id)
