@@ -511,8 +511,7 @@
     <string name="profiles_name_to_continue">जारी रखने के लिए नाम डालें।</string>
     <string name="profiles_welcome">Alder में आपका स्वागत है</string>
     <string name="profiles_new">नई प्रोफ़ाइल</string>
-    <string name="profiles_name_colour">इस प्रोफ़ाइल को एक नाम और रंग दें।</string>
-    <string name="profiles_portrait_colour">पोर्ट्रेट का रंग</string>
+    <string name="profiles_name_colour">इस प्रोफ़ाइल को एक नाम दें। तस्वीर चुनने के लिए प्रोफ़ाइल चित्र चुनें।</string>
     <string name="profiles_your_name">आपका नाम</string>
     <string name="profiles_getting_code">साइन-इन कोड लिया जा रहा है…</string>
     <string name="profiles_back">← वापस</string>
