@@ -482,6 +482,16 @@
     </string-array>
 
     <!-- Profiles -->
+    <string name="profiles_account_mode_title">How should this profile stream?</string>
+    <string name="profiles_share_account">Use an existing Stremio account (local profile)</string>
+    <string name="profiles_separate_account">Sign in to a separate Stremio account</string>
+    <string name="profiles_share_account_desc">Shared streaming addons, but this profile keeps its own watch history and My List on this TV.</string>
+    <string name="profiles_select_account">Share streaming access from</string>
+    <string name="profiles_missing_owner">Shared account unavailable</string>
+    <string name="profiles_missing_owner_desc">This profile\'s Stremio account owner is missing. Restore the account to use this profile.</string>
+    <string name="profiles_remove_owner_blocked">Account still in use</string>
+    <string name="profiles_remove_owner_blocked_desc">Remove the local profiles sharing this Stremio account before deleting its owner.</string>
+    <string name="profiles_remove_local_desc">Remove %1$s and permanently delete their viewing history and My List from this TV?</string>
     <string name="profiles_sign_in_again">Sign in again</string>
     <string name="profiles_whos_here">Who\'s here tonight?</string>
     <string name="profiles_hold_ok">Hold OK</string>
