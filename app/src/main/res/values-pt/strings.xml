@@ -559,4 +559,29 @@
     <string name="catalog_incomplete">Não foi possível carregar alguns catálogos</string>
     <string name="progress_saved_on_tv">O progresso foi salvo nesta TV. O Alder tentará sincronizá-lo de novo.</string>
     <string name="library_load_failed">Não foi possível carregar sua biblioteca do Stremio</string>
+
+    <!-- Profile and avatar features (v1.1.0) -->
+    <string name="profiles_avatar">Alterar foto do perfil</string>
+    <string name="profiles_avatar_choose">Explorar avatares pré-carregados</string>
+    <string name="profiles_avatar_upload">Enviar do seu celular</string>
+    <string name="profiles_avatar_upload_scan">Leia este código com seu celular para escolher e enviar uma imagem.</string>
+    <string name="profiles_avatar_upload_wifi">Seu celular e Fire Stick devem estar na mesma rede Wi-Fi.</string>
+    <string name="profiles_avatar_upload_waiting">Aguardando sua foto…</string>
+    <string name="profiles_avatar_upload_unavailable">Não foi possível iniciar o servidor de envio. Conecte o Fire Stick à sua rede doméstica e tente novamente.</string>
+    <string name="profiles_avatar_title">Escolha uma imagem para %1$s</string>
+    <string name="profiles_avatar_initials">Usar iniciais</string>
+    <string name="profiles_avatar_load_failed">Não foi possível carregar o catálogo de avatares.</string>
+    <string name="profiles_avatar_filter">Coleção: %1$s</string>
+    <string name="profiles_avatar_all">Todas as coleções</string>
+    <string name="profiles_avatar_filter_title">Explorar coleção</string>
+    <string name="profiles_account_mode_title">Como este perfil deve reproduzir conteúdo?</string>
+    <string name="profiles_share_account">Usar uma conta Stremio existente (perfil local)</string>
+    <string name="profiles_separate_account">Entrar com outra conta Stremio</string>
+    <string name="profiles_share_account_desc">Os complementos de streaming são compartilhados, mas este perfil mantém seu histórico e Minha Lista nesta TV.</string>
+    <string name="profiles_select_account">Compartilhar acesso de streaming de</string>
+    <string name="profiles_missing_owner">Conta compartilhada indisponível</string>
+    <string name="profiles_missing_owner_desc">A conta Stremio associada a este perfil não está disponível. Restaure-a para usar este perfil.</string>
+    <string name="profiles_remove_owner_blocked">Conta ainda em uso</string>
+    <string name="profiles_remove_owner_blocked_desc">Remova os perfis locais que usam esta conta Stremio antes de excluir o perfil proprietário.</string>
+    <string name="profiles_remove_local_desc">Remover %1$s e apagar permanentemente o histórico e a Minha Lista desta TV?</string>
 </resources>

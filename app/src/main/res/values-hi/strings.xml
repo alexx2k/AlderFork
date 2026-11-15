@@ -552,4 +552,29 @@
     <string name="catalog_incomplete">कुछ कैटलॉग लोड नहीं हो सके</string>
     <string name="progress_saved_on_tv">प्रगति इस टीवी पर सेव है। Alder इसे फिर से सिंक करने की कोशिश करेगा।</string>
     <string name="library_load_failed">आपकी Stremio लाइब्रेरी लोड नहीं हो सकी</string>
+
+    <!-- Profile and avatar features (v1.1.0) -->
+    <string name="profiles_avatar">प्रोफ़ाइल फ़ोटो बदलें</string>
+    <string name="profiles_avatar_choose">पहले से उपलब्ध अवतार देखें</string>
+    <string name="profiles_avatar_upload">अपने मोबाइल फ़ोन से अपलोड करें</string>
+    <string name="profiles_avatar_upload_scan">तस्वीर चुनने और अपलोड करने के लिए अपने फ़ोन से यह कोड स्कैन करें।</string>
+    <string name="profiles_avatar_upload_wifi">आपका फ़ोन और Fire Stick एक ही Wi-Fi नेटवर्क पर होने चाहिए।</string>
+    <string name="profiles_avatar_upload_waiting">आपकी फ़ोटो का इंतज़ार है…</string>
+    <string name="profiles_avatar_upload_unavailable">अपलोड सर्वर शुरू नहीं हो सका। Fire Stick को अपने घरेलू नेटवर्क से जोड़ें और फिर कोशिश करें।</string>
+    <string name="profiles_avatar_title">%1$s के लिए तस्वीर चुनें</string>
+    <string name="profiles_avatar_initials">इसकी जगह नाम के शुरुआती अक्षर इस्तेमाल करें</string>
+    <string name="profiles_avatar_load_failed">अवतार कैटलॉग लोड नहीं हो सका।</string>
+    <string name="profiles_avatar_filter">संग्रह: %1$s</string>
+    <string name="profiles_avatar_all">सभी संग्रह</string>
+    <string name="profiles_avatar_filter_title">संग्रह देखें</string>
+    <string name="profiles_account_mode_title">यह प्रोफ़ाइल स्ट्रीम कैसे करे?</string>
+    <string name="profiles_share_account">मौजूदा Stremio खाते का उपयोग करें (स्थानीय प्रोफ़ाइल)</string>
+    <string name="profiles_separate_account">किसी दूसरे Stremio खाते से साइन इन करें</string>
+    <string name="profiles_share_account_desc">स्ट्रीमिंग ऐड-ऑन साझा हैं, लेकिन इस प्रोफ़ाइल का देखने का इतिहास और मेरी सूची इसी टीवी पर अलग रहेंगे।</string>
+    <string name="profiles_select_account">स्ट्रीमिंग ऐक्सेस इस खाते से साझा करें</string>
+    <string name="profiles_missing_owner">साझा खाता उपलब्ध नहीं है</string>
+    <string name="profiles_missing_owner_desc">इस प्रोफ़ाइल का Stremio खाता उपलब्ध नहीं है। प्रोफ़ाइल इस्तेमाल करने के लिए खाता बहाल करें।</string>
+    <string name="profiles_remove_owner_blocked">खाता अभी उपयोग में है</string>
+    <string name="profiles_remove_owner_blocked_desc">इस Stremio खाते के मालिक को हटाने से पहले इससे जुड़े स्थानीय प्रोफ़ाइल हटाएँ।</string>
+    <string name="profiles_remove_local_desc">%1$s को हटाकर इस टीवी से उसका देखने का इतिहास और मेरी सूची हमेशा के लिए मिटाएँ?</string>
 </resources>

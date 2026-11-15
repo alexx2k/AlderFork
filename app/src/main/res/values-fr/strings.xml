@@ -559,4 +559,29 @@
     <string name="catalog_incomplete">Impossible de charger certains catalogues</string>
     <string name="progress_saved_on_tv">La progression est enregistrée sur cette TV. Alder réessaiera de la synchroniser.</string>
     <string name="library_load_failed">Impossible de charger votre bibliothèque Stremio</string>
+
+    <!-- Profile and avatar features (v1.1.0) -->
+    <string name="profiles_avatar">Modifier la photo de profil</string>
+    <string name="profiles_avatar_choose">Parcourir les avatars préchargés</string>
+    <string name="profiles_avatar_upload">Importer depuis votre téléphone</string>
+    <string name="profiles_avatar_upload_scan">Scannez ce code avec votre téléphone pour choisir et importer une photo.</string>
+    <string name="profiles_avatar_upload_wifi">Votre téléphone et votre Fire Stick doivent être connectés au même réseau Wi-Fi.</string>
+    <string name="profiles_avatar_upload_waiting">En attente de votre photo…</string>
+    <string name="profiles_avatar_upload_unavailable">Impossible de démarrer le serveur de transfert. Connectez le Fire Stick à votre réseau domestique et réessayez.</string>
+    <string name="profiles_avatar_title">Choisissez une photo pour %1$s</string>
+    <string name="profiles_avatar_initials">Utiliser les initiales</string>
+    <string name="profiles_avatar_load_failed">Impossible de charger le catalogue d’avatars.</string>
+    <string name="profiles_avatar_filter">Collection : %1$s</string>
+    <string name="profiles_avatar_all">Toutes les collections</string>
+    <string name="profiles_avatar_filter_title">Parcourir la collection</string>
+    <string name="profiles_account_mode_title">Comment ce profil doit-il accéder aux vidéos ?</string>
+    <string name="profiles_share_account">Utiliser un compte Stremio existant (profil local)</string>
+    <string name="profiles_separate_account">Se connecter avec un autre compte Stremio</string>
+    <string name="profiles_share_account_desc">Les extensions vidéo sont partagées, mais ce profil garde son historique et Ma liste sur ce téléviseur.</string>
+    <string name="profiles_select_account">Partager l’accès aux vidéos depuis</string>
+    <string name="profiles_missing_owner">Compte partagé indisponible</string>
+    <string name="profiles_missing_owner_desc">Le compte Stremio associé à ce profil est introuvable. Restaurez-le pour utiliser ce profil.</string>
+    <string name="profiles_remove_owner_blocked">Compte toujours utilisé</string>
+    <string name="profiles_remove_owner_blocked_desc">Supprimez les profils locaux liés à ce compte Stremio avant de supprimer son propriétaire.</string>
+    <string name="profiles_remove_local_desc">Supprimer %1$s et effacer définitivement son historique et Ma liste de ce téléviseur ?</string>
 </resources>

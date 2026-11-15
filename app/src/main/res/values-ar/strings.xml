@@ -580,4 +580,29 @@
     <string name="catalog_incomplete">تعذّر تحميل بعض قوائم العرض</string>
     <string name="progress_saved_on_tv">تم حفظ تقدّم المشاهدة على هذا التلفزيون. سيحاول Alder مزامنته مجددًا.</string>
     <string name="library_load_failed">تعذّر تحميل مكتبتك في Stremio</string>
+
+    <!-- Profile and avatar features (v1.1.0) -->
+    <string name="profiles_avatar">تغيير صورة الملف الشخصي</string>
+    <string name="profiles_avatar_choose">تصفّح الصور الرمزية الجاهزة</string>
+    <string name="profiles_avatar_upload">رفع صورة من هاتفك المحمول</string>
+    <string name="profiles_avatar_upload_scan">امسح هذا الرمز بهاتفك لاختيار صورة ورفعها.</string>
+    <string name="profiles_avatar_upload_wifi">يجب أن يكون هاتفك وجهاز Fire Stick متصلين بشبكة Wi-Fi نفسها.</string>
+    <string name="profiles_avatar_upload_waiting">في انتظار صورتك…</string>
+    <string name="profiles_avatar_upload_unavailable">تعذّر تشغيل خادم رفع الصور. صِل جهاز Fire Stick بشبكتك المنزلية وحاول مرة أخرى.</string>
+    <string name="profiles_avatar_title">اختر صورة لـ %1$s</string>
+    <string name="profiles_avatar_initials">استخدام الأحرف الأولى بدلًا من الصورة</string>
+    <string name="profiles_avatar_load_failed">تعذّر تحميل كتالوج الصور الرمزية.</string>
+    <string name="profiles_avatar_filter">المجموعة: %1$s</string>
+    <string name="profiles_avatar_all">كل المجموعات</string>
+    <string name="profiles_avatar_filter_title">تصفّح المجموعة</string>
+    <string name="profiles_account_mode_title">كيف تريد لهذا الملف الشخصي تشغيل المحتوى؟</string>
+    <string name="profiles_share_account">استخدام حساب Stremio موجود (ملف شخصي محلي)</string>
+    <string name="profiles_separate_account">تسجيل الدخول بحساب Stremio آخر</string>
+    <string name="profiles_share_account_desc">يمكن مشاركة إضافات البث، لكن هذا الملف يحتفظ بسجل المشاهدة وقائمتي بشكل مستقل على هذا التلفزيون.</string>
+    <string name="profiles_select_account">مشاركة إمكانية البث من</string>
+    <string name="profiles_missing_owner">الحساب المشترك غير متاح</string>
+    <string name="profiles_missing_owner_desc">حساب Stremio المرتبط بهذا الملف غير موجود. استعِد الحساب لاستخدام هذا الملف.</string>
+    <string name="profiles_remove_owner_blocked">الحساب لا يزال قيد الاستخدام</string>
+    <string name="profiles_remove_owner_blocked_desc">أزل الملفات الشخصية المحلية التي تشارك حساب Stremio هذا قبل حذف الحساب الأساسي.</string>
+    <string name="profiles_remove_local_desc">هل تريد إزالة %1$s وحذف سجل المشاهدة وقائمتي الخاصة به نهائيًا من هذا التلفزيون؟</string>
 </resources>
