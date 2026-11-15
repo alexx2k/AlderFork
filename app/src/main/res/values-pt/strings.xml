@@ -562,6 +562,7 @@
 
     <!-- Profile and avatar features (v1.1.0) -->
     <string name="profiles_avatar">Alterar foto do perfil</string>
+    <string name="profiles_avatar_setup">Escolher foto do perfil</string>
     <string name="profiles_avatar_choose">Explorar avatares pré-carregados</string>
     <string name="profiles_avatar_upload">Enviar do seu celular</string>
     <string name="profiles_avatar_upload_scan">Leia este código com seu celular para escolher e enviar uma imagem.</string>
