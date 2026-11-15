@@ -111,7 +111,7 @@ class ProfilesActivity : Screen() {
         signingIn = false
         waitingCode = null
         relinkLocalId = null
-        val generation = ++pickerGeneration
+        ++pickerGeneration
         val profiles = Profiles.all(this)
         // Temporary flat-black test mode: no faded film/series banner behind profiles.
         val selected = profiles.firstOrNull { it.id == Profiles.active(this)?.id } ?: profiles.first()
