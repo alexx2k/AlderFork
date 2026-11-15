@@ -37,7 +37,7 @@ class StreamsActivity : Screen() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewerProfile = Profiles.active(this) ?: return finish()
-        val key = viewerProfile.authKey
+        val key = authKey ?: return finish()
         val type = intent.getStringExtra("type") ?: "movie"
         val videoId = intent.getStringExtra("videoId")!!
         val preferredProviderId = PreferredServers.forEpisode(this, viewerProfile.id, intent.getStringExtra("id"), videoId)
