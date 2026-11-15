@@ -12,11 +12,12 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "dev.alder"
+        applicationId = "dev.alderfork"
         minSdk = 23
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.3.1"
+
+        versionCode = 100
+        versionName = "1.0.0"
         // TVs are ARM; the x86 builds of ffmpeg's native code would only add size.
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
     }
