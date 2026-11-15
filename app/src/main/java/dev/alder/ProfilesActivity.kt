@@ -28,6 +28,7 @@ class ProfilesActivity : Screen() {
     private var draftName = ""
     private var draftColor = Profiles.COLORS[0]
     private var pickerGeneration = 0
+    private var avatarUpload: AvatarUpload? = null
     private var galleryScrollY = 0
     private var signInGeneration = 0
     private var nameInput: EditText? = null
@@ -51,6 +52,7 @@ class ProfilesActivity : Screen() {
 
     override fun onDestroy() {
         waitingCode = null
+        stopAvatarUpload()
         AvatarImages.stopPrefetch()
         super.onDestroy()
     }
@@ -102,6 +104,7 @@ class ProfilesActivity : Screen() {
     // ---------- who's watching ----------
 
     private fun showPicker() {
+        stopAvatarUpload()
         AvatarImages.stopPrefetch()
         // Opened from inside a profile (Switch profile, Manage profiles): Back returns to it instead of leaving Alder.
         val current = Profiles.active(this)?.takeIf { intent.getBooleanExtra("pick", false) }
@@ -201,7 +204,7 @@ class ProfilesActivity : Screen() {
 
     private fun showMenu(p: Profile) {
         val items = listOfNotNull(
-            getString(R.string.profiles_avatar) to { withPin(p) { showAvatarGallery(p) } },
+            getString(R.string.profiles_avatar) to { withPin(p) { showAvatarOptions(p) } },
             getString(R.string.profiles_rename) to { withPin(p) { rename(p) } },
             getString(if (p.pin == null) R.string.profiles_set_pin else R.string.profiles_change_pin) to { withPin(p) { setPin(p) } },
             getString(R.string.profiles_colour) to { withPin(p) {
@@ -232,15 +235,123 @@ class ProfilesActivity : Screen() {
         data class Icons(val pictures: List<AvatarIcon>) : AvatarGalleryRow()
     }
 
-    /** Prepare the 292 or so lightweight row descriptors off the UI thread. */
+    /** Prepare lightweight gallery rows off-thread, with familiar classic icons first. */
     private fun avatarGalleryRows(icons: List<AvatarIcon>): List<AvatarGalleryRow> = buildList {
-        for ((show, collection) in icons.groupBy { it.group }) {
+        val groups = icons.groupBy { it.group }
+        val ordered = listOf("Netflix Classic Icons") + groups.keys.filterNot { it == "Netflix Classic Icons" }
+        for (show in ordered) {
+            val collection = groups[show] ?: continue
             add(AvatarGalleryRow.Heading(show))
             for ((season, pictures) in collection.groupBy { it.season }) {
                 if (season != "Collection") add(AvatarGalleryRow.Heading("    $season"))
                 pictures.chunked(7).forEach { add(AvatarGalleryRow.Icons(it)) }
             }
         }
+    }
+
+    /** One extra choice before entering the large gallery. */
+    private fun showAvatarOptions(profile: Profile) {
+        choose(getString(R.string.profiles_avatar_title, profile.name), listOf(
+            getString(R.string.profiles_avatar_upload),
+            getString(R.string.profiles_avatar_choose),
+            getString(R.string.profiles_avatar_initials)
+        )) { selected ->
+            when (selected) {
+                0 -> showAvatarUpload(profile)
+                1 -> showAvatarGallery(profile)
+                2 -> {
+                    Profiles.update(this, profile.id, clearAvatar = true)
+                    showPicker()
+                }
+            }
+        }
+    }
+
+    private fun stopAvatarUpload() {
+        avatarUpload?.close()
+        avatarUpload = null
+    }
+
+    /**
+     * The TV temporarily hosts a private upload page on its LAN address.
+     * Scanning the QR opens a phone file picker; a successful photo is saved
+     * locally, the one-time server closes, and the profile picker returns.
+     */
+    private fun showAvatarUpload(profile: Profile) {
+        stopAvatarUpload()
+        AvatarImages.stopPrefetch()
+        nameInput = null
+        val generation = ++pickerGeneration
+        backTo = {
+            stopAvatarUpload()
+            showPicker()
+            showAvatarOptions(profile)
+        }
+        val session = runCatching {
+            AvatarUpload(applicationContext, profile.id) { localUrl ->
+                main.post {
+                    if (generation != pickerGeneration || avatarUpload == null || isFinishing) return@post
+                    stopAvatarUpload()
+                    Profiles.update(this, profile.id, avatarUrl = localUrl)
+                    showPicker()
+                }
+            }
+        }.getOrNull()
+        avatarUpload = session
+
+        val content = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
+        content.addView(brand(), FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.START).apply {
+            leftMargin = dp(PAD); topMargin = dp(31)
+        })
+        val middle = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+        }
+        middle.addView(text(getString(R.string.profiles_avatar_upload),
+            SERIF_TITLE, serif = true).apply { gravity = Gravity.CENTER },
+            LinearLayout.LayoutParams(-1, -2))
+        middle.addView(text(getString(R.string.profiles_avatar_upload_scan),
+            BODY, color = TEXT_2).apply { gravity = Gravity.CENTER },
+            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+
+        if (session != null) {
+            middle.addView(ImageView(this).apply {
+                setImageBitmap(qrBitmap(session.url, dp(220)))
+                setPadding(dp(7), dp(7), dp(7), dp(7))
+                setBackgroundColor(Color.WHITE)
+            }, LinearLayout.LayoutParams(dp(238), dp(238)).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+                topMargin = dp(18)
+            })
+            middle.addView(text(session.url, SMALL, color = TEXT_2).apply {
+                gravity = Gravity.CENTER
+            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+            middle.addView(text(getString(R.string.profiles_avatar_upload_wifi),
+                SMALL, color = TEXT_2).apply { gravity = Gravity.CENTER },
+                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+            middle.addView(text(getString(R.string.profiles_avatar_upload_waiting),
+                SMALL, color = TUNGSTEN).apply { gravity = Gravity.CENTER },
+                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        } else {
+            middle.addView(text(getString(R.string.profiles_avatar_upload_unavailable),
+                BODY, color = TUNGSTEN).apply { gravity = Gravity.CENTER },
+                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(22) })
+        }
+        content.addView(middle, FrameLayout.LayoutParams(-1, -2, Gravity.CENTER).apply {
+            leftMargin = dp(PAD); rightMargin = dp(PAD)
+        })
+        val back = chip(R.string.profiles_back).apply {
+            setOnClickListener {
+                stopAvatarUpload()
+                showPicker()
+                showAvatarOptions(profile)
+            }
+        }
+        content.addView(back, FrameLayout.LayoutParams(-2, dp(32), Gravity.BOTTOM or Gravity.START).apply {
+            leftMargin = dp(PAD); bottomMargin = dp(18)
+        })
+        setContentView(content)
+        back.requestFocus()
     }
 
     /**
