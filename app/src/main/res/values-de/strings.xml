@@ -555,6 +555,7 @@
 
     <!-- Profile and avatar features (v1.1.0) -->
     <string name="profiles_avatar">Profilbild ändern</string>
+    <string name="profiles_avatar_setup">Profilbild auswählen</string>
     <string name="profiles_avatar_choose">Vorinstallierte Avatare durchsuchen</string>
     <string name="profiles_avatar_upload">Vom Smartphone hochladen</string>
     <string name="profiles_avatar_upload_scan">Scanne diesen Code mit deinem Smartphone, um ein Bild auszuwählen und hochzuladen.</string>
