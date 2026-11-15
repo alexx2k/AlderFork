@@ -29,6 +29,7 @@ class ProfilesActivity : Screen() {
     private var draftColor = Profiles.COLORS[0]
     private var pickerGeneration = 0
     private var avatarUpload: AvatarUpload? = null
+    private var avatarUploadInterrupted = false
     private var galleryScrollY = 0
     private var signInGeneration = 0
     private var nameInput: EditText? = null
@@ -55,6 +56,24 @@ class ProfilesActivity : Screen() {
         stopAvatarUpload()
         AvatarImages.stopPrefetch()
         super.onDestroy()
+    }
+
+    // A Home-button exit must also close the LAN server; on return the expired
+    // QR screen is replaced by the profile picker rather than showing a dead link.
+    override fun onStop() {
+        if (avatarUpload != null) {
+            avatarUploadInterrupted = true
+            stopAvatarUpload()
+        }
+        super.onStop()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (avatarUploadInterrupted) {
+            avatarUploadInterrupted = false
+            showPicker()
+        }
     }
 
     @Deprecated("Android back callback")
