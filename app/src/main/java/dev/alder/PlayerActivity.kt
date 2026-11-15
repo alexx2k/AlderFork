@@ -333,7 +333,7 @@ class PlayerActivity : Screen() {
     private var nextPrefetchFor: String? = null
     private var preparedNextSources: List<Stream>? = null
     private var nextTransitionStarted = false
-    private var completingForNextVideoId: String? = null
+    private var transitionProgressSaved = false
     private val upNextCountdownTask = object : Runnable {
         override fun run() {
             if (upNextPanel.visibility != View.VISIBLE || nextTransitionStarted || upNextDismissed || stopped) return
@@ -1279,7 +1279,13 @@ class PlayerActivity : Screen() {
         }
         // Explicit focus links avoid Android TV navigating into the controls beneath the overlay.
         play.nextFocusDownId = watchCredits.id
+        play.nextFocusUpId = watchCredits.id
         watchCredits.nextFocusUpId = play.id
+        watchCredits.nextFocusDownId = play.id
+        play.nextFocusLeftId = play.id
+        play.nextFocusRightId = play.id
+        watchCredits.nextFocusLeftId = watchCredits.id
+        watchCredits.nextFocusRightId = watchCredits.id
         upNextCountdown = EpisodeAutoplayCountdown()
         val countdownText = text(getString(R.string.player_auto_next_in, 5), SMALL, color = TUNGSTEN).onArt()
         countdownLabel = countdownText
@@ -1372,7 +1378,9 @@ class PlayerActivity : Screen() {
         val videos = meta!!.videos
         val after = videos.getOrNull(videos.indexOf(next) + 1)?.takeIf { it.season != 0 }
         val name = intent.getStringExtra("name") ?: ""
-        val ready = preparedNextSources?.takeIf { nextPrefetchFor == next.id && it.isNotEmpty() }
+        val ready = preparedNextSources?.takeIf {
+            !Settings.alwaysList(this) && nextPrefetchFor == next.id && it.isNotEmpty()
+        }
         val destination = if (ready != null) PlayerActivity::class.java else StreamsActivity::class.java
         val upcoming = Intent(this, destination)
             .putExtra("type", type).putExtra("id", metaId).putExtra("name", name)
@@ -1384,7 +1392,23 @@ class PlayerActivity : Screen() {
             .putExtra("quiet", if (origin == EpisodeAdvanceOrigin.AUTOPLAY) quiet + 1 else 0)
             .putExtra("sleepAt", sleepAt)
         if (ready != null) upcoming.putExtra("sources", JSONArray(ready.map { it.toJson() }).toString())
-        completingForNextVideoId = next.id
+        // Commit history before starting the next Activity, otherwise its concurrent library
+        // load can race the outgoing Activity's onStop(). Seeking from the controls to the
+        // next episode mid-story must NOT mark the skipped episode watched.
+        val creditsAt = EpisodeAutoplayTiming.triggerAt(player.duration, introDbOutroAt, mkvChapters,
+            Settings.creditsFallbackSeconds(this))
+        val endedOrInCredits = player.playbackState == Player.STATE_ENDED ||
+            (creditsAt != null && player.currentPosition >= creditsAt)
+        if (watched && !player.isCurrentMediaItemLive && !isLiveType(type) &&
+            (!episodic || plausibleEpisode(player.duration))) {
+            record()
+            item?.let { entry ->
+                if (endedOrInCredits) Library.completeAndAdvance(entry, videos, videoId, next.id)
+                else Library.stopped(entry, next.id)
+                push()
+                transitionProgressSaved = true
+            }
+        }
         startActivity(upcoming)
         finish()
     }
@@ -3252,18 +3276,12 @@ class PlayerActivity : Screen() {
         // A paused source in the background shows no picture: timing it out would skip a good source.
         main.removeCallbacks(startTimeout)
         player.pause()
-        if (isTrailer || !watched || player.isCurrentMediaItemLive || isLiveType(type) || episodic && !plausibleEpisode(player.duration)) return
+        if (transitionProgressSaved || isTrailer || !watched || player.isCurrentMediaItemLive ||
+            isLiveType(type) || episodic && !plausibleEpisode(player.duration)) return
         record()
         // The player's own episode list first: Home's Resume passes no next episode when the title's details weren't in
         // yet, and a finished episode with no next one drops the title out of Continue Watching.
-        item?.let { entry ->
-            val advanceTo = completingForNextVideoId
-            if (advanceTo != null) {
-                Library.completeAndAdvance(entry, meta?.videos.orEmpty(), videoId, advanceTo)
-            } else {
-                Library.stopped(entry, nextVideo(onlyAired = false)?.id ?: intent.getStringExtra("nextVideoId"))
-            }
-        }
+        item?.let { Library.stopped(it, nextVideo(onlyAired = false)?.id ?: intent.getStringExtra("nextVideoId")) }
         push()
     }
 
