@@ -483,6 +483,7 @@
 
     <!-- Profiles -->
     <string name="profiles_avatar">Change profile picture</string>
+    <string name="profiles_avatar_setup">Choose profile picture</string>
     <string name="profiles_avatar_choose">Browse pre-loaded avatars</string>
     <string name="profiles_avatar_upload">Upload from your mobile phone</string>
     <string name="profiles_avatar_upload_scan">Scan this code with your phone to choose and upload a picture.</string>
