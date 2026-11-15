@@ -26,7 +26,9 @@ class ProfilesActivity : Screen() {
     private var signingIn = false
     private var relinkLocalId: String? = null
     private var draftName = ""
-    private var draftColor = Profiles.COLORS[0]
+    private var draftColor = Profiles.COLORS.random()
+    private var draftAvatarUrl: String? = null
+    private var uploadingDraftAvatar = false
     private var pickerGeneration = 0
     private var avatarUpload: AvatarUpload? = null
     private var avatarUploadInterrupted = false
@@ -38,6 +40,8 @@ class ProfilesActivity : Screen() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // An abandoned upload from a previous launch must never become a new profile's picture.
+        LocalProfileAvatars.delete(this, DRAFT_AVATAR_ID)
         val profiles = Profiles.all(this)
         // Home found this profile signed out: straight to its sign-in, the profile and its settings kept.
         // The activity is exported, so the extra is untrusted: enter() still asks for the PIN, and a profile that
@@ -55,6 +59,7 @@ class ProfilesActivity : Screen() {
         waitingCode = null
         stopAvatarUpload()
         AvatarImages.stopPrefetch()
+        LocalProfileAvatars.delete(this, DRAFT_AVATAR_ID)
         super.onDestroy()
     }
 
@@ -72,7 +77,7 @@ class ProfilesActivity : Screen() {
         super.onResume()
         if (avatarUploadInterrupted) {
             avatarUploadInterrupted = false
-            showPicker()
+            if (uploadingDraftAvatar) showName() else showPicker()
         }
     }
 
@@ -123,6 +128,7 @@ class ProfilesActivity : Screen() {
     // ---------- who's watching ----------
 
     private fun showPicker() {
+        discardDraftSetup()
         stopAvatarUpload()
         AvatarImages.stopPrefetch()
         // Opened from inside a profile (Switch profile, Manage profiles): Back returns to it instead of leaving Alder.
@@ -282,7 +288,7 @@ class ProfilesActivity : Screen() {
         }
     }
 
-    /** One extra choice before entering the large gallery. */
+    /** One picker for both new-profile setup and existing-profile editing. */
     private fun showAvatarOptions(profile: Profile) {
         choose(getString(R.string.profiles_avatar_title, profile.name), listOf(
             getString(R.string.profiles_avatar_upload),
@@ -292,12 +298,50 @@ class ProfilesActivity : Screen() {
             when (selected) {
                 0 -> showAvatarUpload(profile)
                 1 -> showAvatarGallery(profile)
-                2 -> {
-                    Profiles.update(this, profile.id, clearAvatar = true)
-                    showPicker()
-                }
+                2 -> selectAvatar(profile, null)
             }
         }
+    }
+
+    /** Draft selections are not stored as a profile until streaming setup succeeds. */
+    private fun draftProfile() = Profile(
+        DRAFT_AVATAR_ID, draftName.trim().ifEmpty { getString(R.string.profiles_new) },
+        draftColor, "", avatarUrl = draftAvatarUrl
+    )
+
+    private fun selectAvatar(profile: Profile, url: String?) {
+        if (profile.id == DRAFT_AVATAR_ID) {
+            if (!LocalProfileAvatars.isLocal(url)) LocalProfileAvatars.delete(this, DRAFT_AVATAR_ID)
+            draftAvatarUrl = url
+            showName()
+        } else {
+            if (url == null) Profiles.update(this, profile.id, clearAvatar = true)
+            else Profiles.update(this, profile.id, avatarUrl = url)
+            showPicker()
+        }
+    }
+
+    private fun returnToAvatarOptions(profile: Profile) {
+        if (profile.id == DRAFT_AVATAR_ID) showName() else showPicker()
+        showAvatarOptions(if (profile.id == DRAFT_AVATAR_ID) draftProfile() else profile)
+    }
+
+    private fun discardDraftSetup() {
+        draftName = ""
+        draftColor = Profiles.COLORS.random()
+        draftAvatarUrl = null
+        LocalProfileAvatars.delete(this, DRAFT_AVATAR_ID)
+    }
+
+    /** Move any temporary phone photo to the real profile ID only after creation. */
+    private fun finishDraftProfile(profile: Profile): Profile {
+        val selected = draftAvatarUrl
+        val saved = if (LocalProfileAvatars.isLocal(selected))
+            selected?.let { LocalProfileAvatars.promote(this, it, profile.id) }
+        else selected
+        if (saved != null) Profiles.update(this, profile.id, avatarUrl = saved)
+        discardDraftSetup()
+        return Profiles.all(this).first { it.id == profile.id }
     }
 
     private fun stopAvatarUpload() {
@@ -314,19 +358,18 @@ class ProfilesActivity : Screen() {
         stopAvatarUpload()
         AvatarImages.stopPrefetch()
         nameInput = null
+        uploadingDraftAvatar = profile.id == DRAFT_AVATAR_ID
         val generation = ++pickerGeneration
         backTo = {
             stopAvatarUpload()
-            showPicker()
-            showAvatarOptions(profile)
+            returnToAvatarOptions(profile)
         }
         val session = runCatching {
             AvatarUpload(applicationContext, profile.id) { localUrl ->
                 main.post {
                     if (generation != pickerGeneration || avatarUpload == null || isFinishing) return@post
                     stopAvatarUpload()
-                    Profiles.update(this, profile.id, avatarUrl = localUrl)
-                    showPicker()
+                    selectAvatar(profile, localUrl)
                 }
             }
         }.getOrNull()
@@ -376,8 +419,7 @@ class ProfilesActivity : Screen() {
         val back = chip(R.string.profiles_back).apply {
             setOnClickListener {
                 stopAvatarUpload()
-                showPicker()
-                showAvatarOptions(profile)
+                returnToAvatarOptions(profile)
             }
         }
         content.addView(back, FrameLayout.LayoutParams(-2, dp(32), Gravity.BOTTOM or Gravity.START).apply {
@@ -399,7 +441,9 @@ class ProfilesActivity : Screen() {
         val generation = ++pickerGeneration
         nameInput = null
         val goBack: () -> Unit = {
-            if (serviceFilter == null) showPicker() else showAvatarGallery(profile)
+            if (serviceFilter != null) showAvatarGallery(profile)
+            else if (profile.id == DRAFT_AVATAR_ID) showName()
+            else showPicker()
         }
         backTo = goBack
 
@@ -453,8 +497,7 @@ class ProfilesActivity : Screen() {
         })
         content.addView(chip(R.string.profiles_avatar_initials).apply {
             setOnClickListener {
-                Profiles.update(this@ProfilesActivity, profile.id, clearAvatar = true)
-                showPicker()
+                selectAvatar(profile, null)
             }
         }, FrameLayout.LayoutParams(-2, dp(32), Gravity.BOTTOM or Gravity.END).apply {
             rightMargin = dp(PAD)
@@ -597,8 +640,7 @@ class ProfilesActivity : Screen() {
                                     cell.name.text = icon.name
                                     cell.holder.contentDescription = "${icon.name}, ${icon.group}, ${icon.service}"
                                     cell.holder.setOnClickListener {
-                                        Profiles.update(this@ProfilesActivity, profile.id, avatarUrl = icon.url)
-                                        showPicker()
+                                        selectAvatar(profile, icon.url)
                                     }
                                     cell.boundUrl = icon.url
                                 }
@@ -790,16 +832,32 @@ class ProfilesActivity : Screen() {
 
     private fun showName() {
         ++pickerGeneration
+        AvatarImages.stopPrefetch()
         backTo = if (Profiles.all(this).isEmpty()) null else ::showPicker
         signingIn = false
         waitingCode = null
         val first = Profiles.all(this).isEmpty()
         val previewName = text(draftName, BODY, bold = true).apply { gravity = Gravity.CENTER }
-        val avatar = onboardingAvatar(draftName.firstOrNull()?.uppercase().orEmpty(), 100, draftColor)
+        val avatar = onboardingAvatar(
+            if (draftAvatarUrl == null) draftName.firstOrNull()?.uppercase().orEmpty() else "", 100, draftColor
+        )
+        val portrait = FrameLayout(this).apply {
+            addView(avatar, FrameLayout.LayoutParams(dp(100), dp(100), Gravity.CENTER))
+            if (draftAvatarUrl != null)
+                ProfileAvatars.attach(this@ProfilesActivity, draftProfile(), this, dp(100), avatar)
+            isFocusable = true
+            contentDescription = getString(R.string.profiles_avatar_setup)
+            setOnClickListener { showAvatarOptions(draftProfile()) }
+            setOnFocusChangeListener { _, focused ->
+                scaleX = if (focused) 1.08f else 1f
+                scaleY = if (focused) 1.08f else 1f
+            }
+        }
         val error = text("", SMALL, color = TUNGSTEN)
         val (name, keyboard, firstKey) = nameEntry(draftName) { typed ->
+            draftName = typed
             previewName.text = typed
-            avatar.text = typed.firstOrNull()?.uppercase().orEmpty()
+            if (draftAvatarUrl == null) avatar.text = typed.firstOrNull()?.uppercase().orEmpty()
             error.text = ""
         }
         val next = onboardingButton(getString(R.string.profiles_continue))
@@ -810,39 +868,16 @@ class ProfilesActivity : Screen() {
         }
         name.setOnEditorActionListener { _, _, _ -> go(); true }
         next.setOnClickListener { go() }
-        val swatches = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-        val marks = mutableListOf<TextView>()
-        Profiles.COLORS.forEachIndexed { index, color ->
-            val mark = text(if (draftColor == color) "✓" else "", SMALL, bold = true, color = BASE).apply {
-                gravity = Gravity.CENTER
-                isFocusable = true
-                fun face(focused: Boolean) = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL; setColor(color)
-                    if (focused) setStroke(dp(2), TUNGSTEN)
-                }
-                background = face(false)
-                setOnFocusChangeListener { view, focused -> view.background = face(focused) }
-                setOnClickListener {
-                    draftColor = color
-                    avatar.background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) }
-                    marks.forEachIndexed { i, view -> view.text = if (i == index) "✓" else "" }
-                }
-            }
-            marks += mark
-            swatches.addView(mark, LinearLayout.LayoutParams(dp(30), dp(30)).apply { marginEnd = dp(8) })
-        }
         val copy = column(Gravity.START,
             text(if (first) R.string.profiles_welcome else R.string.profiles_new, SERIF_TITLE, serif = true),
             text(R.string.profiles_name_colour, BODY, color = TEXT_2).marginTop(4),
             name.apply { layoutParams = LinearLayout.LayoutParams(-1, dp(38)).apply { topMargin = dp(16) } },
             keyboard.apply { layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) } },
-            caps(R.string.profiles_portrait_colour, TUNGSTEN).marginTop(13),
-            swatches.marginTop(7),
             error.marginTop(5),
-            next.marginTop(7),
+            next.marginTop(12),
         ).apply { gravity = Gravity.CENTER_VERTICAL }
         val preview = column(Gravity.CENTER,
-            avatar,
+            portrait,
             previewName.marginTop(16),
         ).apply { gravity = Gravity.CENTER }
         val content = onboardingFrame(step(1, if (first) 2 else 3), 1, if (first) 2 else 3, copy, preview, dp(65), 1.05f, 0.95f)
@@ -868,9 +903,7 @@ class ProfilesActivity : Screen() {
     }
 
     private fun createLocalProfile(name: String, owner: Profile) {
-        val profile = Profiles.addLocal(this, name, owner.id, draftColor)
-        draftName = ""
-        draftColor = Profiles.COLORS[0]
+        val profile = finishDraftProfile(Profiles.addLocal(this, name, owner.id, draftColor))
         showReady(profile)
     }
 
@@ -1154,9 +1187,7 @@ class ProfilesActivity : Screen() {
             return openHome(Profiles.all(this).first { it.id == destination })
         }
         val others = Profiles.all(this)
-        val profile = Profiles.add(this, name, key, draftColor)
-        draftName = ""
-        draftColor = Profiles.COLORS[0]
+        val profile = finishDraftProfile(Profiles.add(this, name, key, draftColor))
         // Each profile brings its own add-ons (stream add-ons are shared in Settings, never copied);
         // the others' lists only tell where Watchly lives, so the new profile can set up its own.
         if (others.isEmpty()) openHome(profile)
@@ -1192,8 +1223,14 @@ class ProfilesActivity : Screen() {
         backTo = { openHome(profile) }
         val total = if (profile.libraryMode == LibraryMode.LOCAL) 2 else 3
         val done = onboardingButton(getString(R.string.profiles_continue_to_alder)).apply { setOnClickListener { openHome(profile) } }
+        val portrait = FrameLayout(this).apply {
+            val fallback = onboardingAvatar(profile.name.take(1).uppercase(), 100, profile.color)
+            addView(fallback, FrameLayout.LayoutParams(dp(100), dp(100), Gravity.CENTER))
+            if (profile.avatarUrl != null)
+                ProfileAvatars.attach(this@ProfilesActivity, profile, this, dp(100), fallback)
+        }
         setWindowed(onboardingFrame(step(total, total), total, total, column(Gravity.CENTER,
-            onboardingAvatar(profile.name.take(1).uppercase(), 100, profile.color),
+            portrait,
             text(profile.name, SERIF_TITLE, serif = true).marginTop(12)
         ).apply { gravity = Gravity.CENTER }, column(Gravity.START,
             text(R.string.profiles_all_set, 40f, serif = true),
@@ -1204,6 +1241,7 @@ class ProfilesActivity : Screen() {
     }
 
     private companion object {
+        const val DRAFT_AVATAR_ID = "draft"
         const val LIFT_ROOM = 8 // dp above the portraits for the focused one's 10% lift and ring
         const val KEY_H = 25 // dp a key row on the name step, so Continue fits under the colours
     }

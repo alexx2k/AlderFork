@@ -518,8 +518,7 @@
     <string name="profiles_name_to_continue">Saisissez un nom pour continuer.</string>
     <string name="profiles_welcome">Bienvenue dans Alder</string>
     <string name="profiles_new">Nouveau profil</string>
-    <string name="profiles_name_colour">Donnez un nom et une couleur à ce profil.</string>
-    <string name="profiles_portrait_colour">Couleur du portrait</string>
+    <string name="profiles_name_colour">Donnez un nom à ce profil. Sélectionnez le portrait pour choisir une image.</string>
     <string name="profiles_your_name">Votre nom</string>
     <string name="profiles_getting_code">Obtention d’un code de connexion…</string>
     <string name="profiles_back">← Retour</string>
@@ -562,6 +561,7 @@
 
     <!-- Profile and avatar features (v1.1.0) -->
     <string name="profiles_avatar">Modifier la photo de profil</string>
+    <string name="profiles_avatar_setup">Choisir une photo de profil</string>
     <string name="profiles_avatar_choose">Parcourir les avatars préchargés</string>
     <string name="profiles_avatar_upload">Importer depuis votre téléphone</string>
     <string name="profiles_avatar_upload_scan">Scannez ce code avec votre téléphone pour choisir et importer une photo.</string>
