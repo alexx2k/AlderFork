@@ -24,6 +24,7 @@ class ProfilesActivity : Screen() {
     // The sign-in code being waited on; anything else stops its polling loop.
     private var waitingCode: String? = null
     private var signingIn = false
+    private var relinkLocalId: String? = null
     private var draftName = ""
     private var draftColor = Profiles.COLORS[0]
     private var pickerGeneration = 0
@@ -72,7 +73,18 @@ class ProfilesActivity : Screen() {
     }
 
     /** Opens a profile, asking for its PIN first when it has one; a signed-out one signs in again first. */
-    private fun enter(p: Profile) = withPin(p) { if (Profiles.signedOut(this, p.id)) showSignIn(p.name, p) else openHome(p) }
+    private fun enter(p: Profile) = withPin(p) {
+        val owner = Profiles.accountOwner(this, p)
+        when {
+            owner == null -> choose(getString(R.string.profiles_missing_owner),
+                listOf(getString(R.string.action_ok)), getString(R.string.profiles_missing_owner_desc)) {}
+            Profiles.signedOut(this, p.id) -> {
+                relinkLocalId = p.id.takeIf { p.libraryMode == LibraryMode.LOCAL }
+                showSignIn(owner.name, owner)
+            }
+            else -> openHome(p)
+        }
+    }
 
     private fun openHome(profile: Profile) {
         Profiles.setActive(this, profile.id)
@@ -95,6 +107,7 @@ class ProfilesActivity : Screen() {
         // Left a sign-in: stop its polling, or approving the abandoned code would still change the profile.
         signingIn = false
         waitingCode = null
+        relinkLocalId = null
         val generation = ++pickerGeneration
         val profiles = Profiles.all(this)
         val art = onboardingBackdrop(false).apply { alpha = 0.42f }
@@ -339,8 +352,16 @@ class ProfilesActivity : Screen() {
     }
 
     private fun confirmRemove(p: Profile) {
+        if (Profiles.all(this).any { it.libraryMode == LibraryMode.LOCAL && it.accountOwnerId == p.id }) {
+            choose(getString(R.string.profiles_remove_owner_blocked),
+                listOf(getString(R.string.action_ok)), getString(R.string.profiles_remove_owner_blocked_desc)) {}
+            return
+        }
+        val warning = if (p.libraryMode == LibraryMode.LOCAL)
+            getString(R.string.profiles_remove_local_desc, p.name)
+        else getString(R.string.profiles_remove_desc, p.name)
         choose(getString(R.string.profiles_remove_title, p.name), listOf(getString(R.string.action_cancel), getString(R.string.action_remove)),
-            getString(R.string.profiles_remove_desc, p.name)) { i ->
+            warning) { i ->
             if (i == 0) return@choose
             Profiles.remove(this, p.id)
             background({ Http.forget() }) {}
@@ -372,7 +393,7 @@ class ProfilesActivity : Screen() {
         val next = onboardingButton(getString(R.string.profiles_continue))
         val go = {
             name.text.toString().trim().takeIf { it.isNotEmpty() }?.replaceFirstChar { it.titlecase() }
-                ?.let { draftName = it; showSignIn(it) }
+                ?.let { draftName = it; showAccountChoice(it) }
                 ?: run { error.text = getString(R.string.profiles_name_to_continue) }
         }
         name.setOnEditorActionListener { _, _, _ -> go(); true }
@@ -416,6 +437,29 @@ class ProfilesActivity : Screen() {
         setWindowed(content, onboardingBackdrop())
         window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
         firstKey.requestFocus()
+    }
+
+    /** Choose shared local history by default, or allow the original separate Stremio sign-in. */
+    private fun showAccountChoice(name: String) {
+        val owners = Profiles.all(this).filter { it.libraryMode == LibraryMode.STREMIO }
+        if (owners.isEmpty()) return showSignIn(name)
+
+        choose(getString(R.string.profiles_account_mode_title),
+            listOf(getString(R.string.profiles_share_account), getString(R.string.profiles_separate_account)),
+            getString(R.string.profiles_share_account_desc), focus = 0) { choice ->
+            if (choice == 1) showSignIn(name)
+            else if (owners.size == 1) createLocalProfile(name, owners.first())
+            else choose(getString(R.string.profiles_select_account), owners.map { it.name }) { selected ->
+                createLocalProfile(name, owners[selected])
+            }
+        }
+    }
+
+    private fun createLocalProfile(name: String, owner: Profile) {
+        val profile = Profiles.addLocal(this, name, owner.id, draftColor)
+        draftName = ""
+        draftColor = Profiles.COLORS[0]
+        showReady(profile)
     }
 
     /**
@@ -675,7 +719,7 @@ class ProfilesActivity : Screen() {
      * the other person), say so before going on. Each sign-in has its own key, so the accounts are compared by user id.
      */
     private fun approved(name: String, key: String, again: Profile?) {
-        val others = Profiles.all(this).filter { it.id != again?.id }
+        val others = Profiles.all(this).filter { it.id != again?.id && it.libraryMode == LibraryMode.STREMIO }
         background({
             others.firstOrNull { it.authKey == key } ?: Stremio.userId(key).let { account ->
                 others.firstOrNull { runCatching { Stremio.userId(it.authKey) }.getOrNull() == account }
@@ -693,7 +737,9 @@ class ProfilesActivity : Screen() {
     private fun signedIn(name: String, key: String, again: Profile?) {
         if (again != null) {
             Profiles.signIn(this, again.id, key)
-            return openHome(Profiles.all(this).first { it.id == again.id })
+            val destination = relinkLocalId ?: again.id
+            relinkLocalId = null
+            return openHome(Profiles.all(this).first { it.id == destination })
         }
         val others = Profiles.all(this)
         val profile = Profiles.add(this, name, key, draftColor)
