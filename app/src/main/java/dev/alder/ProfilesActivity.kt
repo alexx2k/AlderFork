@@ -113,48 +113,20 @@ class ProfilesActivity : Screen() {
         relinkLocalId = null
         val generation = ++pickerGeneration
         val profiles = Profiles.all(this)
-        val art = onboardingBackdrop(false).apply { alpha = 0.42f }
-        var selected = profiles.firstOrNull { it.id == Profiles.active(this)?.id } ?: profiles.first()
+        // Temporary flat-black test mode: no faded film/series banner behind profiles.
+        val selected = profiles.firstOrNull { it.id == Profiles.active(this)?.id } ?: profiles.first()
         // Top-aligned, so Add (no "last watched" line) sits level with the portraits; padding above for the 10% lift.
         val tiles = LinearLayout(this).apply {
             gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP; clipChildren = false; clipToPadding = false
             setPadding(0, dp(LIFT_ROOM), 0, 0)
         }
-        fun showArt(p: Profile, item: org.json.JSONObject?) {
-            if (generation != pickerGeneration || selected.id != p.id) return
-            val url = item?.optString("_id")?.let(Images::backgroundFor) ?: return
-            Images.load(url, art, resources.displayMetrics.widthPixels, urgent = true) {
-                val bitmap = (art.drawable as? BitmapDrawable)?.bitmap ?: return@load
-                background({ Images.frost(bitmap, 160) }) { result ->
-                    if (generation == pickerGeneration && selected.id == p.id && art.tag == url)
-                        result.getOrNull()?.let { art.setImageBitmap(it); art.alpha = 0.5f }
-                }
-            }
-        }
-        val recent = mutableMapOf<String, org.json.JSONObject?>()
-        fun focus(p: Profile) {
-            selected = p
-            if (p.id !in recent) { art.tag = null; art.setImageResource(R.drawable.onboarding_scene); art.alpha = 0.42f }
-            else showArt(p, recent[p.id])
-        }
         profiles.forEach { p ->
             val signedOut = Profiles.signedOut(this, p.id).takeIf { it }
                 ?.let { text(R.string.profiles_sign_in_again, SMALL, color = TUNGSTEN).apply { gravity = Gravity.CENTER } }
-            tiles.addView(tile(p, signedOut) { focus(p) }.apply {
+            tiles.addView(tile(p, signedOut) {}.apply {
                 setOnClickListener { enter(p) }
                 setOnLongClickListener { showMenu(p); true }
             }, LinearLayout.LayoutParams(dp(124), -2).apply { marginStart = dp(10); marginEnd = dp(10) })
-            background({
-                val items = ProfileLibrary.savedLibrary(applicationContext, p) ?: ProfileLibrary.library(applicationContext, p)
-                Library.continueWatching(items).firstOrNull()
-                    ?: items.filter { !it.optJSONObject("state")?.optString("lastWatched").isNullOrBlank() }
-                        .maxByOrNull { it.optJSONObject("state")?.optString("lastWatched").orEmpty() }
-            }) { result ->
-                if (generation != pickerGeneration) return@background
-                val item = result.getOrNull()
-                recent[p.id] = item
-                showArt(p, item)
-            }
         }
         if (profiles.size < Profiles.MAX) {
             tiles.addView(tile(null, null) {}.apply { setOnClickListener { showName() } },
@@ -180,7 +152,9 @@ class ProfilesActivity : Screen() {
             addView(keyHint(getString(R.string.profiles_hold_ok), getString(R.string.profiles_hold_ok_does)),
                 FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = dp(20) })
         }
-        setWindowed(content, art)
+        // Avoid Screen.setWindowed(): it layers translucent gradients over the entire UI.
+        content.setBackgroundColor(Color.BLACK)
+        setContentView(content)
         tiles.getChildAt(profiles.indexOf(selected)).requestFocus()
     }
 
@@ -189,7 +163,7 @@ class ProfilesActivity : Screen() {
         val face = text(if (add) "+" else profile?.name?.take(1)?.uppercase().orEmpty(), if (add) 42f else 48f,
             serif = !add, color = if (add) TEXT_2 else BASE).apply {
             gravity = Gravity.CENTER
-            alpha = 0.6f
+            alpha = 1f
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL; setColor(profile?.color ?: GLASS)
                 if (add) setStroke(dp(1), GLASS_EDGE, dp(2).toFloat(), dp(3).toFloat())
@@ -217,7 +191,6 @@ class ProfilesActivity : Screen() {
             setOnFocusChangeListener { _, has ->
                 dot.visibility = if (has) View.VISIBLE else View.INVISIBLE
                 circle.grow(has, 1.1f).start()
-                face.alpha = if (has) 1f else 0.6f
                 name.setTextColor(if (has) TEXT else TEXT_2)
                 if (has) focused()
             }
@@ -283,19 +256,33 @@ class ProfilesActivity : Screen() {
         nameInput = null
         backTo = ::showPicker
 
-        val backgroundArt = FrameLayout(this).apply {
-            setBackgroundColor(BASE)
-            addView(onboardingBackdrop(false).apply { alpha = 0.42f },
-                FrameLayout.LayoutParams(-1, -1))
-        }
-        val content = FrameLayout(this)
+        // Solid-black gallery for the performance test: no translucent show banner,
+        // onboarding art, film overlay, side shade or edge vignette.
+        val content = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
         content.addView(text(getString(R.string.profiles_avatar_title, profile.name),
             SERIF_TITLE, serif = true), FrameLayout.LayoutParams(-1, dp(65), Gravity.TOP).apply {
             leftMargin = dp(PAD)
             topMargin = dp(28)
         })
 
-        val gallery = android.widget.ListView(this).apply {
+        val gallery = object : android.widget.ListView(this) {
+            // No animated scroll path: jump immediately to the requested offset/row.
+            override fun smoothScrollBy(distance: Int, duration: Int) {
+                scrollListBy(distance)
+            }
+
+            override fun smoothScrollToPosition(position: Int) {
+                setSelection(position)
+            }
+
+            override fun smoothScrollToPosition(position: Int, boundPosition: Int) {
+                setSelection(position)
+            }
+
+            override fun smoothScrollToPositionFromTop(position: Int, offset: Int, duration: Int) {
+                setSelectionFromTop(position, offset)
+            }
+        }.apply {
             divider = null
             dividerHeight = 0
             isVerticalScrollBarEnabled = false
@@ -326,7 +313,7 @@ class ProfilesActivity : Screen() {
             rightMargin = dp(PAD)
             bottomMargin = dp(18)
         })
-        setWindowed(content, backgroundArt)
+        setContentView(content)
 
         background({ avatarGalleryRows(AvatarCatalog.all(applicationContext)) }) { outcome ->
             if (generation != pickerGeneration) return@background
@@ -359,8 +346,9 @@ class ProfilesActivity : Screen() {
                         scaleType = ImageView.ScaleType.CENTER_CROP
                         background = GradientDrawable().apply {
                             shape = GradientDrawable.OVAL
-                            setColor(profile.color)
+                            setColor(Color.BLACK)
                         }
+                        alpha = 1f
                         clipToOutline = true
                         isFocusable = false
                     }
@@ -373,7 +361,17 @@ class ProfilesActivity : Screen() {
                     cell.addView(label, LinearLayout.LayoutParams(-1, dp(35)).apply {
                         topMargin = dp(4)
                     })
-                    cell.rowFocus(9)
+                    // Opaque focus background instead of the usual translucent tint.
+                    val focusedBackground = GradientDrawable().apply {
+                        setColor(0xFF292929.toInt())
+                        cornerRadius = dp(9).toFloat()
+                    }
+                    cell.isFocusable = true
+                    cell.setBackgroundColor(Color.BLACK)
+                    cell.setOnFocusChangeListener { view, hasFocus ->
+                        view.background = if (hasFocus) focusedBackground
+                            else android.graphics.drawable.ColorDrawable(Color.BLACK)
+                    }
                     row.addView(cell, LinearLayout.LayoutParams(0, dp(134), 1f).apply {
                         marginEnd = dp(4)
                     })
