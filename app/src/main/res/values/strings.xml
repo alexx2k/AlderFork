@@ -483,8 +483,8 @@
 
     <!-- Profiles -->
     <string name="profiles_avatar">Change profile picture</string>
-    <string name="profiles_avatar_choose">Browse Netflix profile pictures</string>
-    <string name="profiles_avatar_upload">Upload a photo from your phone</string>
+    <string name="profiles_avatar_choose">Browse pre-loaded avatars</string>
+    <string name="profiles_avatar_upload">Upload from your mobile phone</string>
     <string name="profiles_avatar_upload_scan">Scan this code with your phone to choose and upload a picture.</string>
     <string name="profiles_avatar_upload_wifi">Your phone and Fire Stick must be on the same Wi-Fi network.</string>
     <string name="profiles_avatar_upload_waiting">Waiting for your photo…</string>
@@ -493,6 +493,9 @@
     <string name="profiles_avatar_browse_help">Choose a show or collection to browse its pictures.</string>
     <string name="profiles_avatar_initials">Use initials instead</string>
     <string name="profiles_avatar_load_failed">Could not load the icon catalogue.</string>
+    <string name="profiles_avatar_filter">Collection: %1$s</string>
+    <string name="profiles_avatar_all">All collections</string>
+    <string name="profiles_avatar_filter_title">Browse collection</string>
     <string name="profiles_account_mode_title">How should this profile stream?</string>
     <string name="profiles_share_account">Use an existing Stremio account (local profile)</string>
     <string name="profiles_separate_account">Sign in to a separate Stremio account</string>
