@@ -192,7 +192,7 @@ object StreamsResolver {
             addons.forEachIndexed { i, addon ->
                 executor.execute {
                     if (canceled) return@execute
-                    val streamsResult = runCatching { addon.streams(type, videoId) }
+                    val streamsResult = runCatching { addon.streams(type, videoId, allowTorrents = supportsTorrentPlayback) }
                     mainHandler.post {
                         if (canceled) return@post
                         answers[i] = streamsResult.getOrNull()?.playable.orEmpty()
