@@ -72,6 +72,7 @@ object Profiles {
     fun remove(context: Context, id: String) {
         val prefs = prefs(context)
         save(prefs, all(context).filterNot { it.id == id })
+        LocalLibrary.clear(context, id)
         if (prefs.getString("active", null) == id) prefs.edit().remove("active").apply()
         prefs.edit().remove("shareStreams:$id").remove("signedOut:$id").apply()
         Settings.forget(context, id)
