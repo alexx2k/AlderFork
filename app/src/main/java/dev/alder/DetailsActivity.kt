@@ -90,6 +90,7 @@ class DetailsActivity : Screen() {
     private val initialArt by lazy { intent.getStringExtra("background") }
 
     private lateinit var key: String
+    private lateinit var libraryProfile: Profile
     override val backdrop get() = heroArt
     private lateinit var root: FrameLayout
     private lateinit var hero: FrameLayout
@@ -139,7 +140,8 @@ class DetailsActivity : Screen() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        key = authKey ?: return finish()
+        libraryProfile = Profiles.active(this) ?: return finish()
+        key = libraryProfile.authKey
         val artWidth = resources.displayMetrics.widthPixels
         heroArt = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0f }
         hero = FrameLayout(this).apply { clipChildren = false }
@@ -217,7 +219,7 @@ class DetailsActivity : Screen() {
             }
         }
         background({
-            (Stremio.savedAddons(key) ?: Stremio.addons(key)).savedMeta(type, metaId) to Stremio.savedLibrary(key)?.firstOrNull { it.optString("_id") == metaId }
+            (Stremio.savedAddons(key) ?: Stremio.addons(key)).savedMeta(type, metaId) to ProfileLibrary.savedLibrary(applicationContext, libraryProfile)?.firstOrNull { it.optString("_id") == metaId }
         }) { result ->
             result.getOrNull()?.let { (saved, libraryItem) ->
                 if (!itemChangedHere && item == null) item = libraryItem
@@ -233,7 +235,7 @@ class DetailsActivity : Screen() {
                 showHero(null, failure)
             }
         }
-        background({ Stremio.library(key, listOf(metaId)).firstOrNull() }) { result ->
+        background({ ProfileLibrary.library(applicationContext, libraryProfile, listOf(metaId)).firstOrNull() }) { result ->
             if (!itemChangedHere && !savingEdit) {
                 item = result.getOrNull() ?: item
                 if (meta != null) showHero(meta)
@@ -774,7 +776,7 @@ class DetailsActivity : Screen() {
         savingEdit = true
         val entry = Library.newItem(metaId, type, meta?.name ?: name, meta?.poster ?: poster)
         background({
-            Stremio.editLibrary(key, metaId, entry, change)
+            ProfileLibrary.editLibrary(applicationContext, libraryProfile, metaId, entry, change)
         }) { result ->
             savingEdit = false
             if (isFinishing) return@background
@@ -1613,8 +1615,8 @@ class DetailsActivity : Screen() {
     // Back from the player: progress, the resume point and My List may have changed.
     override fun onRestart() {
         super.onRestart()
-        background({ runCatching { Stremio.library(key, listOf(metaId)).firstOrNull() }.getOrNull()
-            ?: Stremio.savedLibrary(key)?.firstOrNull { it.optString("_id") == metaId } }) { result ->
+        background({ runCatching { ProfileLibrary.library(applicationContext, libraryProfile, listOf(metaId)).firstOrNull() }.getOrNull()
+            ?: ProfileLibrary.savedLibrary(applicationContext, libraryProfile)?.firstOrNull { it.optString("_id") == metaId } }) { result ->
             item = result.getOrNull() ?: item
             val wasGuide = guideOpen
             if (infoOpen) { root.removeView(infoOverlay); infoOpen = false }
