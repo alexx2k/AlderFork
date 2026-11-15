@@ -774,7 +774,7 @@ class SettingsActivity : Screen() {
     private fun stored(c: Choice): Any = when (val default = c.values[0].first) {
         is Boolean -> prefs.getBoolean(key(c), default)
         is String -> prefs.getString(key(c), default).orEmpty()
-        else -> prefs.getInt(key(c), default as Int)
+        else -> prefs.getInt(key(c), if (c.key == "creditsFallbackSeconds") 10 else default as Int)
     }
     private fun store(c: Choice, value: Any) = prefs.edit().apply {
         when (value) {
