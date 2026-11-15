@@ -254,16 +254,30 @@ class ProfilesActivity : Screen() {
         data class Icons(val pictures: List<AvatarIcon>) : AvatarGalleryRow()
     }
 
-    /** Prepare lightweight gallery rows off-thread, with familiar classic icons first. */
-    private fun avatarGalleryRows(icons: List<AvatarIcon>): List<AvatarGalleryRow> = buildList {
-        val groups = icons.groupBy { it.group }
-        val ordered = listOf("Netflix Classic Icons") + groups.keys.filterNot { it == "Netflix Classic Icons" }
-        for (show in ordered) {
-            val collection = groups[show] ?: continue
-            add(AvatarGalleryRow.Heading(show))
-            for ((season, pictures) in collection.groupBy { it.season }) {
-                if (season != "Collection") add(AvatarGalleryRow.Heading("    $season"))
-                pictures.chunked(7).forEach { add(AvatarGalleryRow.Icons(it)) }
+    /** Keep the scrollable gallery fast, with Netflix Classics first within Netflix. */
+    private fun avatarGalleryRows(
+        icons: List<AvatarIcon>,
+        serviceFilter: String? = null
+    ): List<AvatarGalleryRow> = buildList {
+        val byService = icons.filter { serviceFilter == null || it.service == serviceFilter }
+            .groupBy { it.service }
+        val priority = listOf("Netflix", "Disney+", "HBO Max", "Prime Video", "Crunchyroll")
+        val providers = priority + byService.keys.filterNot { it in priority }.sorted()
+        for (service in providers.distinct()) {
+            val serviceIcons = byService[service] ?: continue
+            add(AvatarGalleryRow.Heading(service))
+            val groups = serviceIcons.groupBy { it.group }
+            val sorted = groups.keys.sortedWith(String.CASE_INSENSITIVE_ORDER)
+            val ordered = if (service == "Netflix")
+                listOf("Netflix Classic Icons") + sorted.filterNot { it == "Netflix Classic Icons" }
+                else sorted
+            for (show in ordered) {
+                val collection = groups[show] ?: continue
+                add(AvatarGalleryRow.Heading(show))
+                for ((season, pictures) in collection.groupBy { it.season }) {
+                    if (season != "Collection") add(AvatarGalleryRow.Heading("    $season"))
+                    pictures.chunked(7).forEach { add(AvatarGalleryRow.Icons(it)) }
+                }
             }
         }
     }
@@ -380,11 +394,14 @@ class ProfilesActivity : Screen() {
      * it never creates ~1,000 image/text views, and each portrait has exactly one
      * opaque circular ImageView (no fallback initials beneath transparent PNGs).
      */
-    private fun showAvatarGallery(profile: Profile) {
+    private fun showAvatarGallery(profile: Profile, serviceFilter: String? = null) {
         AvatarImages.stopPrefetch()
         val generation = ++pickerGeneration
         nameInput = null
-        backTo = ::showPicker
+        val goBack: () -> Unit = {
+            if (serviceFilter == null) showPicker() else showAvatarGallery(profile)
+        }
+        backTo = goBack
 
         // Solid-black gallery for the performance test: no translucent show banner,
         // onboarding art, film overlay, side shade or edge vignette.
@@ -429,7 +446,7 @@ class ProfilesActivity : Screen() {
             bottomMargin = dp(65)
         })
         content.addView(chip(R.string.profiles_back).apply {
-            setOnClickListener { showPicker() }
+            setOnClickListener { goBack() }
         }, FrameLayout.LayoutParams(-2, dp(32), Gravity.BOTTOM or Gravity.START).apply {
             leftMargin = dp(PAD)
             bottomMargin = dp(18)
@@ -445,14 +462,33 @@ class ProfilesActivity : Screen() {
         })
         setContentView(content)
 
-        background({ avatarGalleryRows(AvatarCatalog.all(applicationContext)) }) { outcome ->
+        background({
+            val allIcons = AvatarCatalog.all(applicationContext)
+            Pair(avatarGalleryRows(allIcons, serviceFilter), allIcons.map { it.service }.distinct())
+        }) { outcome ->
             if (generation != pickerGeneration) return@background
-            val rows = outcome.getOrNull()
+            val data = outcome.getOrNull()
+            val rows = data?.first
             if (rows.isNullOrEmpty()) {
                 choose(getString(R.string.profiles_avatar_title, profile.name),
                     listOf(getString(R.string.action_ok)), getString(R.string.profiles_avatar_load_failed)) {}
                 return@background
             }
+
+            val services = data.second
+            content.addView(chip(getString(R.string.profiles_avatar_filter,
+                serviceFilter ?: getString(R.string.profiles_avatar_all))).apply {
+                setOnClickListener {
+                    val options = listOf(getString(R.string.profiles_avatar_all)) + services
+                    choose(getString(R.string.profiles_avatar_filter_title), options,
+                        checked = if (serviceFilter == null) 0 else services.indexOf(serviceFilter) + 1
+                    ) { selected ->
+                        showAvatarGallery(profile, if (selected == 0) null else services[selected - 1])
+                    }
+                }
+            }, FrameLayout.LayoutParams(-2, dp(32), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
+                bottomMargin = dp(18)
+            })
 
             class Cell(val holder: LinearLayout, val image: ImageView, val name: TextView,
                        var boundUrl: String? = null)
@@ -559,7 +595,7 @@ class ProfilesActivity : Screen() {
                                     cell.holder.visibility = View.VISIBLE
                                     cell.holder.isFocusable = true
                                     cell.name.text = icon.name
-                                    cell.holder.contentDescription = "${icon.name}, ${icon.group}"
+                                    cell.holder.contentDescription = "${icon.name}, ${icon.group}, ${icon.service}"
                                     cell.holder.setOnClickListener {
                                         Profiles.update(this@ProfilesActivity, profile.id, avatarUrl = icon.url)
                                         showPicker()
@@ -575,7 +611,7 @@ class ProfilesActivity : Screen() {
             }
 
             // Only prefetch one row immediately beyond the viewport, in the
-            // direction of travel. Never queue the entire 986-image catalogue.
+            // direction of travel. Never queue the entire multi-service catalogue.
             var previousFirst = 0
             var movingDown = true
             var prefetchedRow = -1
