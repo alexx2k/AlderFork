@@ -1,0 +1,1848 @@
+{
+  "source": "https://github.com/eueueue292/Fusion-Profile-Avatars",
+  "sourceAuthor": "eueueue292",
+  "sourceLicense": "Images belong to their respective rights holders; the archive does not grant redistribution rights.",
+  "notes": "URL references only, not bundled image files. Images load on demand, are cached locally and may become unavailable.",
+  "sourcePacks": [
+    {
+      "group": "Animation",
+      "path": "Disney+/Animation/pack.json",
+      "manifestBlobSha": "8c26efaae40afd0b76ddf5fafc6bcb8e0d832bd2"
+    },
+    {
+      "group": "Classics",
+      "path": "Disney+/Classics/pack.json",
+      "manifestBlobSha": "92172e1caf37596e3779ffd5e5c673b3f21b0fa3"
+    },
+    {
+      "group": "Kids",
+      "path": "Disney+/Kids/pack.json",
+      "manifestBlobSha": "dad6a23815c7b8f74b107a2f176b3bd5faf1b61c"
+    },
+    {
+      "group": "Marvel",
+      "path": "Disney+/Marvel/pack.json",
+      "manifestBlobSha": "05079b194046a3edce0a2e166fbe805f124efedb"
+    },
+    {
+      "group": "Muppets",
+      "path": "Disney+/Muppets/pack.json",
+      "manifestBlobSha": "a899bc38e0656f3621fc072eb6e9eb0f0c063815"
+    },
+    {
+      "group": "National Geographic",
+      "path": "Disney+/NatGeo/pack.json",
+      "manifestBlobSha": "22a3d0116c351bfa9e75a0177e466e33bbb59e8a"
+    },
+    {
+      "group": "Pixar",
+      "path": "Disney+/Pixar/pack.json",
+      "manifestBlobSha": "ac2a064ee32499c3b6d016bb2d5d244602038193"
+    },
+    {
+      "group": "The Simpsons",
+      "path": "Disney+/Simpsons/pack.json",
+      "manifestBlobSha": "c1ba6a9f656174d293e0e17abab0636a1f4db715"
+    },
+    {
+      "group": "Star Wars",
+      "path": "Disney+/Star Wars/pack.json",
+      "manifestBlobSha": "8adc3478253d92be2aba7f1406a8fe5518cf2801"
+    },
+    {
+      "group": "TV",
+      "path": "Disney+/TV/pack.json",
+      "manifestBlobSha": "b807408f1c0430d008b0e6292c73773a11239993"
+    },
+    {
+      "group": "X-Men",
+      "path": "Disney+/X-Men/pack.json",
+      "manifestBlobSha": "963f7b198a423ba98fe5d16558e66b70e2e1cb5a"
+    },
+    {
+      "group": "Avatar",
+      "path": "Disney+/Avatar/pack.json",
+      "manifestBlobSha": "05caabd6a5feec17ebd349166f9afca0fa1c8d70"
+    }
+  ],
+  "icons": [
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Anna",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/anna.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Baymax",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/baymax.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Billie",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/billie.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Bolt",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/bolt.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Cruella de Vil",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/cruella.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Elsa",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/elsa.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Dr. Facilier",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/facilier.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Flynn Rider",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/flynn.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Frank Wolff",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/frank.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Mother Gothel",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/gothel.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Hades",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/hades.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Hercules",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/hercules.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Hiro Hamada",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/hiro.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Jack Skellington",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/jack_skellington.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Judy Hopps",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/judy.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Lilo",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/lilo.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Lily",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/lily.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Maui",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/maui.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Mirabel Madrigal",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/mirabel.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Moana",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/moana.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Mulan",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/mulan.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Mushu",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/mushu.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Nick Wilde",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/nick_wilde.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Olaf",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/olaf.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Oswald the Lucky Rabbit",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/oswald.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Pascal",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/pascal.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Penny Proud",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/pennyproud.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Pua",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/pua.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Pumbaa",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/pumbaa.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Ralph",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/ralph.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Raya",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/raya.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Rapunzel",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/repunzel.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Sally",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/sally.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Sisu",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/sisu.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Sparky",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/sparky.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Stitch",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/stitch.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Tiana",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/tiana.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Timon",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/timon.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Vanellope von Schweetz",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/vanellope.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Young Nala",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney+/Animation/young_nala.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Young Simba",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/young_simba.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Animation",
+      "season": "Collection",
+      "name": "Yzma",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Animation/yzma.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Aladdin",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/aladdin.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Alice",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/alice.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Ariel",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/ariel.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Aurora",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/aurora.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Baloo",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/baloo.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Bambi",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/bambi.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Beast",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/beast.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Belle",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/belle.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Bernard",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/bernard.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Prince Charming",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/charming.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Chip",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/chip.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Copper",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/copper.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Daisy Duck",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/daisy.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Dale",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/dale.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Dewey",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/dewey.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Donald Duck",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/donald.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Prince Eric",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/eric.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Fairy Godmother",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/fairygodmother.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Fauna",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/fauma.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Flora",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/flora.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Flower",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/flower.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Gaston",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/gaston.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Genie",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/genie.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Goofy",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/goofy.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Huey",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/huey.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Jasmine",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/jasmine.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Jiminy Cricket",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/jiminycricket.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "José Carioca",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/jose.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Lady",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/lady.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Launchpad",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/launchpad.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Louie",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/louie.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Marie",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/marie.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Merryweather",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney+/Classics/merryweather.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Mickey Mouse",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/mickey.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Mowgli",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/mowgli.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Pinocchio",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/pinocchio.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Pluto",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/pluto.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Winnie the Pooh",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/pooh.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Robin Hood",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/robinhood.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Scrooge McDuck",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/scrooge.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Thumper",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/thumper.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Tod",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/todd.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Webby",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/webby.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Classics",
+      "season": "Collection",
+      "name": "Wendy",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Classics/wendy.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Kids",
+      "season": "Collection",
+      "name": "Bingo",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Kids/bingo.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Kids",
+      "season": "Collection",
+      "name": "Catboy",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Kids/catboy.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Kids",
+      "season": "Collection",
+      "name": "Doc McStuffins",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Kids/doc_mcstuffins.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Kids",
+      "season": "Collection",
+      "name": "Elena",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Kids/elena.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Kids",
+      "season": "Collection",
+      "name": "Gekko",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Kids/gecko.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Kids",
+      "season": "Collection",
+      "name": "Jake",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Kids/jake.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Kids",
+      "season": "Collection",
+      "name": "Kion",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Kids/kion.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Kids",
+      "season": "Collection",
+      "name": "Lambie",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Kids/lambie.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Kids",
+      "season": "Collection",
+      "name": "Nancy",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Kids/nancy.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Kids",
+      "season": "Collection",
+      "name": "Owlette",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Kids/owlette.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Kids",
+      "season": "Collection",
+      "name": "Rolly",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Kids/rolly.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Kids",
+      "season": "Collection",
+      "name": "Vampirina",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Kids/vampirina.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Ant-Man",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Ant-Man.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Baron Zemo",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Baron%20Zemo.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Black Panther",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Black%20Panther.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Black Widow",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Black%20Widow.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Bucky Barnes",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Bucky.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Captain Carter",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Captain%20Carter.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Falcon",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Falcon.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Falcon (Variant)",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Falcon%202.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Groot",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Groot.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Hawkeye",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Hawkeye.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Hulk",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Hulk.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Ikaris",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Ikaris.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Iron Man",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Iron%20Man.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Kate Bishop",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Kate%20Bishop.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Loki",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Loki.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Moon Knight",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Moon%20Knight.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Rocket",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Rocket.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Sersi",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Sersi.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Shang-Chi",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Shang-Chi.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Sharon Carter",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Sharon.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Thanos",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Thanos.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Uatu",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Uatu.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Vision",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Vision.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Wanda Maximoff",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Wanda.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Scarlet Witch",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Wanda%202.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Marvel",
+      "season": "Collection",
+      "name": "Wasp",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Marvel/Wasp.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Muppets",
+      "season": "Collection",
+      "name": "Animal",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Muppets/animal.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Muppets",
+      "season": "Collection",
+      "name": "Beaker",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Muppets/beaker.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Muppets",
+      "season": "Collection",
+      "name": "Fozzie Bear",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Muppets/fozziebear.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Muppets",
+      "season": "Collection",
+      "name": "Gonzo",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Muppets/gonzo.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Muppets",
+      "season": "Collection",
+      "name": "Janice",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Muppets/janice.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Muppets",
+      "season": "Collection",
+      "name": "Kermit the Frog",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Muppets/kermit.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Muppets",
+      "season": "Collection",
+      "name": "Miss Piggy",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Muppets/misspiggy.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Muppets",
+      "season": "Collection",
+      "name": "Pepe the King Prawn",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Muppets/pepe.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Muppets",
+      "season": "Collection",
+      "name": "Scooter",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Muppets/scooter.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Muppets",
+      "season": "Collection",
+      "name": "Swedish Chef",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Muppets/swedishchef.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "National Geographic",
+      "season": "Collection",
+      "name": "Dolphin",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/NatGeo/dolphin.PNG"
+    },
+    {
+      "service": "Disney+",
+      "group": "National Geographic",
+      "season": "Collection",
+      "name": "Elephant",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/NatGeo/elephant.PNG"
+    },
+    {
+      "service": "Disney+",
+      "group": "National Geographic",
+      "season": "Collection",
+      "name": "Leopard Cub",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/NatGeo/leopard_cub.PNG"
+    },
+    {
+      "service": "Disney+",
+      "group": "National Geographic",
+      "season": "Collection",
+      "name": "Monkey",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/NatGeo/monkey.PNG"
+    },
+    {
+      "service": "Disney+",
+      "group": "National Geographic",
+      "season": "Collection",
+      "name": "Panda",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/NatGeo/panda.PNG"
+    },
+    {
+      "service": "Disney+",
+      "group": "National Geographic",
+      "season": "Collection",
+      "name": "Penguin",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/NatGeo/penguin.PNG"
+    },
+    {
+      "service": "Disney+",
+      "group": "National Geographic",
+      "season": "Collection",
+      "name": "Shark",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/NatGeo/shark.PNG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Alberto",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Alberto.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Anger",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Anger.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Arlo",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Arlo.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Barley",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Barley.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Boo",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Boo.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Buzz Lightyear",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Buzz.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Carl Fredricksen",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney+/Pixar/Carl.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Dante",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Dante.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Dash Parr",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Dash.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Disgust",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney+/Pixar/Disgust.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Dory",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney+/Pixar/Dory.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Dug",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Doug.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Edna Mode",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Edna.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Fear",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney+/Pixar/Fear.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Flik",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney+/Pixar/Flik.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Forky",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Forky.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Frozone",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Frozone.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Giulia",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Giulia.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Ian",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Ian.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Jack-Jack",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Jakjak.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Jessie",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney+/Pixar/Jessie.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Joe Gardner",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Joe.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Joy",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Joy.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Lightning McQueen",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Lightning%20Mcqueen.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Luca",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Luca.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Mater",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Mater.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Meilin Lee",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Meilin.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Merida",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Merida.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Miguel",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Miguel.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Mike Wazowski",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney+/Pixar/Mike.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Mr. Incredible",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Mr%20Incredible.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Mrs. Incredible",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Mrs%20Incredible.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Nemo",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Nemo.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Randall Boggs",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney+/Pixar/Randall.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Remy",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Remy.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Russell",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Russel.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Sadness",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Sadness.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Sully",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Sully.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Violet Parr",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Violet.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "WALL-E",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Wall-e.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Pixar",
+      "season": "Collection",
+      "name": "Woody",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Pixar/Woody.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "The Simpsons",
+      "season": "Collection",
+      "name": "Julius Hibbert",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Simpsons/Julius.PNG"
+    },
+    {
+      "service": "Disney+",
+      "group": "The Simpsons",
+      "season": "Collection",
+      "name": "Krusty the Clown",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Simpsons/Krusty.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "The Simpsons",
+      "season": "Collection",
+      "name": "Ralph Wiggum",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Simpsons/Ralph.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "The Simpsons",
+      "season": "Collection",
+      "name": "Bart Simpson",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Simpsons/bart.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "The Simpsons",
+      "season": "Collection",
+      "name": "Homer Simpson",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Simpsons/homer.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "The Simpsons",
+      "season": "Collection",
+      "name": "Lisa Simpson",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Simpsons/lisa.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "The Simpsons",
+      "season": "Collection",
+      "name": "Maggie Simpson",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Simpsons/maggie.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "The Simpsons",
+      "season": "Collection",
+      "name": "Marge Simpson",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Simpsons/marge.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Ahsoka Trooper",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Ahsoka%20Trooper.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Ahsoka Tano",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Ahsoka.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "BB-8",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Bb-8.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Bo-Katan Kryze",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Bo%20Katan.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Boba Fett",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Boba.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "C-3PO",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/C3po.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Chewbacca",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Chewie.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Chopper",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Chopper.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "D-O",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/D-0.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Ezra Bridger",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Ezra.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "First Order Stormtrooper",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/FO%20Stormtrooper.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Fennec Shand",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Fennec.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Grogu",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Grogu.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Hunter",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Hunter.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Jabba the Hutt",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Jabba.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Kylo Ren",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Kylo.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "The Mandalorian",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Mando.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Darth Maul",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Maul.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Omega",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Omega.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Porg",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Porg.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "R2-D2",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/R2d2.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Captain Rex",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Rex.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Sabine Wren",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Sabine.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Darth Vader",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Vader.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Star Wars",
+      "season": "Collection",
+      "name": "Yoda",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Star%20Wars/Yoda.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Addison",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/addison.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Ally",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/ally.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Bia",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/bia.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Candace Flynn",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/candace.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Carlos",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/carlos.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Demi Lovato",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/demi.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Dipper Pines",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/dipper.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Dr. Heinz Doofenshmirtz",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/doofenschmirtz.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Evie",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/evie.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Ferb Fletcher",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/ferb.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Gabriella Montez",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/gabriella.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Hannah Montana",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/hannahmontana.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Jay",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/jay.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "K.C. Cooper",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/kccooper.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Kim Possible",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/kimpossible.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Lizzie McGuire",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/lizzie.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Luna",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/luna.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Mabel Pines",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/mabel.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Mal",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/mal.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Nick Jonas",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/nickjonas.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Perry the Platypus",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/perry.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Phineas Flynn",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/phineas.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Raven Baxter",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/raven.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Sharpay Evans",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/sharpay.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Troy Bolton",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/troy.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Uma",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/uma.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Violetta",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/violetta.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "TV",
+      "season": "Collection",
+      "name": "Zed",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/TV/zed.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "X-Men",
+      "season": "Collection",
+      "name": "Beast",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/X-Men/Beast.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "X-Men",
+      "season": "Collection",
+      "name": "Cyclops",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/X-Men/Cyclops.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "X-Men",
+      "season": "Collection",
+      "name": "Gambit",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/X-Men/Gambit.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "X-Men",
+      "season": "Collection",
+      "name": "Jean Grey",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/X-Men/Jean.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "X-Men",
+      "season": "Collection",
+      "name": "Jubilee",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/X-Men/Jubilee.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "X-Men",
+      "season": "Collection",
+      "name": "Magneto",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/X-Men/Magneto.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "X-Men",
+      "season": "Collection",
+      "name": "Rogue",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/X-Men/Rogue.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "X-Men",
+      "season": "Collection",
+      "name": "Storm",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/X-Men/Storm.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "X-Men",
+      "season": "Collection",
+      "name": "Wolverine",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/X-Men/Wolverine.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "X-Men",
+      "season": "Collection",
+      "name": "Professor X",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/X-Men/Xavier.JPG"
+    },
+    {
+      "service": "Disney+",
+      "group": "Avatar",
+      "season": "Collection",
+      "name": "Neytiri",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Disney%2B/Avatar/Neytiri.PNG"
+    }
+  ]
+}
