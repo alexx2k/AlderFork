@@ -145,6 +145,8 @@
     <string name="player_try_another">Try another source</string>
     <string name="player_next_episode">Next episode</string>
     <string name="player_up_next">Up next</string>
+    <string name="player_auto_next_in">Playing automatically in %1$d s</string>
+    <string name="player_watch_credits">Watch Credits</string>
     <string name="player_play_episode">Play S%1$d E%2$d</string>
     <string name="player_exit_home">Exit to Home</string>
     <string name="player_still_watching">Still watching?</string>
@@ -415,6 +417,8 @@
     <string name="streams_scan_key">Enter a new key or sign in again there, and install it again. Then select Try again.</string>
     <string name="streams_auto">Auto</string>
     <string name="streams_best_match">Best match</string>
+    <string name="autoplay_fallback">Credits fallback</string>
+    <string name="autoplay_fallback_hint">When no credits timestamp is available, offer the next episode this many seconds before the end.</string>
     <string name="streams_tag_multi_audio">Multi audio</string>
     <string name="streams_tag_dub">Dub</string>
     <string name="streams_tag_hard_subs">Hard subs</string>
