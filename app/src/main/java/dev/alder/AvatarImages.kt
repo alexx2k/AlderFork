@@ -143,7 +143,11 @@ internal object AvatarImages {
                 val downloaded = software == null
                 if (downloaded) {
                     if (file.exists()) file.delete() // Invalid or truncated thumbnail.
-                    software = decode(Http.bytes(url, strict = true), width)
+                    // Uploaded portraits are private local files, not HTTP URLs.
+                    val bytes = if (LocalProfileAvatars.isLocal(url)) {
+                        LocalProfileAvatars.fileForUrl(context, url)?.readBytes()
+                    } else Http.bytes(url, strict = true)
+                    software = bytes?.let { decode(it, width) }
                 }
 
                 software?.let { original ->
