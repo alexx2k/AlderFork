@@ -327,6 +327,28 @@ class PlayerActivity : Screen() {
     // "Up next": offered during credits; the current episode keeps playing until the viewer chooses the next one.
     private lateinit var upNextPanel: FrameLayout
     private var upNextDismissed = false
+    private var upNextCountdown: EpisodeAutoplayCountdown? = null
+    private var countdownLabel: TextView? = null
+    private var nextPrefetch: Cancellable? = null
+    private var nextPrefetchFor: String? = null
+    private var preparedNextSources: List<Stream>? = null
+    private var nextTransitionStarted = false
+    private var completingForNextVideoId: String? = null
+    private val upNextCountdownTask = object : Runnable {
+        override fun run() {
+            if (upNextPanel.visibility != View.VISIBLE || nextTransitionStarted || upNextDismissed || stopped) return
+            val countdown = upNextCountdown ?: return
+            if (countdown.tick(player.isPlaying)) {
+                val next = nextVideo()
+                if (next == null) return dismissUpNext()
+                if (askStillWatching(quiet + 1)) showStillWatching(next)
+                else playNext(EpisodeAdvanceOrigin.AUTOPLAY)
+                return
+            }
+            countdownLabel?.text = getString(R.string.player_auto_next_in, countdown.remainingSeconds)
+            main.postDelayed(this, 1_000L)
+        }
+    }
     // "Still watching?": episodes before this one that ended with no key pressed (carried in the intent from one
     // episode to the next, and to another source), and the sleep choices: stop when this one ends, or pause at sleepAt.
     private lateinit var stillPanel: FrameLayout
@@ -545,7 +567,7 @@ class PlayerActivity : Screen() {
             override fun onPlaybackStateChanged(state: Int) {
                 // At the real end the next episode starts, unless the viewer chose to watch the credits or to stop after
                 // this one, or this is the third episode in a row with no key pressed: then "Still watching?" waits.
-                if (state == Player.STATE_ENDED) {
+                if (state == Player.STATE_ENDED && !nextTransitionStarted) {
                     if (isTrailer) {
                         finish()
                         return
@@ -557,14 +579,14 @@ class PlayerActivity : Screen() {
                         next(Failure.MISSING)
                     } else if (upcoming == null || upNextDismissed || stopAfter) finish()
                     else if (askStillWatching(quiet + 1)) showStillWatching(upcoming)
-                    else playNext(quiet + 1)
+                    else playNext(EpisodeAdvanceOrigin.AUTOPLAY)
                 }
                 if (state == Player.STATE_BUFFERING) showLoading(if (started) getString(R.string.player_loading) else startMessage
                     ?: getString(R.string.player_starting, sources.getOrNull(at)?.label.orEmpty()))
                 if (state == Player.STATE_READY) {
                     if (started) {
                         hideLoading()
-                        updateMarkers()
+                        reconcileSegments()
                     }
                 }
                 // A seek buffers too; only stalls in plain playback count.
@@ -1142,10 +1164,10 @@ class PlayerActivity : Screen() {
             tickedWatched = true
             Library.markWatched(item, videos, videoId)
         }
-        // Keep the current episode full screen; offer the next one only near its actual end.
-        // If credits timing (outroAt) is known, wait until outroAt before showing Up next.
-        val shouldShowUpNext = if (outroAt > 0) position >= outroAt else duration - position < upNextWindow(duration)
-        if (!upNextDismissed && upNextPanel.visibility != View.VISIBLE && shouldShowUpNext) showUpNext()
+        // Prefer a validated IntroDB timestamp or chapter. Without one, wait until the configured
+        // final seconds rather than guess early credits from a fraction of the running time.
+        val trigger = EpisodeAutoplayTiming.triggerAt(duration, introDbOutroAt, mkvChapters, Settings.creditsFallbackSeconds(this))
+        if (!upNextDismissed && upNextPanel.visibility != View.VISIBLE && trigger != null && position >= trigger) showUpNext()
     }
 
     /** The episode after this one, or null for a film, the last episode, or before the episode list is in. */
@@ -1482,7 +1504,10 @@ class PlayerActivity : Screen() {
 
     private fun fetchSegments() {
         val parts = videoId.split(":")
-        if (!episodic || !metaId.startsWith("tt") || parts.size < 3) return
+        // Episode metadata loads asynchronously after this request begins, so do not depend
+        // on meta?.videos here: that silently disabled IntroDB for first-time plays.
+        if (isTrailer || type != "series" || !metaId.startsWith("tt") || parts.size < 3 ||
+            parts[0] != metaId || parts[1].toIntOrNull() == null || parts[2].toIntOrNull() == null) return
         background({
             val json = JSONObject(Http.get("https://api.introdb.app/segments?imdb_id=${parts[0]}&season=${parts[1]}&episode=${parts[2]}"))
             fun part(name: String) = json.optJSONObject(name)?.let { seg ->
@@ -1510,15 +1535,14 @@ class PlayerActivity : Screen() {
         val mkvIntros = MkvChapters.findIntroSegments(mkvChapters, duration)
         if (mkvIntros.isNotEmpty()) {
             segments = mkvIntros.map { IntroSegment(it.label, it.startMs, it.endMs) }
-            outroAt = introDbOutroAt
         } else {
             // Reject zero-second starts from IntroDB if file has chapters indicating a later start or cold open
             val hasColdOpenChapter = mkvChapters.any { it.startMs in 1L..120_000L }
             segments = introDbSegments.filterNot { seg ->
                 seg.startMs == 0L && hasColdOpenChapter
             }
-            outroAt = introDbOutroAt
         }
+        outroAt = EpisodeAutoplayTiming.metadataStart(duration, introDbOutroAt, mkvChapters) ?: 0L
         updateMarkers()
     }
 
@@ -1543,8 +1567,10 @@ class PlayerActivity : Screen() {
             skip.visibility = View.VISIBLE
         }
         if (now != null && skip.tag === now && System.currentTimeMillis() - skipShownAt > SKIP_SHOWN) { skipped += now; skip.visibility = View.GONE }
-        if (outroAt > 0 && position >= outroAt && player.duration - position < 60_000 &&
-            !upNextDismissed && upNextPanel.visibility != View.VISIBLE && player.duration > 0) showUpNext()
+        val trigger = EpisodeAutoplayTiming.triggerAt(player.duration, introDbOutroAt, mkvChapters,
+            Settings.creditsFallbackSeconds(this))
+        if (trigger != null && position >= trigger && !upNextDismissed &&
+            upNextPanel.visibility != View.VISIBLE) showUpNext()
         main.postDelayed(skipTask, 500)
     }
 
