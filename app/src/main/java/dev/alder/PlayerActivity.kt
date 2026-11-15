@@ -1141,6 +1141,11 @@ class PlayerActivity : Screen() {
             if (!isTrailer) {
                 main.postDelayed(tickTask, TICK)
                 main.post(skipTask)
+                if (upNextPanel.visibility == View.VISIBLE && upNextCountdown != null) {
+                    nextVideo()?.let(::prepareNextEpisode)
+                    main.removeCallbacks(upNextCountdownTask)
+                    main.postDelayed(upNextCountdownTask, 1_000L)
+                }
             }
             if (loading.visibility == View.VISIBLE && player.playbackState == Player.STATE_BUFFERING)
                 main.post(loadingTask)
@@ -1276,7 +1281,8 @@ class PlayerActivity : Screen() {
         play.nextFocusDownId = watchCredits.id
         watchCredits.nextFocusUpId = play.id
         upNextCountdown = EpisodeAutoplayCountdown()
-        countdownLabel = text(getString(R.string.player_auto_next_in, 5), SMALL, color = TUNGSTEN).onArt()
+        val countdownText = text(getString(R.string.player_auto_next_in, 5), SMALL, color = TUNGSTEN).onArt()
+        countdownLabel = countdownText
 
         val content = column(Gravity.START).apply {
             setPadding(dp(18), dp(14), dp(18), dp(14))
@@ -1287,7 +1293,7 @@ class PlayerActivity : Screen() {
                 wrap().apply { topMargin = dp(6) })
             addView(text("S${next.season} E${next.episode}", SMALL, color = TEXT_2).onArt(),
                 wrap().apply { topMargin = dp(5) })
-            addView(countdownLabel, wrap().apply { topMargin = dp(8) })
+            addView(countdownText, wrap().apply { topMargin = dp(8) })
             addView(play, wrap().apply { topMargin = dp(12) })
             addView(watchCredits, wrap().apply { topMargin = dp(8) })
         }
@@ -1392,6 +1398,8 @@ class PlayerActivity : Screen() {
         if (shown) hideControls(force = true)
         options.visibility = View.GONE
         upNextPanel.visibility = View.GONE
+        stopNextCountdown()
+        cancelNextPreparation()
         hideLoading()
         stillPanel.removeAllViews()
         stillPanel.visibility = View.VISIBLE
@@ -1497,6 +1505,16 @@ class PlayerActivity : Screen() {
                 if (event.action == KeyEvent.ACTION_DOWN) {
                     wakeKey = KeyEvent.KEYCODE_BACK
                     dismissUpNext()
+                }
+                return true
+            }
+            // Media buttons still control playback while the overlay has D-pad focus.
+            if (event.keyCode in listOf(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_MEDIA_PLAY,
+                    KeyEvent.KEYCODE_MEDIA_PAUSE)) {
+                if (event.action == KeyEvent.ACTION_DOWN) when (event.keyCode) {
+                    KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> if (player.playWhenReady) player.pause() else player.play()
+                    KeyEvent.KEYCODE_MEDIA_PLAY -> player.play()
+                    KeyEvent.KEYCODE_MEDIA_PAUSE -> player.pause()
                 }
                 return true
             }
@@ -3229,6 +3247,8 @@ class PlayerActivity : Screen() {
         main.removeCallbacks(progressTask)
         main.removeCallbacks(skipTask)
         main.removeCallbacks(loadingTask)
+        main.removeCallbacks(upNextCountdownTask)
+        cancelNextPreparation()
         // A paused source in the background shows no picture: timing it out would skip a good source.
         main.removeCallbacks(startTimeout)
         player.pause()
@@ -3236,13 +3256,22 @@ class PlayerActivity : Screen() {
         record()
         // The player's own episode list first: Home's Resume passes no next episode when the title's details weren't in
         // yet, and a finished episode with no next one drops the title out of Continue Watching.
-        item?.let { Library.stopped(it, nextVideo(onlyAired = false)?.id ?: intent.getStringExtra("nextVideoId")) }
+        item?.let { entry ->
+            val advanceTo = completingForNextVideoId
+            if (advanceTo != null) {
+                Library.completeAndAdvance(entry, meta?.videos.orEmpty(), videoId, advanceTo)
+            } else {
+                Library.stopped(entry, nextVideo(onlyAired = false)?.id ?: intent.getStringExtra("nextVideoId"))
+            }
+        }
         push()
     }
 
     override fun onDestroy() {
         resolvingStreams?.cancel()
         resolvingStreams = null
+        main.removeCallbacks(upNextCountdownTask)
+        cancelNextPreparation()
         main.removeCallbacks(startTimeout)
         opened?.close()
         opened = null
