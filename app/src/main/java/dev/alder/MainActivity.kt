@@ -816,6 +816,8 @@ class MainActivity : Screen() {
             clipChildren = false
             clipToPadding = false
             addView(avatar, FrameLayout.LayoutParams(dp(30), dp(30)))
+            // The clickable initial stays underneath and retains remote focus.
+            ProfileAvatars.attach(this@MainActivity, profile, this, dp(30), avatar)
             addView(dot, FrameLayout.LayoutParams(dp(8), dp(8), Gravity.TOP or Gravity.END).apply {
                 topMargin = dp(1)
                 marginEnd = dp(1)
