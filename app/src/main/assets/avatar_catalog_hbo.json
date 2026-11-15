@@ -1,0 +1,167 @@
+{
+  "source": "https://github.com/eueueue292/Fusion-Profile-Avatars",
+  "sourceAuthor": "eueueue292",
+  "sourceLicense": "Images belong to their respective rights holders; the archive does not grant redistribution rights.",
+  "notes": "URL references only, not bundled image files. Images load on demand, are cached locally and may become unavailable.",
+  "sourcePacks": [
+    {
+      "group": "Harry Potter",
+      "path": "Harry Potter/pack.json",
+      "manifestBlobSha": "95eeae698cfc94c3c7713661b242e65e01773c5c"
+    },
+    {
+      "group": "Rick and Morty",
+      "path": "Rick And Morty/pack.json",
+      "manifestBlobSha": "f4f4f0f2d7190a8172b4348ea0e4837f5c60cdef"
+    }
+  ],
+  "icons": [
+    {
+      "service": "HBO Max",
+      "group": "Harry Potter",
+      "season": "Collection",
+      "name": "Harry Potter",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Harry%20Potter/Harry%20Potter.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Harry Potter",
+      "season": "Collection",
+      "name": "Hermione Granger",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Harry%20Potter/Hermione%20Granger.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Harry Potter",
+      "season": "Collection",
+      "name": "Ron Weasley",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Harry%20Potter/Ron%20Weasley.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Harry Potter",
+      "season": "Collection",
+      "name": "Albus Dumbledore",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Harry%20Potter/Albus%20Dumbledore.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Harry Potter",
+      "season": "Collection",
+      "name": "Professor McGonagall",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Harry%20Potter/Professor%20McGonagall.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Harry Potter",
+      "season": "Collection",
+      "name": "Severus Snape",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Harry%20Potter/Severus%20Snape.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Harry Potter",
+      "season": "Collection",
+      "name": "Lord Voldemort",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Harry%20Potter/Lord%20Voldemort.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Harry Potter",
+      "season": "Collection",
+      "name": "Bellatrix Lestrange",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Harry%20Potter/Bellatrix%20Lestrange.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Harry Potter",
+      "season": "Collection",
+      "name": "Sirius Black",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Harry%20Potter/Sirius%20Black.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Harry Potter",
+      "season": "Collection",
+      "name": "Rubeus Hagrid",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Harry%20Potter/Rubeus%20Hagrid.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Harry Potter",
+      "season": "Collection",
+      "name": "Luna Lovegood",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Harry%20Potter/Luna%20Lovegood.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Harry Potter",
+      "season": "Collection",
+      "name": "Ginny Weasley",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Harry%20Potter/Ginny%20Weasley.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Harry Potter",
+      "season": "Collection",
+      "name": "Neville Longbottom",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Harry%20Potter/Neville%20Longbottom.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Harry Potter",
+      "season": "Collection",
+      "name": "Dobby",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Harry%20Potter/Dobby.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Rick and Morty",
+      "season": "Collection",
+      "name": "Beth",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Rick%20And%20Morty/Beth.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Rick and Morty",
+      "season": "Collection",
+      "name": "Evil Morty",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Rick%20And%20Morty/Evil%20Morty.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Rick and Morty",
+      "season": "Collection",
+      "name": "Jerry",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Rick%20And%20Morty/Jerry.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Rick and Morty",
+      "season": "Collection",
+      "name": "Morty",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Rick%20And%20Morty/Morty.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Rick and Morty",
+      "season": "Collection",
+      "name": "Pickle Rick",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Rick%20And%20Morty/Pickle%20Rick.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Rick and Morty",
+      "season": "Collection",
+      "name": "Rick",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Rick%20And%20Morty/Rick.JPG"
+    },
+    {
+      "service": "HBO Max",
+      "group": "Rick and Morty",
+      "season": "Collection",
+      "name": "Summer",
+      "url": "https://raw.githubusercontent.com/eueueue292/Fusion-Profile-Avatars/main/Rick%20And%20Morty/Summer.JPG"
+    }
+  ]
+}
