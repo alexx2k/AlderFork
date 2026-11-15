@@ -587,7 +587,7 @@ class MainActivity : Screen() {
      * List's first three rows of posters fetched, so its grid doesn't open dark on the left while they download.
      */
     private fun warmPages() = background({
-        Stremio.savedLibrary(profile.authKey).orEmpty()
+        ProfileLibrary.savedLibrary(applicationContext, profile).orEmpty()
             .filter { !it.optBoolean("removed") && !isLiveType(it.optString("type")) }
             .sortedByDescending { it.optString("_ctime") }.take(LIST_COLUMNS * 3)
             .forEach { it.text("poster")?.let { url -> Images.prefetch(url, (libraryPosterWidth() * CARD_GROW).toInt()) } }
@@ -643,7 +643,7 @@ class MainActivity : Screen() {
         super.onResume()
         if (!::profile.isInitialized) return
         val key = profile.authKey
-        background({ syncWatchProgress(key) }) {}
+        background({ ProfileLibrary.syncProgress(profile) }) {}
         // ponytail: idle dim and the cinema screensaver are off (2026-10-26, not wanted yet); post `idle` here to bring the cinema back.
         updateDot?.visibility = if (Updates.hasUpdate(this)) View.VISIBLE else View.GONE
         // Back from Settings: the hero shows the ratings picked there (Letterboxd needs a redraw to ask for its score).
@@ -1534,14 +1534,14 @@ class MainActivity : Screen() {
             else {
                 val known = if (grid) emptyMap() else metas.toMap()
                 background({
-                    (Stremio.savedLibrary(key) ?: remembered)?.let { prepareLibrary(it, known, key, grid) }
+                    (ProfileLibrary.savedLibrary(applicationContext, profile) ?: remembered)?.let { prepareLibrary(it, known, key, grid) }
                 }, cacheReads) { r -> if (g == generation && !fresh) r.getOrNull()?.let { show(it) } }
             }
             var libraryRequest = 0
             fun ask() {
                 val request = ++libraryRequest
                 val known = if (grid) emptyMap() else metas.toMap()
-                background({ prepareLibrary(Stremio.library(key), known, key, grid) }) { result ->
+                background({ prepareLibrary(ProfileLibrary.library(applicationContext, profile), known, key, grid) }) { result ->
                     if (g != generation || request != libraryRequest) return@background
                     result.fold({
                         fresh = true
@@ -2096,7 +2096,7 @@ class MainActivity : Screen() {
                 val videos = if (remove) emptyList() else (known ?: runCatching {
                         Stremio.addons(key).let { it.savedMeta(item.type, item.id) ?: it.meta(item.type, item.id) }
                     }.getOrNull())?.videos.orEmpty()
-                Stremio.editLibrary(key, item.id, JSONObject(original.toString())) { updated ->
+                ProfileLibrary.editLibrary(applicationContext, profile, item.id, JSONObject(original.toString())) { updated ->
                     if (remove) Library.setInList(updated, false) else Library.markTitleWatched(updated, videos)
                 }
             }) { result ->
@@ -2135,7 +2135,7 @@ class MainActivity : Screen() {
             val original = library.firstOrNull { it.optString("_id") == item.id } ?: return@choose
             val updated = JSONObject(original.toString())
             val offset = Library.hideFromContinueWatching(updated)
-            background({ Stremio.saveLibrary(profile.authKey, listOf(updated)) }) { result ->
+            background({ ProfileLibrary.saveLibrary(applicationContext, profile, listOf(updated)) }) { result ->
                 result.fold({
                     Settings.setHidden(this, Settings.hidden(this)
                         .put(item.id, JSONObject().put("name", item.name).put("timeOffset", offset)))
