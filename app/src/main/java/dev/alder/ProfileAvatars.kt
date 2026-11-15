@@ -42,23 +42,52 @@ internal object ProfileAvatars {
     }
 }
 
-internal data class AvatarIcon(val group: String, val season: String, val name: String, val url: String)
+internal data class AvatarIcon(
+    val group: String,
+    val season: String,
+    val name: String,
+    val url: String,
+    val service: String = "Netflix"
+)
 
 /**
- * Show names are alphabetised; seasons/collections and the icons in each
- * collection retain their source ordering.
+ * Each service has a small offline catalogue of remote image references.
+ * APK bundles metadata only; the existing AvatarImages loader fetches only
+ * visible thumbnails and caches them. An optional pack failing to parse must
+ * never prevent the existing Netflix pictures from appearing.
  */
 internal object AvatarCatalog {
+    private val optionalPacks = listOf(
+        "avatar_catalog_disney.json",
+        "avatar_catalog_hbo.json",
+        "avatar_catalog_prime.json",
+        "avatar_catalog_crunchyroll.json"
+    )
     private var cache: List<AvatarIcon>? = null
+
+    private fun parse(context: Context, filename: String): List<AvatarIcon> {
+        val raw = context.assets.open(filename).bufferedReader().use { it.readText() }
+        val array = JSONObject(raw).getJSONArray("icons")
+        return (0 until array.length()).map { array.getJSONObject(it) }.map {
+            AvatarIcon(
+                group = it.getString("group"),
+                season = it.optString("season", "Collection"),
+                name = it.getString("name"),
+                url = it.getString("url"),
+                service = it.optString("service", "Netflix")
+            )
+        }
+    }
 
     @Synchronized
     fun all(context: Context): List<AvatarIcon> {
         cache?.let { return it }
-        val text = context.assets.open("avatar_catalog.json").bufferedReader().use { it.readText() }
-        val array = JSONObject(text).getJSONArray("icons")
-        return (0 until array.length()).map { array.getJSONObject(it) }.map {
-            AvatarIcon(it.getString("group"), it.getString("season"),
-                it.getString("name"), it.getString("url"))
-        }.also { cache = it }
+        val icons = parse(context, "avatar_catalog.json").toMutableList()
+        optionalPacks.forEach { file ->
+            runCatching { parse(context, file) }
+                .onSuccess { icons.addAll(it) }
+                .onFailure { android.util.Log.w("AvatarCatalog", "Could not load $file", it) }
+        }
+        return icons.also { cache = it }
     }
 }
