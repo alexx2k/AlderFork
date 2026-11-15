@@ -51,6 +51,7 @@ class ProfilesActivity : Screen() {
 
     override fun onDestroy() {
         waitingCode = null
+        AvatarImages.stopPrefetch()
         super.onDestroy()
     }
 
