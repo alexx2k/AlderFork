@@ -101,6 +101,7 @@ object Profiles {
         val prefs = prefs(context)
         save(prefs, list.filterNot { it.id == id })
         LocalLibrary.clear(context, id)
+        LocalProfileAvatars.delete(context, id)
         if (prefs.getString("active", null) == id) prefs.edit().remove("active").apply()
         prefs.edit().remove("shareStreams:$id").remove("signedOut:$id").apply()
         Settings.forget(context, id)
@@ -146,6 +147,10 @@ object Profiles {
     /** Rename or set the PIN of a profile (clearPin removes it), keeping its place in the list. */
     fun update(context: Context, id: String, name: String? = null, pin: String? = null, clearPin: Boolean = false, color: Int? = null,
                avatarUrl: String? = null, clearAvatar: Boolean = false) {
+        // Replacing a phone-uploaded picture with a gallery icon or initials
+        // should not leave its private JPEG lying around.
+        if (clearAvatar || (avatarUrl != null && !LocalProfileAvatars.isLocal(avatarUrl)))
+            LocalProfileAvatars.delete(context, id)
         save(prefs(context), all(context).map {
             if (it.id != id) it
             else Profile(
