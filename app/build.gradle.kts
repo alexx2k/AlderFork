@@ -16,8 +16,8 @@ android {
         minSdk = 23
         targetSdk = 36
 
-        versionCode = 111
-        versionName = "1.1.1"
+        versionCode = 112
+        versionName = "1.1.2"
         // TVs are ARM; the x86 builds of ffmpeg's native code would only add size.
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
     }
