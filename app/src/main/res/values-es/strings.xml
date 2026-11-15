@@ -584,4 +584,8 @@
     <string name="profiles_remove_owner_blocked">La cuenta sigue en uso</string>
     <string name="profiles_remove_owner_blocked_desc">Elimina los perfiles locales que comparten esta cuenta de Stremio antes de borrar su propietario.</string>
     <string name="profiles_remove_local_desc">¿Eliminar a %1$s y borrar permanentemente su historial de visualización y Mi lista de este televisor?</string>
+    <string name="player_auto_next_in">Reproducción automática en %1$d s</string>
+    <string name="player_watch_credits">Ver créditos</string>
+    <string name="autoplay_fallback">Alternativa para créditos</string>
+    <string name="autoplay_fallback_hint">Si no se conoce el inicio de los créditos, ofrecer el siguiente episodio estos segundos antes del final.</string>
 </resources>
