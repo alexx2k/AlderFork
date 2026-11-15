@@ -201,6 +201,29 @@ object Library {
         item.put("_mtime", now)
     }
 
+    /**
+     * A deliberate next-episode transition at detected credits is completion even when credits
+     * start before Stremio's 90% threshold. Record the real position first; do not fabricate
+     * watched time or modify the old episode before playback genuinely ends.
+     *
+     * This operates only on the already captured profile's library item. Neither this method
+     * nor the player looks up an account or the currently selected profile during saving.
+     */
+    fun completeAndAdvance(item: JSONObject, videos: List<Video>, currentVideoId: String, nextVideoId: String) {
+        val state = item.state
+        if (state.text("video_id") != currentVideoId || nextVideoId == currentVideoId) return
+        if (state.optInt("flaggedWatched") == 0) {
+            state.put("timesWatched", state.optInt("timesWatched") + 1)
+        }
+        if (videos.any { it.id == currentVideoId }) markWatched(item, videos, currentVideoId)
+        // timeWatched is already included in overallTimeWatched by record().
+        state.put("video_id", nextVideoId)
+            .put("timeOffset", 1L)
+            .put("timeWatched", 0L)
+            .put("flaggedWatched", 0)
+        item.put("_mtime", now())
+    }
+
     /** When playback stops: past the credits it's finished, and a series moves on to [nextVideoId]. */
     fun stopped(item: JSONObject, nextVideoId: String?) {
         val s = item.state

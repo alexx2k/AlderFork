@@ -577,4 +577,8 @@
     <string name="profiles_remove_owner_blocked">Konto wird noch verwendet</string>
     <string name="profiles_remove_owner_blocked_desc">Entferne zuerst die lokalen Profile, die dieses Stremio-Konto verwenden, bevor du den Kontoinhaber löschst.</string>
     <string name="profiles_remove_local_desc">%1$s entfernen und den Wiedergabeverlauf und Meine Liste dauerhaft von diesem Fernseher löschen?</string>
+    <string name="player_auto_next_in">Automatische Wiedergabe in %1$d s</string>
+    <string name="player_watch_credits">Abspann ansehen</string>
+    <string name="autoplay_fallback">Abspann-Ersatzzeitpunkt</string>
+    <string name="autoplay_fallback_hint">Wenn kein Abspann-Zeitpunkt bekannt ist, die nächste Folge so viele Sekunden vor dem Ende anbieten.</string>
 </resources>

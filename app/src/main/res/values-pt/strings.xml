@@ -584,4 +584,8 @@
     <string name="profiles_remove_owner_blocked">Conta ainda em uso</string>
     <string name="profiles_remove_owner_blocked_desc">Remova os perfis locais que usam esta conta Stremio antes de excluir o perfil proprietário.</string>
     <string name="profiles_remove_local_desc">Remover %1$s e apagar permanentemente o histórico e a Minha Lista desta TV?</string>
+    <string name="player_auto_next_in">Reprodução automática em %1$d s</string>
+    <string name="player_watch_credits">Assistir aos créditos</string>
+    <string name="autoplay_fallback">Detecção alternativa de créditos</string>
+    <string name="autoplay_fallback_hint">Quando não houver horário dos créditos, oferecer o próximo episódio tantos segundos antes do fim.</string>
 </resources>

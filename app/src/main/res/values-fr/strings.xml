@@ -584,4 +584,8 @@
     <string name="profiles_remove_owner_blocked">Compte toujours utilisé</string>
     <string name="profiles_remove_owner_blocked_desc">Supprimez les profils locaux liés à ce compte Stremio avant de supprimer son propriétaire.</string>
     <string name="profiles_remove_local_desc">Supprimer %1$s et effacer définitivement son historique et Ma liste de ce téléviseur ?</string>
+    <string name="player_auto_next_in">Lecture automatique dans %1$d s</string>
+    <string name="player_watch_credits">Regarder le générique</string>
+    <string name="autoplay_fallback">Détection de secours du générique</string>
+    <string name="autoplay_fallback_hint">Si le début du générique est inconnu, proposer la suite ce nombre de secondes avant la fin.</string>
 </resources>
