@@ -23,9 +23,10 @@ internal object LocalProfileAvatars {
     fun isLocal(url: String?) = url?.startsWith(PREFIX) == true
 
     private fun validId(id: String) = id.length == 1 && id[0] in '1'..'5'
+    private fun validStorageId(id: String) = validId(id) || id == "draft"
 
     private fun storage(context: Context, profileId: String): File? {
-        if (!validId(profileId)) return null
+        if (!validStorageId(profileId)) return null
         return File(File(context.filesDir, "profile_avatars"), "$profileId.jpg")
     }
 
@@ -33,8 +34,21 @@ internal object LocalProfileAvatars {
         if (!isLocal(url)) return null
         val rest = url.removePrefix(PREFIX)
         val profileId = rest.substringBefore('/')
-        if (!validId(profileId) || !rest.contains('/')) return null
+        if (!validStorageId(profileId) || !rest.contains('/')) return null
         return storage(context, profileId)?.takeIf { it.isFile }
+    }
+
+    /** Finalise an uploaded photo without exposing a temporary draft URL to saved profiles. */
+    fun promote(context: Context, draftUrl: String, profileId: String): String? {
+        if (!draftUrl.startsWith(PREFIX + "draft/") || !validId(profileId)) return null
+        val temporary = storage(context, "draft")?.takeIf { it.isFile } ?: return null
+        val destination = storage(context, profileId) ?: return null
+        return runCatching {
+            destination.parentFile?.mkdirs()
+            temporary.copyTo(destination, overwrite = true)
+            temporary.delete()
+            PREFIX + profileId + "/" + UUID.randomUUID()
+        }.getOrNull()
     }
 
     fun delete(context: Context, profileId: String) {
