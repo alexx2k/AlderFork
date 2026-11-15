@@ -14,7 +14,7 @@ internal object ProfileAvatars {
     fun attach(context: Context, profile: Profile, host: FrameLayout, sizePx: Int,
                placeholder: TextView? = null): ImageView? {
         val url = profile.avatarUrl?.takeIf { it.startsWith("https://") } ?: return null
-        val picture = ImageView(context).apply {
+        val picture = AvatarPortraitImage(context).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             isFocusable = false
             visibility = View.INVISIBLE
@@ -25,7 +25,7 @@ internal object ProfileAvatars {
             clipToOutline = true
         }
         host.addView(picture, FrameLayout.LayoutParams(sizePx, sizePx, Gravity.CENTER))
-        Images.load(url, picture, sizePx, urgent = true,
+        AvatarImages.bind(context, url, picture, sizePx,
             failed = {
                 picture.visibility = View.INVISIBLE
                 placeholder?.text = profile.name.take(1).uppercase()
