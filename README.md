@@ -7,8 +7,8 @@
 
 <p align="center">
   <a href="https://aradhyas8.github.io/Alder/"><img alt="Website" src="https://img.shields.io/badge/Website-blue"></a>
-  <a href="https://github.com/aradhyas8/Alder/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/aradhyas8/Alder?label=release"></a>
-  <a href="https://github.com/aradhyas8/Alder/releases"><img alt="Total GitHub release downloads" src="https://img.shields.io/github/downloads/aradhyas8/Alder/total?label=Downloads"></a>
+  <a href="https://github.com/alexx2k/AlderFork/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/alexx2k/AlderFork?label=release"></a>
+  <a href="https://github.com/alexx2k/AlderFork/releases"><img alt="Total GitHub release downloads" src="https://img.shields.io/github/downloads/alexx2k/AlderFork/total?label=Downloads"></a>
   <img alt="Android TV 8.0+" src="https://img.shields.io/badge/Android%20TV-8.0%2B-3ddc84">
   <a href="LICENSE"><img alt="GPL-3.0 License" src="https://img.shields.io/badge/license-GPL--3.0-blue"></a>
 </p>
@@ -26,10 +26,11 @@ Stremio on a TV hands you a list of fifty streams named like `2160p.WEB.HEVC.DV.
 Alder makes that choice for them:
 
 - **Press Play, it plays.** Alder picks the best source for your TV and starts it. Hold OK when you want to choose yourself.
+- **Keep your favourite provider.** Pick a source for a series and Alder tries the same add-on first on later episodes. If it is unavailable, Alder selects another.
 - **Dead links don't stop the film.** If a stream fails or shows no picture within 12 seconds, Alder moves to the next one from the same second. You only see the list if three fail in a row.
 - **It knows your TV.** Files your TV can't decode are left out before anyone sees them, including Dolby Vision profiles it can't show and 4K on a 1080p screen.
 - **Automatic audio output.** Alder sends TrueHD and DTS-HD to audio devices that support those formats. If passthrough fails, Alder tries to decode the same track to PCM at the same position before it changes tracks or sources.
-- **Everyone gets their own profile.** Up to 5, each its own Stremio account with its own history and recommendations, and an optional PIN.
+- **Everyone gets their own profile.** Up to 5, with separate watch history, local profiles that can share one Stremio account, and optional PINs.
 
 ## A look around
 
@@ -63,7 +64,7 @@ Alder can also show Continue Watching on the Google TV home screen, skip intros 
 | Pressing Play | **Starts the best source for your TV** | Opens a list of streams to choose from |
 | When a stream fails | **Tries the next one from the same second** | Back to the list |
 | Files the TV can't decode | **Hidden before you see them** | Listed; you find out when it won't play |
-| Profiles | **Up to 5, each its own account, with PIN** | One account per install |
+| Profiles | **Up to 5, with shared-account local profiles and PINs** | One account per install |
 | Stream preferences | **Plain words: Best picture, Balanced, Fast start** | Set inside each add-on |
 | Skip intro | ✅ | ❌ |
 | Continue Watching on the Google TV home | ✅ | ❌ |
@@ -92,11 +93,11 @@ On Android 7 or newer, sources marked **P2P** play torrents from your add-ons. A
 ## Install
 
 1. On your phone or computer, sign in to [Stremio](https://web.stremio.com) and install your add-ons.
-1. Download `Alder.apk` from the [latest release](https://github.com/aradhyas8/Alder/releases/latest).
-1. Install it on your TV. Easiest: install the free **Downloader** app by AFTVnews from the Google Play Store on your TV, open it, enter code **9638679** and press Go, then Install. Or use a USB drive and a file manager, or `adb install Alder.apk`.
+1. Download `app-release.apk` from the [latest release](https://github.com/alexx2k/AlderFork/releases/latest).
+1. Install it on your TV. Use the Downloader app with the APK URL, a USB drive with a file manager, or `adb install app-release.apk`.
 1. Open **Alder**, name your profile and sign in to Stremio with the code on screen. Your add-ons, library and Continue Watching come with it.
 
-After that, Alder offers new versions itself: press Install when it asks, or use Settings › About › Updates. Android may ask you to allow Alder to install apps the first time. (Version 1.0 needs one manual update with the code above.)
+After that, Alder offers new versions itself: press Install when it asks, or use Settings › About › Updates. Android may ask you to allow Alder to install apps the first time.
 
 ## Privacy
 
@@ -105,8 +106,8 @@ Alder has no analytics, no ads and no account of its own. It talks to Stremio, t
 ## Building from source
 
 ```sh
-git clone https://github.com/aradhyas8/Alder.git
-cd Alder
+git clone https://github.com/alexx2k/AlderFork.git
+cd AlderFork
 ./gradlew assembleRelease
 ```
 
