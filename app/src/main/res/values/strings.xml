@@ -539,8 +539,7 @@
     <string name="profiles_name_to_continue">Enter a name to continue.</string>
     <string name="profiles_welcome">Welcome to Alder</string>
     <string name="profiles_new">New profile</string>
-    <string name="profiles_name_colour">Give this profile a name and colour.</string>
-    <string name="profiles_portrait_colour">Portrait colour</string>
+    <string name="profiles_name_colour">Give this profile a name. Select the portrait to choose a picture.</string>
     <string name="profiles_your_name">Your name</string>
     <string name="profiles_getting_code">Getting a sign-in code…</string>
     <string name="profiles_back">← Back</string>
