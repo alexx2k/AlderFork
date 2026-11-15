@@ -518,8 +518,7 @@
     <string name="profiles_name_to_continue">Escribe un nombre para continuar.</string>
     <string name="profiles_welcome">Te damos la bienvenida a Alder</string>
     <string name="profiles_new">Nuevo perfil</string>
-    <string name="profiles_name_colour">Dale a este perfil un nombre y un color.</string>
-    <string name="profiles_portrait_colour">Color del retrato</string>
+    <string name="profiles_name_colour">Dale un nombre a este perfil. Selecciona el retrato para elegir una imagen.</string>
     <string name="profiles_your_name">Tu nombre</string>
     <string name="profiles_getting_code">Obteniendo un código de inicio de sesión…</string>
     <string name="profiles_back">← Atrás</string>
