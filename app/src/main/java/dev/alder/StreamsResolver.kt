@@ -175,6 +175,11 @@ object StreamsResolver {
                 val best = rank(context, ready.filter { it.isVideo && it.playableOn(tv) && wanted(context, it, maxHeight) },
                     videoId, metaId, maxHeight, profileId)
                 if (best.isEmpty() && answers.any { it == null }) return
+                // If the remembered add-on replied first, allow a brief window for an automatic
+                // fallback from another add-on to join the player's retry list.
+                if (!allowGaps && preferredProviderId != null && answers.any { it == null } &&
+                    best.any { it.providerId == preferredProviderId } &&
+                    best.none { it.providerId != preferredProviderId }) return
                 if (best.isEmpty()) {
                     started = true
                     onFallback()
