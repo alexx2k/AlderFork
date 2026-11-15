@@ -250,67 +250,58 @@ class ProfilesActivity : Screen() {
      * with the source's icon order preserved. Only visible portraits are decoded.
      */
 
-    /** Choose a collection before loading pictures: never render all 985 icons together. */
-    private fun showAvatarGallery(profile: Profile) {
-        nameInput = null
-        backTo = ::showPicker
-        background({ AvatarCatalog.all(applicationContext) }) { result ->
-            val icons = result.getOrNull()
-            if (icons.isNullOrEmpty()) {
-                choose(getString(R.string.profiles_avatar_title, profile.name),
-                    listOf(getString(R.string.action_ok)), getString(R.string.profiles_avatar_load_failed)) {}
-                return@background
-            }
-            val groups = icons.groupBy { it.group }
-            val names = groups.keys.sortedWith(String.CASE_INSENSITIVE_ORDER)
-            choose(getString(R.string.profiles_avatar_title, profile.name),
-                names.map { name -> "$name (${groups.getValue(name).size})" },
-                getString(R.string.profiles_avatar_browse_help)) { i ->
-                val group = names[i]
-                showAvatarCollection(profile, group, groups.getValue(group))
-            }
-        }
+
+    /** A gallery list row: only visible rows are made into Android views. */
+    private sealed class AvatarGalleryRow {
+        data class Heading(val label: String) : AvatarGalleryRow()
+        data class Icons(val pictures: List<AvatarIcon>) : AvatarGalleryRow()
     }
 
-    /** One collection at a time, with a single ImageView per avatar. */
-    private fun showAvatarCollection(profile: Profile, group: String, icons: List<AvatarIcon>) {
+    /**
+     * One continuous gallery organised alphabetically by show and then season.
+     *
+     * ListView recycles rows as the user scrolls. Unlike the previous ScrollView,
+     * it never creates ~1,000 image/text views, and each portrait has exactly one
+     * opaque circular ImageView (no fallback initials beneath transparent PNGs).
+     */
+    private fun showAvatarGallery(profile: Profile) {
         val generation = ++pickerGeneration
         nameInput = null
         backTo = ::showPicker
 
-        // A solid background prevents old gallery frames showing through the window.
         val backgroundArt = FrameLayout(this).apply {
             setBackgroundColor(BASE)
             addView(onboardingBackdrop(false).apply { alpha = 0.42f },
                 FrameLayout.LayoutParams(-1, -1))
         }
         val content = FrameLayout(this)
-        content.addView(text(group, SERIF_TITLE, serif = true),
-            FrameLayout.LayoutParams(-1, dp(65), Gravity.TOP).apply {
-                leftMargin = dp(PAD)
-                topMargin = dp(25)
-            })
-        val scroll = android.widget.ScrollView(this).apply {
+        content.addView(text(getString(R.string.profiles_avatar_title, profile.name),
+            SERIF_TITLE, serif = true), FrameLayout.LayoutParams(-1, dp(65), Gravity.TOP).apply {
+            leftMargin = dp(PAD)
+            topMargin = dp(28)
+        })
+
+        val gallery = android.widget.ListView(this).apply {
+            divider = null
+            dividerHeight = 0
             isVerticalScrollBarEnabled = false
+            itemsCanFocus = true
+            descendantFocusability = android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS
             clipChildren = true
             clipToPadding = true
+            setSelector(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
+            setCacheColorHint(Color.TRANSPARENT)
+            overScrollMode = View.OVER_SCROLL_NEVER
         }
-        val grid = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            clipChildren = true
-            clipToPadding = true
-            setPadding(dp(38), dp(8), dp(38), dp(12))
-        }
-        scroll.addView(grid)
-        content.addView(scroll, FrameLayout.LayoutParams(-1, -1).apply {
-            topMargin = dp(95)
-            bottomMargin = dp(60)
+        content.addView(gallery, FrameLayout.LayoutParams(-1, -1).apply {
+            topMargin = dp(98)
+            bottomMargin = dp(65)
         })
         content.addView(chip(R.string.profiles_back).apply {
-            setOnClickListener { showAvatarGallery(profile) }
+            setOnClickListener { showPicker() }
         }, FrameLayout.LayoutParams(-2, dp(32), Gravity.BOTTOM or Gravity.START).apply {
             leftMargin = dp(PAD)
-            bottomMargin = dp(16)
+            bottomMargin = dp(18)
         })
         content.addView(chip(R.string.profiles_avatar_initials).apply {
             setOnClickListener {
@@ -319,84 +310,139 @@ class ProfilesActivity : Screen() {
             }
         }, FrameLayout.LayoutParams(-2, dp(32), Gravity.BOTTOM or Gravity.END).apply {
             rightMargin = dp(PAD)
-            bottomMargin = dp(16)
+            bottomMargin = dp(18)
         })
         setWindowed(content, backgroundArt)
 
-        val pictures = mutableListOf<Triple<View, ImageView, String>>()
-        var scheduled = false
-        fun updateVisible() {
-            if (isDestroyed || pickerGeneration != generation) return
-            val rect = android.graphics.Rect()
-            for ((card, image, url) in pictures) {
-                if (card.getGlobalVisibleRect(rect) && image.tag != url) {
-                    Images.load(url, image, dp(88))
+        background({ AvatarCatalog.all(applicationContext) }) { outcome ->
+            if (generation != pickerGeneration) return@background
+            val icons = outcome.getOrNull()
+            if (icons.isNullOrEmpty()) {
+                choose(getString(R.string.profiles_avatar_title, profile.name),
+                    listOf(getString(R.string.action_ok)), getString(R.string.profiles_avatar_load_failed)) {}
+                return@background
+            }
+
+            val rows = mutableListOf<AvatarGalleryRow>()
+            for ((show, collection) in icons.groupBy { it.group }) {
+                rows.add(AvatarGalleryRow.Heading(show))
+                for ((season, pictures) in collection.groupBy { it.season }) {
+                    if (season != "Collection") rows.add(AvatarGalleryRow.Heading("    $season"))
+                    pictures.chunked(7).forEach { rows.add(AvatarGalleryRow.Icons(it)) }
                 }
             }
-        }
-        fun scheduleVisible() {
-            if (scheduled) return
-            scheduled = true
-            main.postDelayed({ scheduled = false; updateVisible() }, 60L)
-        }
-        scroll.setOnScrollChangeListener { _, _, _, _, _ -> scheduleVisible() }
 
-        var first: View? = null
-        for ((season, entries) in icons.groupBy { it.season }) {
-            if (season != "Collection") {
-                grid.addView(text(season, BODY, bold = true).apply {
-                    setPadding(0, dp(8), 0, dp(8))
-                })
-            }
-            for (line in entries.chunked(7)) {
-                val row = LinearLayout(this).apply {
+            class Cell(val holder: LinearLayout, val image: ImageView, val name: TextView)
+            class IconRow(val cells: List<Cell>)
+
+            fun newRow(): LinearLayout {
+                val row = LinearLayout(this@ProfilesActivity).apply {
                     orientation = LinearLayout.HORIZONTAL
                     clipChildren = true
                     clipToPadding = true
+                    setPadding(dp(38), 0, dp(38), 0)
+                    descendantFocusability = android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS
                 }
-                for (icon in line) {
-                    val card = LinearLayout(this).apply {
+                val cells = (0 until 7).map {
+                    val cell = LinearLayout(this@ProfilesActivity).apply {
                         orientation = LinearLayout.VERTICAL
                         gravity = Gravity.CENTER_HORIZONTAL
                         clipChildren = true
                     }
-                    val image = ImageView(this).apply {
+                    val image = ImageView(this@ProfilesActivity).apply {
                         scaleType = ImageView.ScaleType.CENTER_CROP
-                        isFocusable = false
                         background = GradientDrawable().apply {
                             shape = GradientDrawable.OVAL
                             setColor(profile.color)
                         }
                         clipToOutline = true
+                        isFocusable = false
                     }
-                    card.addView(image, LinearLayout.LayoutParams(dp(88), dp(88)))
-                    card.addView(text(icon.name, SMALL, color = TEXT_2).apply {
+                    cell.addView(image, LinearLayout.LayoutParams(dp(88), dp(88)))
+                    val label = text("", SMALL, color = TEXT_2).apply {
                         gravity = Gravity.CENTER
                         maxLines = 2
                         ellipsize = android.text.TextUtils.TruncateAt.END
-                    }, LinearLayout.LayoutParams(-1, dp(35)).apply { topMargin = dp(4) })
-                    card.rowFocus(8, also = { focused ->
-                        if (focused) scheduleVisible()
-                    })
-                    card.contentDescription = "${icon.name}, ${icon.group}"
-                    card.setOnClickListener {
-                        Profiles.update(this@ProfilesActivity, profile.id, avatarUrl = icon.url)
-                        showPicker()
                     }
-                    pictures.add(Triple(card, image, icon.url))
-                    row.addView(card, LinearLayout.LayoutParams(0, dp(134), 1f).apply { marginEnd = dp(4) })
-                    if (first == null) first = card
+                    cell.addView(label, LinearLayout.LayoutParams(-1, dp(35)).apply {
+                        topMargin = dp(4)
+                    })
+                    cell.rowFocus(9)
+                    row.addView(cell, LinearLayout.LayoutParams(0, dp(134), 1f).apply {
+                        marginEnd = dp(4)
+                    })
+                    Cell(cell, image, label)
                 }
-                repeat(7 - line.size) {
-                    row.addView(View(this), LinearLayout.LayoutParams(0, dp(134), 1f).apply { marginEnd = dp(4) })
-                }
-                grid.addView(row, LinearLayout.LayoutParams(-1, dp(138)))
+                row.tag = IconRow(cells)
+                return row
             }
-        }
-        scroll.post {
-            if (pickerGeneration == generation) {
-                first?.requestFocus()
-                scheduleVisible()
+
+            gallery.adapter = object : android.widget.BaseAdapter() {
+                override fun getCount() = rows.size
+                override fun getItem(position: Int): Any = rows[position]
+                override fun getItemId(position: Int) = position.toLong()
+                override fun getViewTypeCount() = 2
+                override fun getItemViewType(position: Int) =
+                    if (rows[position] is AvatarGalleryRow.Heading) 0 else 1
+
+                override fun isEnabled(position: Int) = rows[position] is AvatarGalleryRow.Icons
+
+                override fun getView(position: Int, convertView: View?,
+                                     parent: android.view.ViewGroup): View {
+                    return when (val row = rows[position]) {
+                        is AvatarGalleryRow.Heading -> {
+                            val label = (convertView as? TextView)
+                                ?: text("", BODY, bold = true).apply {
+                                    setPadding(dp(40), dp(17), dp(15), dp(9))
+                                    isFocusable = false
+                                }
+                            label.text = row.label
+                            label
+                        }
+
+                        is AvatarGalleryRow.Icons -> {
+                            val grid = (convertView as? LinearLayout) ?: newRow()
+                            val cells = (grid.tag as IconRow).cells
+                            for (index in cells.indices) {
+                                val cell = cells[index]
+                                val icon = row.pictures.getOrNull(index)
+                                if (icon == null) {
+                                    cell.holder.visibility = View.INVISIBLE
+                                    cell.holder.isFocusable = false
+                                    cell.holder.setOnClickListener(null)
+                                    cell.name.text = ""
+                                    cell.image.tag = null
+                                    cell.image.setImageDrawable(null)
+                                    continue
+                                }
+                                cell.holder.visibility = View.VISIBLE
+                                cell.holder.isFocusable = true
+                                cell.name.text = icon.name
+                                cell.holder.contentDescription = "${icon.name}, ${icon.group}"
+                                cell.holder.setOnClickListener {
+                                    Profiles.update(this@ProfilesActivity, profile.id, avatarUrl = icon.url)
+                                    showPicker()
+                                }
+                                // Images.load tags each ImageView and rejects stale requests
+                                // if a recycled row has been rebound to a different icon.
+                                if (cell.image.tag != icon.url) {
+                                    Images.load(icon.url, cell.image, dp(88))
+                                }
+                            }
+                            grid
+                        }
+                    }
+                }
+            }
+
+            val firstIcons = rows.indexOfFirst { it is AvatarGalleryRow.Icons }
+            if (firstIcons >= 0) {
+                gallery.setSelection(firstIcons)
+                gallery.post {
+                    if (generation != pickerGeneration) return@post
+                    val row = gallery.getChildAt(firstIcons - gallery.firstVisiblePosition)
+                    ((row as? LinearLayout)?.getChildAt(0))?.requestFocus()
+                }
             }
         }
     }
