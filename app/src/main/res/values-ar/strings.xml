@@ -583,6 +583,7 @@
 
     <!-- Profile and avatar features (v1.1.0) -->
     <string name="profiles_avatar">تغيير صورة الملف الشخصي</string>
+    <string name="profiles_avatar_setup">اختيار صورة الملف الشخصي</string>
     <string name="profiles_avatar_choose">تصفّح الصور الرمزية الجاهزة</string>
     <string name="profiles_avatar_upload">رفع صورة من هاتفك المحمول</string>
     <string name="profiles_avatar_upload_scan">امسح هذا الرمز بهاتفك لاختيار صورة ورفعها.</string>
