@@ -129,7 +129,7 @@ class ProfilesActivity : Screen() {
                 setOnLongClickListener { showMenu(p); true }
             }, LinearLayout.LayoutParams(dp(124), -2).apply { marginStart = dp(10); marginEnd = dp(10) })
             background({
-                val items = Stremio.savedLibrary(p.authKey) ?: Stremio.library(p.authKey)
+                val items = ProfileLibrary.savedLibrary(applicationContext, p) ?: ProfileLibrary.library(applicationContext, p)
                 Library.continueWatching(items).firstOrNull()
                     ?: items.filter { !it.optJSONObject("state")?.optString("lastWatched").isNullOrBlank() }
                         .maxByOrNull { it.optJSONObject("state")?.optString("lastWatched").orEmpty() }
@@ -600,7 +600,7 @@ class ProfilesActivity : Screen() {
         // background, so a see-through backdrop would show the last frame instead of darkening.
         if (useLastFilm) setColorFilter(android.graphics.Color.argb(166, 14, 12, 10), android.graphics.PorterDuff.Mode.SRC_ATOP)
         if (useLastFilm) Profiles.active(this@ProfilesActivity)?.let { profile ->
-            background({ Stremio.savedLibrary(profile.authKey)?.let(Library::continueWatching)?.firstOrNull()?.optString("_id") }) { result ->
+            background({ ProfileLibrary.savedLibrary(applicationContext, profile)?.let(Library::continueWatching)?.firstOrNull()?.optString("_id") }) { result ->
                 result.getOrNull()?.let(Images::backgroundFor)?.let { url -> Images.load(url, this, resources.displayMetrics.widthPixels) }
             }
         }
