@@ -118,6 +118,8 @@ object Settings {
         prefs(c).edit().putString(key, json.toString()).apply()
     }
     fun alwaysList(c: Context) = prefs(c).getBoolean("alwaysList", false)
+    /** Conservative fallback when a stream has no trustworthy credits chapter or IntroDB timestamp. */
+    fun creditsFallbackSeconds(c: Context) = prefs(c).getInt("creditsFallbackSeconds", 10).coerceIn(5, 30)
     /** Settings › Source list: true shows each source as its add-on wrote it, in a wider list. */
     fun addonText(c: Context) = prefs(c).getBoolean("addonText", false)
     fun matchFrameRate(c: Context) = prefs(c).getBoolean("matchFrameRate", true)
@@ -273,6 +275,8 @@ class SettingsActivity : Screen() {
             listOf(false to getString(R.string.play_best_source), true to getString(R.string.play_show_sources))),
         Choice("addonText", getString(R.string.source_list), getString(R.string.source_list_hint),
             listOf(false to getString(R.string.source_list_clean), true to getString(R.string.source_list_addon))),
+        Choice("creditsFallbackSeconds", getString(R.string.autoplay_fallback), getString(R.string.autoplay_fallback_hint),
+            listOf(5 to "5 s", 10 to "10 s", 15 to "15 s", 20 to "20 s", 30 to "30 s")),
         // Alder, then each video app on this TV by its own name.
         Choice("videoPlayer", getString(R.string.video_player), getString(R.string.video_player_hint),
             listOf("" to getString(R.string.video_player_alder)) + ExternalPlayer.installed(this)),
