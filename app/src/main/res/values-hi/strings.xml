@@ -577,4 +577,8 @@
     <string name="profiles_remove_owner_blocked">खाता अभी उपयोग में है</string>
     <string name="profiles_remove_owner_blocked_desc">इस Stremio खाते के मालिक को हटाने से पहले इससे जुड़े स्थानीय प्रोफ़ाइल हटाएँ।</string>
     <string name="profiles_remove_local_desc">%1$s को हटाकर इस टीवी से उसका देखने का इतिहास और मेरी सूची हमेशा के लिए मिटाएँ?</string>
+    <string name="player_auto_next_in">अगला एपिसोड %1$d सेकंड में अपने आप चलेगा</string>
+    <string name="player_watch_credits">क्रेडिट देखें</string>
+    <string name="autoplay_fallback">क्रेडिट का वैकल्पिक समय</string>
+    <string name="autoplay_fallback_hint">यदि क्रेडिट का समय उपलब्ध नहीं है, तो समाप्त होने से इतने सेकंड पहले अगला एपिसोड दिखाएँ।</string>
 </resources>
