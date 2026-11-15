@@ -6,11 +6,13 @@ import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.TextView
 import org.json.JSONObject
 
 /** Avatar images are referenced by URL; the APK contains no third-party artwork. */
 internal object ProfileAvatars {
-    fun attach(context: Context, profile: Profile, host: FrameLayout, sizePx: Int): ImageView? {
+    fun attach(context: Context, profile: Profile, host: FrameLayout, sizePx: Int,
+               placeholder: TextView? = null): ImageView? {
         val url = profile.avatarUrl?.takeIf { it.startsWith("https://") } ?: return null
         val picture = ImageView(context).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
@@ -24,8 +26,16 @@ internal object ProfileAvatars {
         }
         host.addView(picture, FrameLayout.LayoutParams(sizePx, sizePx, Gravity.CENTER))
         Images.load(url, picture, sizePx, urgent = true,
-            failed = { picture.visibility = View.INVISIBLE },
-            done = { picture.visibility = View.VISIBLE })
+            failed = {
+                picture.visibility = View.INVISIBLE
+                placeholder?.text = profile.name.take(1).uppercase()
+            },
+            done = {
+                // Retire the initials once the actual picture has loaded. Transparent
+                // PNGs must not reveal a duplicate/faint letter behind the artwork.
+                placeholder?.text = ""
+                picture.visibility = View.VISIBLE
+            })
         return picture
     }
 }
