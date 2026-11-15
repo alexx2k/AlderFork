@@ -475,7 +475,7 @@ class ProfilesActivity : Screen() {
                 return@background
             }
 
-            val services = data.second
+            val services = data?.second.orEmpty()
             content.addView(chip(getString(R.string.profiles_avatar_filter,
                 serviceFilter ?: getString(R.string.profiles_avatar_all))).apply {
                 setOnClickListener {
