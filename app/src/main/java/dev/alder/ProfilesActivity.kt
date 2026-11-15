@@ -101,6 +101,7 @@ class ProfilesActivity : Screen() {
     // ---------- who's watching ----------
 
     private fun showPicker() {
+        AvatarImages.stopPrefetch()
         // Opened from inside a profile (Switch profile, Manage profiles): Back returns to it instead of leaving Alder.
         val current = Profiles.active(this)?.takeIf { intent.getBooleanExtra("pick", false) }
         backTo = current?.let { { openHome(it) } }
@@ -257,6 +258,17 @@ class ProfilesActivity : Screen() {
         data class Icons(val pictures: List<AvatarIcon>) : AvatarGalleryRow()
     }
 
+    /** Prepare the 292 or so lightweight row descriptors off the UI thread. */
+    private fun avatarGalleryRows(icons: List<AvatarIcon>): List<AvatarGalleryRow> = buildList {
+        for ((show, collection) in icons.groupBy { it.group }) {
+            add(AvatarGalleryRow.Heading(show))
+            for ((season, pictures) in collection.groupBy { it.season }) {
+                if (season != "Collection") add(AvatarGalleryRow.Heading("    $season"))
+                pictures.chunked(7).forEach { add(AvatarGalleryRow.Icons(it)) }
+            }
+        }
+    }
+
     /**
      * One continuous gallery organised alphabetically by show and then season.
      *
@@ -265,6 +277,7 @@ class ProfilesActivity : Screen() {
      * opaque circular ImageView (no fallback initials beneath transparent PNGs).
      */
     private fun showAvatarGallery(profile: Profile) {
+        AvatarImages.stopPrefetch()
         val generation = ++pickerGeneration
         nameInput = null
         backTo = ::showPicker
@@ -314,25 +327,17 @@ class ProfilesActivity : Screen() {
         })
         setWindowed(content, backgroundArt)
 
-        background({ AvatarCatalog.all(applicationContext) }) { outcome ->
+        background({ avatarGalleryRows(AvatarCatalog.all(applicationContext)) }) { outcome ->
             if (generation != pickerGeneration) return@background
-            val icons = outcome.getOrNull()
-            if (icons.isNullOrEmpty()) {
+            val rows = outcome.getOrNull()
+            if (rows.isNullOrEmpty()) {
                 choose(getString(R.string.profiles_avatar_title, profile.name),
                     listOf(getString(R.string.action_ok)), getString(R.string.profiles_avatar_load_failed)) {}
                 return@background
             }
 
-            val rows = mutableListOf<AvatarGalleryRow>()
-            for ((show, collection) in icons.groupBy { it.group }) {
-                rows.add(AvatarGalleryRow.Heading(show))
-                for ((season, pictures) in collection.groupBy { it.season }) {
-                    if (season != "Collection") rows.add(AvatarGalleryRow.Heading("    $season"))
-                    pictures.chunked(7).forEach { rows.add(AvatarGalleryRow.Icons(it)) }
-                }
-            }
-
-            class Cell(val holder: LinearLayout, val image: ImageView, val name: TextView)
+            class Cell(val holder: LinearLayout, val image: ImageView, val name: TextView,
+                       var boundUrl: String? = null)
             class IconRow(val cells: List<Cell>)
 
             fun newRow(): LinearLayout {
@@ -349,7 +354,7 @@ class ProfilesActivity : Screen() {
                         gravity = Gravity.CENTER_HORIZONTAL
                         clipChildren = true
                     }
-                    val image = ImageView(this@ProfilesActivity).apply {
+                    val image = AvatarPortraitImage(this@ProfilesActivity).apply {
                         scaleType = ImageView.ScaleType.CENTER_CROP
                         background = GradientDrawable().apply {
                             shape = GradientDrawable.OVAL
@@ -407,33 +412,69 @@ class ProfilesActivity : Screen() {
                                 val cell = cells[index]
                                 val icon = row.pictures.getOrNull(index)
                                 if (icon == null) {
-                                    cell.holder.visibility = View.INVISIBLE
-                                    cell.holder.isFocusable = false
-                                    cell.holder.setOnClickListener(null)
-                                    cell.name.text = ""
-                                    cell.image.tag = null
-                                    cell.image.setImageDrawable(null)
+                                    if (cell.boundUrl != null) {
+                                        cell.holder.visibility = View.INVISIBLE
+                                        cell.holder.isFocusable = false
+                                        cell.holder.setOnClickListener(null)
+                                        cell.name.text = ""
+                                        cell.boundUrl = null
+                                        AvatarImages.cancel(cell.image)
+                                        cell.image.setImageDrawable(null)
+                                    }
                                     continue
                                 }
-                                cell.holder.visibility = View.VISIBLE
-                                cell.holder.isFocusable = true
-                                cell.name.text = icon.name
-                                cell.holder.contentDescription = "${icon.name}, ${icon.group}"
-                                cell.holder.setOnClickListener {
-                                    Profiles.update(this@ProfilesActivity, profile.id, avatarUrl = icon.url)
-                                    showPicker()
+                                // Labels and listeners only change when a recycled cell
+                                // represents a different icon. A detached row still
+                                // rebinds its image so canceled requests can restart.
+                                if (cell.boundUrl != icon.url) {
+                                    cell.holder.visibility = View.VISIBLE
+                                    cell.holder.isFocusable = true
+                                    cell.name.text = icon.name
+                                    cell.holder.contentDescription = "${icon.name}, ${icon.group}"
+                                    cell.holder.setOnClickListener {
+                                        Profiles.update(this@ProfilesActivity, profile.id, avatarUrl = icon.url)
+                                        showPicker()
+                                    }
+                                    cell.boundUrl = icon.url
                                 }
-                                // Images.load tags each ImageView and rejects stale requests
-                                // if a recycled row has been rebound to a different icon.
-                                if (cell.image.tag != icon.url) {
-                                    Images.load(icon.url, cell.image, dp(88))
-                                }
+                                AvatarImages.bind(applicationContext, icon.url, cell.image, dp(100))
                             }
                             grid
                         }
                     }
                 }
             }
+
+            // Only prefetch one row immediately beyond the viewport, in the
+            // direction of travel. Never queue the entire 986-image catalogue.
+            var previousFirst = 0
+            var movingDown = true
+            var prefetchedRow = -1
+            gallery.setOnScrollListener(object : android.widget.AbsListView.OnScrollListener {
+                override fun onScrollStateChanged(
+                    view: android.widget.AbsListView?, scrollState: Int
+                ) = Unit
+
+                override fun onScroll(
+                    view: android.widget.AbsListView?,
+                    firstVisibleItem: Int,
+                    visibleItemCount: Int,
+                    totalItemCount: Int
+                ) {
+                    if (visibleItemCount == 0) return
+                    if (firstVisibleItem != previousFirst) movingDown = firstVisibleItem > previousFirst
+                    previousFirst = firstVisibleItem
+                    val visibleEnd = firstVisibleItem + visibleItemCount
+                    val candidates = if (movingDown) visibleEnd until rows.size
+                        else (firstVisibleItem - 1 downTo 0)
+                    val next = candidates.firstOrNull { rows[it] is AvatarGalleryRow.Icons } ?: -1
+                    if (next == prefetchedRow) return
+                    prefetchedRow = next
+                    val urls = (rows.getOrNull(next) as? AvatarGalleryRow.Icons)
+                        ?.pictures?.map { it.url }.orEmpty()
+                    AvatarImages.prefetchRow(applicationContext, urls, dp(100))
+                }
+            })
 
             val firstIcons = rows.indexOfFirst { it is AvatarGalleryRow.Icons }
             if (firstIcons >= 0) {
