@@ -552,4 +552,29 @@
     <string name="catalog_incomplete">Einige Kataloge konnten nicht geladen werden</string>
     <string name="progress_saved_on_tv">Der Fortschritt wurde auf diesem Fernseher gespeichert. Alder versucht erneut, ihn zu synchronisieren.</string>
     <string name="library_load_failed">Deine Stremio-Bibliothek konnte nicht geladen werden</string>
+
+    <!-- Profile and avatar features (v1.1.0) -->
+    <string name="profiles_avatar">Profilbild ändern</string>
+    <string name="profiles_avatar_choose">Vorinstallierte Avatare durchsuchen</string>
+    <string name="profiles_avatar_upload">Vom Smartphone hochladen</string>
+    <string name="profiles_avatar_upload_scan">Scanne diesen Code mit deinem Smartphone, um ein Bild auszuwählen und hochzuladen.</string>
+    <string name="profiles_avatar_upload_wifi">Smartphone und Fire Stick müssen mit demselben WLAN verbunden sein.</string>
+    <string name="profiles_avatar_upload_waiting">Warte auf dein Foto…</string>
+    <string name="profiles_avatar_upload_unavailable">Upload-Server konnte nicht gestartet werden. Verbinde den Fire Stick mit deinem Heimnetzwerk und versuche es erneut.</string>
+    <string name="profiles_avatar_title">Bild für %1$s auswählen</string>
+    <string name="profiles_avatar_initials">Stattdessen Initialen verwenden</string>
+    <string name="profiles_avatar_load_failed">Avatar-Katalog konnte nicht geladen werden.</string>
+    <string name="profiles_avatar_filter">Sammlung: %1$s</string>
+    <string name="profiles_avatar_all">Alle Sammlungen</string>
+    <string name="profiles_avatar_filter_title">Sammlung durchsuchen</string>
+    <string name="profiles_account_mode_title">Wie soll dieses Profil streamen?</string>
+    <string name="profiles_share_account">Bestehendes Stremio-Konto verwenden (lokales Profil)</string>
+    <string name="profiles_separate_account">Mit einem anderen Stremio-Konto anmelden</string>
+    <string name="profiles_share_account_desc">Streaming-Add-ons werden geteilt, aber dieses Profil behält seinen eigenen Verlauf und Meine Liste auf diesem Fernseher.</string>
+    <string name="profiles_select_account">Streaming-Zugriff teilen von</string>
+    <string name="profiles_missing_owner">Geteiltes Konto nicht verfügbar</string>
+    <string name="profiles_missing_owner_desc">Das Stremio-Konto für dieses Profil fehlt. Stelle das Konto wieder her, um dieses Profil zu verwenden.</string>
+    <string name="profiles_remove_owner_blocked">Konto wird noch verwendet</string>
+    <string name="profiles_remove_owner_blocked_desc">Entferne zuerst die lokalen Profile, die dieses Stremio-Konto verwenden, bevor du den Kontoinhaber löschst.</string>
+    <string name="profiles_remove_local_desc">%1$s entfernen und den Wiedergabeverlauf und Meine Liste dauerhaft von diesem Fernseher löschen?</string>
 </resources>

@@ -559,4 +559,29 @@
     <string name="catalog_incomplete">Impossibile caricare alcuni cataloghi</string>
     <string name="progress_saved_on_tv">I progressi sono salvati su questo TV. Alder proverà a sincronizzarli di nuovo.</string>
     <string name="library_load_failed">Impossibile caricare la tua libreria Stremio</string>
+
+    <!-- Profile and avatar features (v1.1.0) -->
+    <string name="profiles_avatar">Cambia immagine del profilo</string>
+    <string name="profiles_avatar_choose">Sfoglia gli avatar predefiniti</string>
+    <string name="profiles_avatar_upload">Carica dal tuo telefono</string>
+    <string name="profiles_avatar_upload_scan">Scansiona questo codice con il telefono per scegliere e caricare una foto.</string>
+    <string name="profiles_avatar_upload_wifi">Il telefono e la Fire Stick devono essere connessi alla stessa rete Wi-Fi.</string>
+    <string name="profiles_avatar_upload_waiting">In attesa della tua foto…</string>
+    <string name="profiles_avatar_upload_unavailable">Impossibile avviare il server di caricamento. Collega la Fire Stick alla rete domestica e riprova.</string>
+    <string name="profiles_avatar_title">Scegli un\'immagine per %1$s</string>
+    <string name="profiles_avatar_initials">Usa le iniziali</string>
+    <string name="profiles_avatar_load_failed">Impossibile caricare il catalogo degli avatar.</string>
+    <string name="profiles_avatar_filter">Raccolta: %1$s</string>
+    <string name="profiles_avatar_all">Tutte le raccolte</string>
+    <string name="profiles_avatar_filter_title">Sfoglia raccolta</string>
+    <string name="profiles_account_mode_title">Come deve accedere ai contenuti questo profilo?</string>
+    <string name="profiles_share_account">Usa un account Stremio esistente (profilo locale)</string>
+    <string name="profiles_separate_account">Accedi con un altro account Stremio</string>
+    <string name="profiles_share_account_desc">I componenti aggiuntivi sono condivisi, ma questo profilo conserva cronologia e La mia lista su questa TV.</string>
+    <string name="profiles_select_account">Condividi l\'accesso ai contenuti da</string>
+    <string name="profiles_missing_owner">Account condiviso non disponibile</string>
+    <string name="profiles_missing_owner_desc">L\'account Stremio associato a questo profilo non è disponibile. Ripristinalo per usare il profilo.</string>
+    <string name="profiles_remove_owner_blocked">Account ancora in uso</string>
+    <string name="profiles_remove_owner_blocked_desc">Rimuovi i profili locali che condividono questo account Stremio prima di eliminare il proprietario.</string>
+    <string name="profiles_remove_local_desc">Rimuovere %1$s ed eliminare definitivamente cronologia e La mia lista da questa TV?</string>
 </resources>
