@@ -101,12 +101,12 @@ internal class AvatarUpload(
             else -> "Unprocessable Entity"
         }
         socket.getOutputStream().apply {
-            write(("HTTP/1.1 $code $reason\\r\\nContent-Type: $type\\r\\n" +
-                "Content-Length: ${data.size}\\r\\nCache-Control: no-store\\r\\n" +
-                "X-Content-Type-Options: nosniff\\r\\nReferrer-Policy: no-referrer\\r\\n" +
+            write(("HTTP/1.1 $code $reason\r\nContent-Type: $type\r\n" +
+                "Content-Length: ${data.size}\r\nCache-Control: no-store\r\n" +
+                "X-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\n" +
                 "Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; " +
-                "style-src 'unsafe-inline'; img-src blob: data:; connect-src 'self'\\r\\n" +
-                "Connection: close\\r\\n\\r\\n").toByteArray(Charsets.UTF_8))
+                "style-src 'unsafe-inline'; img-src blob: data:; connect-src 'self'\r\n" +
+                "Connection: close\r\n\r\n").toByteArray(Charsets.UTF_8))
             write(data)
             flush()
         }
@@ -118,7 +118,7 @@ internal class AvatarUpload(
             val b = input.read()
             if (b < 0) return null
             header.append(b.toChar())
-            if (header.endsWith("\\r\\n\\r\\n")) return header.toString()
+            if (header.endsWith("\r\n\r\n")) return header.toString()
         }
         return null
     }
