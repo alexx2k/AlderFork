@@ -25,7 +25,7 @@ Check-Exit "Switch to development branch"
 & git pull --ff-only origin $branch
 Check-Exit "Pull development branch"
 
-& .\gradlew.bat --no-configuration-cache clean testDebugUnitTest assembleDebug
+& .\gradlew.bat -PdebugKey --no-configuration-cache clean testDebugUnitTest assembleDebug
 Check-Exit "Build and unit tests"
 
 $apk = Join-Path $root "app\build\outputs\apk\debug\app-debug.apk"
