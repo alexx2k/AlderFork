@@ -65,6 +65,10 @@ class StillWatchingSessionTest {
         assertFalse(StillWatchingSession("one").suppressed)
     }
 
+    @Test fun processTokenIsFreshAndNeverEmpty() {
+        assertTrue(StillWatchingProcess.token.isNotBlank())
+    }
+
     @Test fun sessionIsAlwaysIsolatedByProfileId() {
         val old = autoStart(autoStart(autoStart(StillWatchingSession("one"))))
         assertEquals(0, StillWatchingSession.restore("two", old.profileId, old.autoStarts, old.suppressed, false).autoStarts)

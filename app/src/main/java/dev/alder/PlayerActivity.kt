@@ -453,7 +453,9 @@ class PlayerActivity : Screen() {
         stillPanel = FrameLayout(this).apply { visibility = View.GONE }
         stillSession = StillWatchingSession.restore(
             libraryProfile.id,
-            intent.getStringExtra(STILL_SESSION_PROFILE_ID),
+            intent.getStringExtra(STILL_SESSION_PROFILE_ID).takeIf {
+                intent.getStringExtra(STILL_SESSION_PROCESS_ID) == StillWatchingProcess.token
+            },
             intent.getIntExtra(STILL_SESSION_AUTO_COUNT, 0),
             intent.getBooleanExtra(STILL_SESSION_SUPPRESSED, false),
             intent.getBooleanExtra(STILL_SESSION_PENDING_FRAME, false)
@@ -1385,6 +1387,7 @@ class PlayerActivity : Screen() {
     /** Copy transient policy to an Intent; never store it in account or library preferences. */
     private fun carryStillSession(destination: Intent, state: StillWatchingSession): Intent = destination.apply {
         putExtra(STILL_SESSION_PROFILE_ID, state.profileId)
+        putExtra(STILL_SESSION_PROCESS_ID, StillWatchingProcess.token)
         putExtra(STILL_SESSION_AUTO_COUNT, state.autoStarts)
         putExtra(STILL_SESSION_SUPPRESSED, state.suppressed)
         putExtra(STILL_SESSION_PENDING_FRAME, state.pendingAutoFrame)
@@ -2449,6 +2452,8 @@ class PlayerActivity : Screen() {
      * there comes back in [onActivityResult] and plays from the same second.
      */
     private fun changeStream() {
+        stillSession.onIntentionalInput() // explicit source selection, not an automatic retry
+        rememberStillSession()
         playAfterSources = player.playWhenReady
         player.pause()
         startActivityForResult(Intent(this, StreamsActivity::class.java).putExtras(intent).apply {

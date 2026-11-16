@@ -8,6 +8,12 @@ package dev.alder
  * their Intents, including via StreamsActivity if the prepared sources were unavailable.
  */
 internal const val STILL_SESSION_PROFILE_ID = "stillWatchingProfileId"
+internal const val STILL_SESSION_PROCESS_ID = "stillWatchingProcessId"
+
+/** A cold launch or Android process death always starts a new viewing session. */
+internal object StillWatchingProcess {
+    val token: String = java.util.UUID.randomUUID().toString()
+}
 internal const val STILL_SESSION_AUTO_COUNT = "stillWatchingAutoStarts"
 internal const val STILL_SESSION_SUPPRESSED = "stillWatchingSuppressed"
 internal const val STILL_SESSION_PENDING_FRAME = "stillWatchingPendingAutoFrame"
