@@ -142,10 +142,13 @@
     <string name="player_try_another">Versuche eine andere Quelle</string>
     <string name="player_next_episode">Nächste Folge</string>
     <string name="player_up_next">Als Nächstes</string>
-    <string name="player_play_episode">S%1$d F%2$d abspielen</string>
     <string name="player_exit_home">Zur Startseite</string>
     <string name="player_still_watching">Schaust du noch?</string>
-    <string name="player_quiet_episodes">%1$d Folgen liefen, ohne dass eine Taste gedrückt wurde.</string>
+    <string name="player_still_prompt_description">Die nächste Folge ist bereit, sobald du es bist.</string>
+    <string name="player_still_episode">S%1$d F%2$d</string>
+    <string name="player_still_keep_watching">Weiterschauen</string>
+    <string name="player_still_dont_ask">Nicht erneut fragen</string>
+    <string name="player_still_stop">Wiedergabe beenden</string>
     <string name="player_sleep_paused">Der Sleep-Timer hat die Wiedergabe angehalten.</string>
     <string name="skip_intro">Intro überspringen</string>
     <string name="skip_recap">Rückblick überspringen</string>

@@ -146,10 +146,13 @@
     <string name="player_try_another">Prova un’altra fonte</string>
     <string name="player_next_episode">Episodio successivo</string>
     <string name="player_up_next">Prossimo</string>
-    <string name="player_play_episode">Riproduci S%1$d E%2$d</string>
     <string name="player_exit_home">Torna alla Home</string>
     <string name="player_still_watching">Stai ancora guardando?</string>
-    <string name="player_quiet_episodes">Sono stati riprodotti %1$d episodi senza premere il telecomando.</string>
+    <string name="player_still_prompt_description">Il prossimo episodio è pronto quando vuoi.</string>
+    <string name="player_still_episode">S%1$d E%2$d</string>
+    <string name="player_still_keep_watching">Continua a guardare</string>
+    <string name="player_still_dont_ask">Non chiedere più</string>
+    <string name="player_still_stop">Interrompi la visione</string>
     <string name="player_sleep_paused">Il timer di spegnimento ha messo in pausa.</string>
     <string name="skip_intro">Salta intro</string>
     <string name="skip_recap">Salta riassunto</string>

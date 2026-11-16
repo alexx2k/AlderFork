@@ -147,7 +147,6 @@
     <string name="player_up_next">Up next</string>
     <string name="player_auto_next_in">Playing automatically in %1$d s</string>
     <string name="player_watch_credits">Watch Credits</string>
-    <string name="player_play_episode">Play S%1$d E%2$d</string>
     <string name="player_exit_home">Exit to Home</string>
     <string name="player_still_watching">Are You Still Watching?</string>
     <string name="player_still_prompt_description">Your next episode is ready whenever you are.</string>
@@ -155,7 +154,6 @@
     <string name="player_still_keep_watching">Keep Watching</string>
     <string name="player_still_dont_ask">Don\'t Ask Again</string>
     <string name="player_still_stop">Stop Watching</string>
-    <string name="player_quiet_episodes">%1$d episodes played with no remote press.</string>
     <string name="player_sleep_paused">The sleep timer paused playback.</string>
     <string name="skip_intro">Skip intro</string>
     <string name="skip_recap">Skip recap</string>

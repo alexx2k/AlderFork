@@ -142,10 +142,13 @@
     <string name="player_try_another">कोई दूसरा स्रोत आज़माएँ</string>
     <string name="player_next_episode">अगला एपिसोड</string>
     <string name="player_up_next">आगे है</string>
-    <string name="player_play_episode">S%1$d E%2$d चलाएँ</string>
     <string name="player_exit_home">होम पर जाएँ</string>
     <string name="player_still_watching">अभी भी देख रहे हैं?</string>
-    <string name="player_quiet_episodes">रिमोट दबाए बिना %1$d एपिसोड चले।</string>
+    <string name="player_still_prompt_description">अगला एपिसोड तैयार है, जब आप चाहें।</string>
+    <string name="player_still_episode">S%1$d E%2$d</string>
+    <string name="player_still_keep_watching">देखना जारी रखें</string>
+    <string name="player_still_dont_ask">दोबारा न पूछें</string>
+    <string name="player_still_stop">देखना बंद करें</string>
     <string name="player_sleep_paused">स्लीप टाइमर ने प्लेबैक रोक दिया।</string>
     <string name="skip_intro">इंट्रो छोड़ें</string>
     <string name="skip_recap">रीकैप छोड़ें</string>
