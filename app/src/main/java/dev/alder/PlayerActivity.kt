@@ -63,12 +63,7 @@ internal fun lowerSourceHeight(height: Int): Int? = listOf(1080, 720, 480).first
 internal fun upNextWindow(durationMs: Long) = minOf(25_000L, maxOf(15_000L, durationMs / 60))
 internal fun plausibleEpisode(durationMs: Long) = durationMs >= 2 * 60_000L
 
-// Fall-asleep protection: episodes that end in a row with no remote key pressed are counted, and the next one waits
-// behind "Still watching?" instead of streaming all night (debrid traffic, and Stremio's watched ticks).
-internal const val QUIET_EPISODES = 3
 internal const val SLEEP_TIMER = 60 * 60_000L
-/** [endedQuietly] episodes in a row, this one included, ended with no key pressed: ask before the next one. */
-internal fun askStillWatching(endedQuietly: Int) = endedQuietly >= QUIET_EPISODES
 /** The Sleep row's value in Audio & subtitles: "Off", "After this episode" or "In 42 min". The screen passes its words. */
 internal fun sleepLabel(stopAfter: Boolean, sleepAt: Long, now: Long,
                         afterEpisode: String = "After this episode", inMinutes: String = "In %1\$d min", off: String = "Off") = when {
@@ -332,6 +327,7 @@ class PlayerActivity : Screen() {
     private var nextPrefetch: Cancellable? = null
     private var nextPrefetchFor: String? = null
     private var preparedNextSources: List<Stream>? = null
+    private var preparedNextAtElapsed = 0L
     private var nextTransitionStarted = false
     private var transitionProgressSaved = false
     private val upNextCountdownTask = object : Runnable {
@@ -341,18 +337,21 @@ class PlayerActivity : Screen() {
             if (countdown.tick(player.isPlaying)) {
                 val next = nextVideo()
                 if (next == null) return dismissUpNext()
-                if (askStillWatching(quiet + 1)) showStillWatching(next)
-                else playNext(EpisodeAdvanceOrigin.AUTOPLAY)
+                when (stillSession.autoplayDecision(hasNext = true, viewerStopped = stopAfter)) {
+                    AutoplayDecision.ASK -> showStillWatching(next)
+                    AutoplayDecision.PLAY_NEXT -> playNext(EpisodeAdvanceOrigin.AUTOPLAY)
+                    AutoplayDecision.STOP -> dismissUpNext()
+                }
                 return
             }
             countdownLabel?.text = getString(R.string.player_auto_next_in, countdown.remainingSeconds)
             main.postDelayed(this, 1_000L)
         }
     }
-    // "Still watching?": episodes before this one that ended with no key pressed (carried in the intent from one
-    // episode to the next, and to another source), and the sleep choices: stop when this one ends, or pause at sleepAt.
+    // Ephemeral viewing-session policy travels with episode/player Intents, not saved watch history.
     private lateinit var stillPanel: FrameLayout
-    private var quiet = 0
+    private lateinit var stillSession: StillWatchingSession
+    private var stillWatchingNext: Video? = null
     private lateinit var libraryProfile: Profile
     private var stopAfter = false
     private var sleepAt = 0L
@@ -452,7 +451,13 @@ class PlayerActivity : Screen() {
         pausedShade = View(this).apply { setBackgroundColor(0x4D000000); visibility = View.GONE }
         upNextPanel = FrameLayout(this).apply { visibility = View.GONE }
         stillPanel = FrameLayout(this).apply { visibility = View.GONE }
-        quiet = intent.getIntExtra("quiet", 0)
+        stillSession = StillWatchingSession.restore(
+            libraryProfile.id,
+            intent.getStringExtra(STILL_SESSION_PROFILE_ID),
+            intent.getIntExtra(STILL_SESSION_AUTO_COUNT, 0),
+            intent.getBooleanExtra(STILL_SESSION_SUPPRESSED, false),
+            intent.getBooleanExtra(STILL_SESSION_PENDING_FRAME, false)
+        )
         sleepAt = intent.getLongExtra("sleepAt", 0L)
         stopAfter = intent.getBooleanExtra("stopAfter", false) // another source of this video; the next episode gets a fresh intent
         controls = buildControls()
@@ -548,6 +553,8 @@ class PlayerActivity : Screen() {
                 lastSourceFailure = null
                 if (started) return
                 started = true
+                stillSession.onFirstRenderedFrame()
+                rememberStillSession()
                 applyLateResume()
                 watched = true
                 retries = 0
@@ -568,7 +575,7 @@ class PlayerActivity : Screen() {
             override fun onPlaybackStateChanged(state: Int) {
                 // At the real end the next episode starts, unless the viewer chose to watch the credits or to stop after
                 // this one, or this is the third episode in a row with no key pressed: then "Still watching?" waits.
-                if (state == Player.STATE_ENDED && !nextTransitionStarted) {
+                if (state == Player.STATE_ENDED && !nextTransitionStarted && stillPanel.visibility != View.VISIBLE) {
                     if (isTrailer) {
                         finish()
                         return
@@ -579,7 +586,7 @@ class PlayerActivity : Screen() {
                         started = false // retry from the original resume point, not the placeholder's short ending
                         next(Failure.MISSING)
                     } else if (upcoming == null || upNextDismissed || stopAfter) finish()
-                    else if (askStillWatching(quiet + 1)) showStillWatching(upcoming)
+                    else if (stillSession.shouldConfirmBeforeNext()) showStillWatching(upcoming)
                     else playNext(EpisodeAdvanceOrigin.AUTOPLAY)
                 }
                 if (state == Player.STATE_BUFFERING) showLoading(if (started) getString(R.string.player_loading) else startMessage
@@ -1130,6 +1137,7 @@ class PlayerActivity : Screen() {
 
     override fun onStart() {
         super.onStart()
+        if (Profiles.active(this)?.id != libraryProfile.id) return finish()
         stopped = false
         if (prepared) {
             lastPosition = player.currentPosition
@@ -1146,6 +1154,9 @@ class PlayerActivity : Screen() {
                     nextVideo()?.let(::prepareNextEpisode)
                     main.removeCallbacks(upNextCountdownTask)
                     main.postDelayed(upNextCountdownTask, 1_000L)
+                }
+                if (stillPanel.visibility == View.VISIBLE && stillWatchingNext != null) {
+                    stillWatchingNext?.let(::prepareNextEpisode)
                 }
             }
             if (loading.visibility == View.VISIBLE && player.playbackState == Player.STATE_BUFFERING)
@@ -1320,7 +1331,9 @@ class PlayerActivity : Screen() {
      * The resolver uses the same profile, provider preference and ranked fallback sources as Play.
      */
     private fun prepareNextEpisode(next: Video) {
-        if (nextPrefetchFor == next.id) return
+        if (nextPrefetchFor == next.id &&
+            (nextPrefetch != null || preparedNextSources != null &&
+                preparedSourcesFresh(preparedNextAtElapsed, android.os.SystemClock.elapsedRealtime()))) return
         cancelNextPreparation()
         nextPrefetchFor = next.id
         nextPrefetch = StreamsResolver.resolve(
@@ -1331,9 +1344,11 @@ class PlayerActivity : Screen() {
             authKey = libraryProfile.authKey,
             profileId = libraryProfile.id,
             onReady = { ready ->
-                if (!isFinishing && !isDestroyed && !nextTransitionStarted && nextPrefetchFor == next.id) {
+                if (!isFinishing && !isDestroyed && !nextTransitionStarted && nextPrefetchFor == next.id &&
+                    Profiles.active(this)?.id == libraryProfile.id) {
                     nextPrefetch = null
                     preparedNextSources = ready
+                    preparedNextAtElapsed = android.os.SystemClock.elapsedRealtime()
                 }
             },
             onFallback = {
@@ -1343,11 +1358,14 @@ class PlayerActivity : Screen() {
         )
     }
 
-    private fun cancelNextPreparation() {
+    private fun cancelNextPreparation(clearReady: Boolean = true) {
         nextPrefetch?.cancel()
         nextPrefetch = null
-        nextPrefetchFor = null
-        preparedNextSources = null
+        if (clearReady || preparedNextSources == null) {
+            nextPrefetchFor = null
+            preparedNextSources = null
+            preparedNextAtElapsed = 0L
+        }
     }
 
     private fun stopNextCountdown() {
@@ -1364,39 +1382,22 @@ class PlayerActivity : Screen() {
         cancelNextPreparation()
     }
 
-    /**
-     * Move straight into PlayerActivity when candidates have been resolved, skipping StreamsActivity's
-     * redundant source lookup. Expired/unavailable sources still use the player's existing retry logic.
-     * Origin is explicit for a later per-session inactivity policy.
-     */
-    private fun playNext(origin: EpisodeAdvanceOrigin = EpisodeAdvanceOrigin.MANUAL) {
-        if (nextTransitionStarted) return
-        val next = nextVideo() ?: return finish()
-        if (Profiles.active(this)?.id != libraryProfile.id) return finish() // never autoplay into a different profile
-        nextTransitionStarted = true
-        main.removeCallbacks(upNextCountdownTask)
-        upNextPanel.visibility = View.GONE
-        val videos = meta!!.videos
-        val after = videos.getOrNull(videos.indexOf(next) + 1)?.takeIf { it.season != 0 }
-        val name = intent.getStringExtra("name") ?: ""
-        val ready = preparedNextSources?.takeIf {
-            !Settings.alwaysList(this) && nextPrefetchFor == next.id && it.isNotEmpty()
-        }
-        val destination = if (ready != null) PlayerActivity::class.java else StreamsActivity::class.java
-        val upcoming = Intent(this, destination)
-            .putExtra("playbackProfileId", libraryProfile.id)
-            .putExtra("type", type).putExtra("id", metaId).putExtra("name", name)
-            .putExtra("poster", intent.getStringExtra("poster")).putExtra("background", intent.getStringExtra("background"))
-            .putExtra("videoId", next.id).putExtra("nextVideoId", after?.id)
-            .putExtra("label", "$name  ·  S${next.season} E${next.episode}")
-            .putExtra("logo", meta?.logo).putExtra("still", next.thumbnail).putExtra("runtime", meta?.runtime)
-            .putExtra("episode", "S${next.season} E${next.episode}  ·  ${next.title}")
-            .putExtra("quiet", if (origin == EpisodeAdvanceOrigin.AUTOPLAY) quiet + 1 else 0)
-            .putExtra("sleepAt", sleepAt)
-        if (ready != null) upcoming.putExtra("sources", JSONArray(ready.map { it.toJson() }).toString())
-        // Commit history before starting the next Activity, otherwise its concurrent library
-        // load can race the outgoing Activity's onStop(). Seeking from the controls to the
-        // next episode mid-story must NOT mark the skipped episode watched.
+    /** Copy transient policy to an Intent; never store it in account or library preferences. */
+    private fun carryStillSession(destination: Intent, state: StillWatchingSession): Intent = destination.apply {
+        putExtra(STILL_SESSION_PROFILE_ID, state.profileId)
+        putExtra(STILL_SESSION_AUTO_COUNT, state.autoStarts)
+        putExtra(STILL_SESSION_SUPPRESSED, state.suppressed)
+        putExtra(STILL_SESSION_PENDING_FRAME, state.pendingAutoFrame)
+        removeExtra("quiet") // obsolete pre-v1.2.0 quietly-ended counting
+    }
+
+    private fun rememberStillSession() {
+        carryStillSession(intent, stillSession)
+    }
+
+    /** Record a completed episode before either starting the next one or explicitly stopping at credits. */
+    private fun completeForTransition(next: Video) {
+        val videos = meta?.videos ?: return
         val creditsAt = EpisodeAutoplayTiming.triggerAt(player.duration, introDbOutroAt, mkvChapters,
             Settings.creditsFallbackSeconds(this))
         val endedOrInCredits = player.playbackState == Player.STATE_ENDED ||
@@ -1411,49 +1412,92 @@ class PlayerActivity : Screen() {
                 transitionProgressSaved = true
             }
         }
+    }
+
+    /**
+     * Single launch gate shared by the end-of-stream and five-second countdown paths.
+     * Prepared stream candidates are handed directly to the next PlayerActivity while fresh.
+     */
+    private fun playNext(origin: EpisodeAdvanceOrigin = EpisodeAdvanceOrigin.MANUAL) {
+        if (nextTransitionStarted || stopped) return
+        val next = nextVideo() ?: return finish()
+        if (Profiles.active(this)?.id != libraryProfile.id) return finish()
+        if (origin == EpisodeAdvanceOrigin.AUTOPLAY && stillSession.shouldConfirmBeforeNext()) {
+            showStillWatching(next)
+            return
+        }
+        nextTransitionStarted = true
+        stopNextCountdown()
+        upNextPanel.visibility = View.GONE
+        val videos = meta?.videos ?: return finish()
+        val after = videos.getOrNull(videos.indexOf(next) + 1)?.takeIf { it.season != 0 }
+        val name = intent.getStringExtra("name") ?: ""
+        val ready = preparedNextSources?.takeIf {
+            !Settings.alwaysList(this) && nextPrefetchFor == next.id && it.isNotEmpty() &&
+                preparedSourcesFresh(preparedNextAtElapsed, android.os.SystemClock.elapsedRealtime())
+        }
+        val destination = if (ready != null) PlayerActivity::class.java else StreamsActivity::class.java
+        val upcoming = Intent(this, destination)
+            .putExtra("playbackProfileId", libraryProfile.id)
+            .putExtra("type", type).putExtra("id", metaId).putExtra("name", name)
+            .putExtra("poster", intent.getStringExtra("poster")).putExtra("background", intent.getStringExtra("background"))
+            .putExtra("videoId", next.id).putExtra("nextVideoId", after?.id)
+            .putExtra("label", name + "  ·  S" + next.season + " E" + next.episode)
+            .putExtra("logo", meta?.logo).putExtra("still", next.thumbnail).putExtra("runtime", meta?.runtime)
+            .putExtra("episode", "S" + next.season + " E" + next.episode + "  ·  " + next.title)
+            .putExtra("sleepAt", sleepAt)
+        carryStillSession(upcoming, stillSession.forAdvance(origin))
+        if (ready != null) upcoming.putExtra("sources", JSONArray(ready.map { it.toJson() }).toString())
+        completeForTransition(next)
+        cancelNextPreparation()
         startActivity(upcoming)
         finish()
     }
 
-    /**
-     * "Still watching?", in the Up next place: before the next episode once [QUIET_EPISODES] ended with no key pressed
-     * ([next]), or when the sleep timer runs out (null: Resume). Playback stops, and the screen may sleep.
-     */
+    /** The three-option inactivity confirmation is independent of the existing sleep-timer pause. */
     private fun showStillWatching(next: Video?) {
+        if (stopped || nextTransitionStarted || stillPanel.visibility == View.VISIBLE) return
         if (offeringLower) dismissStall()
         if (shown) hideControls(force = true)
         options.visibility = View.GONE
         upNextPanel.visibility = View.GONE
         stopNextCountdown()
-        cancelNextPreparation()
         hideLoading()
+        skip.visibility = View.GONE
+        stillWatchingNext = next
         stillPanel.removeAllViews()
         stillPanel.visibility = View.VISIBLE
         player.pause()
         pausedShade.visibility = View.VISIBLE
-        view.keepScreenOn = false // nobody may be watching: let the TV's own screen saver and sleep take over
-        val play = pill(if (next != null) getString(R.string.player_play_episode, next.season, next.episode)
-            else getString(R.string.action_resume), R.drawable.ic_play).apply {
-            setOnClickListener { if (next != null) playNext() else leaveStillWatching() }
+        view.keepScreenOn = false
+
+        if (next != null) {
+            // Keep the already resolved candidate list. If this is a direct end-of-file transition,
+            // start pre-resolution now; confirmation itself must never trigger a second player.
+            prepareNextEpisode(next)
+            showStillWatchingConfirmation(next)
+            return
+        }
+
+        // The legacy sleep timer still pauses the current movie/episode and offers Resume or Exit.
+        cancelNextPreparation()
+        stillPanel.setBackgroundColor(Color.TRANSPARENT)
+        val play = pill(R.string.action_resume, R.drawable.ic_play).apply {
+            setOnClickListener { leaveStillWatching() }
         }
         val actions = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
         actions.addView(play, wrap())
         actions.addView(chip(R.string.player_exit_home).apply {
-            setOnClickListener {
-                startActivity(Intent(this@PlayerActivity, MainActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
-                finish()
-            }
+            setOnClickListener { stopWatching() }
         }, wrap().apply { marginStart = dp(8) })
-        val title = next?.let { it.title.ifBlank { getString(R.string.episode_number, it.episode) } } ?: pauseTitle.text.toString()
-        val why = if (next != null) getString(R.string.player_quiet_episodes, QUIET_EPISODES) else getString(R.string.player_sleep_paused)
         val content = column(Gravity.START).apply {
             setPadding(dp(18), dp(14), dp(18), dp(14))
             background = videoGlass(14)
             addView(caps(R.string.player_still_watching, TUNGSTEN).onArt())
-            addView(text(title, SERIF_HERO, serif = true).onArt().apply { maxLines = 2; ellipsize = TextUtils.TruncateAt.END },
+            addView(text(pauseTitle.text.toString(), SERIF_HERO, serif = true).onArt(),
                 LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
-            addView(text(why, SMALL, color = TEXT_2).onArt(), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
+            addView(text(R.string.player_sleep_paused, SMALL, color = TEXT_2).onArt(),
+                LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
             addView(actions, wrap().apply { topMargin = dp(16) })
         }
         stillPanel.addView(content, FrameLayout.LayoutParams(dp(500), -2, Gravity.BOTTOM or Gravity.END).apply {
@@ -1462,11 +1506,101 @@ class PlayerActivity : Screen() {
         play.requestFocus()
     }
 
-    /** Back or Resume on "Still watching?": at the end the player closes; mid-episode it stays paused with the controls. */
+    private fun showStillWatchingConfirmation(next: Video) {
+        stillPanel.setBackgroundColor(0xE6000000.toInt())
+
+        // A high-contrast, static focus treatment is deliberate: no animations on low-powered TVs.
+        fun action(label: String, perform: () -> Unit): TextView = text(label, BODY, bold = true).apply {
+            id = View.generateViewId()
+            gravity = Gravity.CENTER
+            isFocusable = true
+            minHeight = dp(46)
+            setPadding(dp(16), dp(10), dp(16), dp(10))
+            fun updateFocus(focused: Boolean) {
+                setTextColor(if (focused) 0xFF161619.toInt() else Color.WHITE)
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(9).toFloat()
+                    setColor(if (focused) 0xFFF5F3F0.toInt() else 0xFF29292F.toInt())
+                    setStroke(dp(if (focused) 2 else 1), if (focused) TUNGSTEN else 0xFF52525C.toInt())
+                }
+            }
+            setOnFocusChangeListener { _, focused -> updateFocus(focused) }
+            updateFocus(false)
+            setOnClickListener { perform() }
+        }
+
+        fun confirmAndContinue(dontAskAgain: Boolean) {
+            if (nextTransitionStarted || Profiles.active(this)?.id != libraryProfile.id) return finish()
+            stillSession.confirm(dontAskAgain)
+            rememberStillSession()
+            stillWatchingNext = null
+            stillPanel.visibility = View.GONE
+            stillPanel.removeAllViews()
+            stillPanel.setBackgroundColor(Color.TRANSPARENT)
+            view.keepScreenOn = true
+            playNext(EpisodeAdvanceOrigin.AUTOPLAY)
+        }
+
+        val keep = action(getString(R.string.player_still_keep_watching)) { confirmAndContinue(false) }
+        val never = action(getString(R.string.player_still_dont_ask)) { confirmAndContinue(true) }
+        val stop = action(getString(R.string.player_still_stop)) { stopWatching() }
+        keep.nextFocusDownId = never.id
+        keep.nextFocusUpId = stop.id
+        never.nextFocusDownId = stop.id
+        never.nextFocusUpId = keep.id
+        stop.nextFocusDownId = keep.id
+        stop.nextFocusUpId = never.id
+        listOf(keep, never, stop).forEach {
+            it.nextFocusLeftId = it.id
+            it.nextFocusRightId = it.id
+        }
+        val title = next.title.ifBlank { getString(R.string.episode_number, next.episode) }
+        val content = column(Gravity.CENTER_HORIZONTAL).apply {
+            setPadding(dp(32), dp(28), dp(32), dp(28))
+            background = videoGlass(16)
+            addView(caps(R.string.player_up_next, TUNGSTEN).apply { gravity = Gravity.CENTER })
+            addView(text(R.string.player_still_watching, SERIF_HERO, serif = true).onArt().apply {
+                gravity = Gravity.CENTER
+            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+            addView(text(R.string.player_still_prompt_description, SMALL, color = TEXT_2).onArt().apply {
+                gravity = Gravity.CENTER
+            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+            addView(text(getString(R.string.player_still_episode, next.season, next.episode) + "  ·  " + title,
+                BODY, bold = true).onArt().apply {
+                gravity = Gravity.CENTER
+                maxLines = 2
+                ellipsize = TextUtils.TruncateAt.END
+            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(20) })
+            listOf(keep, never, stop).forEachIndexed { index, button ->
+                addView(button, LinearLayout.LayoutParams(-1, dp(46)).apply {
+                    topMargin = dp(if (index == 0) 18 else 9)
+                })
+            }
+        }
+        stillPanel.addView(content, FrameLayout.LayoutParams(dp(580), -2, Gravity.CENTER))
+        keep.requestFocus()
+    }
+
+    /** Back on the inactivity prompt is an explicit Stop, never an unobserved continue. */
+    private fun stopWatching() {
+        if (nextTransitionStarted) return
+        nextTransitionStarted = true
+        upNextDismissed = true
+        stopNextCountdown()
+        stillWatchingNext?.let(::completeForTransition)
+        cancelNextPreparation()
+        startActivity(Intent(this, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
+        finish()
+    }
+
+    /** Sleep-timer Resume keeps the episode paused or playing as requested. */
     private fun leaveStillWatching(resume: Boolean = true) {
         if (player.playbackState == Player.STATE_ENDED) return finish()
+        stillWatchingNext = null
         stillPanel.visibility = View.GONE
         stillPanel.removeAllViews()
+        stillPanel.setBackgroundColor(Color.TRANSPARENT)
         view.keepScreenOn = true
         if (resume) player.play()
         showControls(playPause)
@@ -1516,10 +1650,33 @@ class PlayerActivity : Screen() {
         }
     }
 
+    private fun intentionalPlayerKey(code: Int): Boolean = code in listOf(
+        KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_LEFT,
+        KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER,
+        KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_MENU, KeyEvent.KEYCODE_MEDIA_PLAY,
+        KeyEvent.KEYCODE_MEDIA_PAUSE, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+        KeyEvent.KEYCODE_MEDIA_FAST_FORWARD, KeyEvent.KEYCODE_MEDIA_REWIND,
+        KeyEvent.KEYCODE_MEDIA_NEXT, KeyEvent.KEYCODE_MEDIA_PREVIOUS
+    )
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        // Someone is awake: the count of episodes with no key pressed starts again (also for another source of this one).
-        if (event.action == KeyEvent.ACTION_DOWN && quiet != 0) { quiet = 0; intent.removeExtra("quiet") }
+        // Only deliberate first key-downs from the remote reset the streak. Player callbacks,
+        // source retries, automatic transitions and repeated held keys never do.
+        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 &&
+            stillPanel.visibility != View.VISIBLE && intentionalPlayerKey(event.keyCode)) {
+            stillSession.onIntentionalInput()
+            rememberStillSession()
+        }
         if (stillPanel.visibility == View.VISIBLE) {
+            if (stillWatchingNext != null) {
+                if (event.keyCode == KeyEvent.KEYCODE_BACK) {
+                    if (event.action == KeyEvent.ACTION_UP) stopWatching()
+                    return true
+                }
+                if (event.keyCode !in listOf(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN,
+                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER)) return true
+                return super.dispatchKeyEvent(event)
+            }
             if (event.keyCode == KeyEvent.KEYCODE_BACK) {
                 if (event.action == KeyEvent.ACTION_UP) leaveStillWatching(resume = false)
                 return true
@@ -3274,7 +3431,7 @@ class PlayerActivity : Screen() {
         main.removeCallbacks(skipTask)
         main.removeCallbacks(loadingTask)
         main.removeCallbacks(upNextCountdownTask)
-        cancelNextPreparation()
+        cancelNextPreparation(clearReady = false)
         // A paused source in the background shows no picture: timing it out would skip a good source.
         main.removeCallbacks(startTimeout)
         player.pause()
