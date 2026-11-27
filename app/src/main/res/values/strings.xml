@@ -2,7 +2,7 @@
 <resources>
     <string name="card_watched">Watched</string>
     <string name="card_progress">%1$d%% watched</string>
-    <string name="app_name" translatable="false">Alder Fork</string>
+    <string name="app_name" translatable="false">Tarn</string>
 
     <!-- Shared -->
     <string name="action_ok">OK</string>
@@ -15,9 +15,9 @@
     <string name="key_exit">Exit</string>
 
     <!-- Updates -->
-    <string name="updates_allow_title">Allow Alder to install updates</string>
-    <string name="updates_allow_steps">On Fire TV: Settings › My Fire TV › Developer options › Install unknown apps, then turn on Alder. On Google TV: Settings › Apps › Security &amp; restrictions › Unknown sources, then turn on Alder. Then select Install again.</string>
-    <string name="updates_downloading">Downloading Alder %1$s… Alder closes to update. Open it again after.</string>
+    <string name="updates_allow_title">Allow Tarn to install updates</string>
+    <string name="updates_allow_steps">On Fire TV: Settings › My Fire TV › Developer options › Install unknown apps, then turn on Tarn. On Google TV: Settings › Apps › Security &amp; restrictions › Unknown sources, then turn on Tarn. Then select Install again.</string>
+    <string name="updates_downloading">Downloading Tarn %1$s… Tarn closes to update. Open it again after.</string>
     <string name="updates_download_failed">Couldn\'t download the update</string>
     <string name="updates_download_failed_desc">Check the TV\'s connection and try again from Settings › About.</string>
 
@@ -49,10 +49,10 @@
     <string name="tab_movies">Movies</string>
     <string name="tab_live">Live</string>
     <string name="tab_anime">Anime</string>
-    <string name="tab_my_list">My Alder</string>
+    <string name="tab_my_list">My Tarn</string>
     <string name="nav_profile">Profile</string>
     <string name="nav_search">Search</string>
-    <string name="updates_ready">Alder %1$s is ready</string>
+    <string name="updates_ready">Tarn %1$s is ready</string>
     <string name="updates_ready_desc">Install it now? It takes a minute, and your profiles and settings stay.</string>
     <string name="action_later">Later</string>
     <string name="action_install">Install</string>
@@ -81,13 +81,13 @@
     <string name="list_sort_name">A–Z</string>
     <string name="list_sort_unwatched">Unwatched first</string>
     <string name="list_empty">Titles you save with + appear here</string>
-    <string name="list_empty_movies">No movies in My Alder</string>
-    <string name="list_empty_shows">No shows in My Alder</string>
-    <string name="list_empty_unwatched">No unwatched titles in My Alder</string>
+    <string name="list_empty_movies">No movies in My Tarn</string>
+    <string name="list_empty_shows">No shows in My Tarn</string>
+    <string name="list_empty_unwatched">No unwatched titles in My Tarn</string>
     <string name="list_clear_filters">Clear filters</string>
-    <string name="action_remove_from_list">Remove from My Alder</string>
+    <string name="action_remove_from_list">Remove from My Tarn</string>
     <string name="action_mark_watched">Mark as watched</string>
-    <string name="list_update_failed">Couldn\'t update My Alder</string>
+    <string name="list_update_failed">Couldn\'t update My Tarn</string>
     <string name="check_connection">Check the connection and try again.</string>
     <string name="action_choose_source">Choose a source</string>
     <string name="action_remove_from_continue">Remove from Continue Watching</string>
@@ -106,7 +106,7 @@
     <string name="action_more_info">More information</string>
     <string name="action_start_over">Start over</string>
     <string name="action_trailer">Trailer</string>
-    <string name="action_add_to_list">Add to My Alder</string>
+    <string name="action_add_to_list">Add to My Tarn</string>
     <string name="season_specials">Specials</string>
     <string name="season_number">Season %1$d</string>
     <string name="episode_number">Episode %1$d</string>
@@ -213,14 +213,14 @@
     <string name="group_language">Language</string>
     <string name="group_storage">Storage</string>
     <string name="group_about">About</string>
-    <string name="hint_streams">Choose how Alder finds and starts a source.</string>
+    <string name="hint_streams">Choose how Tarn finds and starts a source.</string>
     <string name="hint_picture">Choose the picture and sound this TV can play.</string>
     <string name="hint_subtitles">Set how subtitles start and appear.</string>
     <string name="hint_addons">Manage the add-ons connected to this profile.</string>
     <string name="hint_profile">Profile choices stay with the person watching.</string>
-    <string name="hint_language">Choose the language Alder shows.</string>
+    <string name="hint_language">Choose the language Tarn shows.</string>
     <string name="hint_storage">Storage on this TV only.</string>
-    <string name="hint_about">About Alder.</string>
+    <string name="hint_about">About Tarn.</string>
     <string name="play_press">When I press Play</string>
     <string name="play_press_hint">What Play and Resume do. Holding OK always shows every source.</string>
     <string name="play_best_source">Best source</string>
@@ -247,18 +247,18 @@
     <string name="frame_rate">Match frame rate</string>
     <string name="frame_rate_hint">The TV switches to the film\'s rate so pans don\'t judder.</string>
     <string name="audio_output">Audio output</string>
-    <string name="audio_output_hint">Auto sends supported formats to your audio device. PCM decodes the sound in Alder.</string>
+    <string name="audio_output_hint">Auto sends supported formats to your audio device. PCM decodes the sound in Tarn.</string>
     <string name="ui_size">Text and poster size</string>
     <string name="ui_size_hint">Makes text, posters and buttons bigger on every screen, for a TV far from your seat.</string>
     <string name="ui_size_normal">Normal</string>
     <string name="video_player">Video player</string>
-    <string name="video_player_hint">Choose the app that plays your videos. With another app, Alder still picks the source and saves where you stop.</string>
-    <string name="video_player_alder">Alder</string>
+    <string name="video_player_hint">Choose the app that plays your videos. With another app, Tarn still picks the source and saves where you stop.</string>
+    <string name="video_player_alder">Tarn</string>
     <string name="player_other_app">Plays in another app. Press Back there to return.</string>
-    <string name="player_no_other_app">No other video player is on this TV. Alder plays the video.</string>
+    <string name="player_no_other_app">No other video player is on this TV. Tarn plays the video.</string>
     <string name="clear_dialogue_setting_hint">Lifts voices above music and loud effects when using TV speakers.</string>
     <string name="dubbed">Dubbed releases</string>
-    <string name="dubbed_hint">Original first puts dubbed releases last. My language first uses Alder’s player to check the audio before automatic playback. You can still choose any source.</string>
+    <string name="dubbed_hint">Original first puts dubbed releases last. My language first uses Tarn’s player to check the audio before automatic playback. You can still choose any source.</string>
     <string name="dubbed_original">Original first</string>
     <string name="dubbed_mine">My language first</string>
     <string name="subs_default">Subtitles by default</string>
@@ -288,7 +288,7 @@
     <string name="audio_language">Audio language</string>
     <string name="audio_language_hint">The dub to start with when a file has several. Changeable while watching.</string>
     <string name="audio_fallback">Fallback audio language</string>
-    <string name="audio_fallback_hint">With My language first, Alder tries your chosen language, this fallback, then English. Select Off to use only your chosen language.</string>
+    <string name="audio_fallback_hint">With My language first, Tarn tries your chosen language, this fallback, then English. Select Off to use only your chosen language.</string>
     <string name="subtitle_language">Subtitle language</string>
     <string name="subtitle_language_hint">Which subtitles start with the video, and which come first in the list while watching.</string>
     <string name="my_addons">My add-ons</string>
@@ -326,7 +326,7 @@
     <string name="episode_badges_aired">Newly aired</string>
     <string name="episode_badges_season">Current season</string>
     <string name="mdblist_key">MDBList key</string>
-    <string name="mdblist_key_hint">Your free API key from mdblist.com/preferences. Alder uses it only to get Letterboxd ratings.</string>
+    <string name="mdblist_key_hint">Your free API key from mdblist.com/preferences. Tarn uses it only to get Letterboxd ratings.</string>
     <string name="key_not_set">Not set</string>
     <string name="key_set">Set</string>
     <string name="phone_entry_scan">Scan with a phone on the same Wi-Fi as this TV, then paste the key there.</string>
@@ -344,19 +344,19 @@
     <string name="clear_storage_desc">This removes saved profiles, settings and cached data from this TV. It does not cancel your Stremio account.</string>
     <string name="action_clear">Clear</string>
     <string name="version">Version %1$s</string>
-    <string name="about_hint">Alder is a TV interface for your Stremio account.</string>
+    <string name="about_hint">Tarn is a TV interface for your Stremio account.</string>
     <string name="about_desc">A TV interface for your Stremio account.</string>
     <string name="whats_new_hint">The changes in the version on this TV.</string>
     <string name="updates">Updates</string>
     <string name="updates_checking">Checking…</string>
-    <string name="updates_hint">New versions come from Alder\'s releases on GitHub.</string>
+    <string name="updates_hint">New versions come from Tarn\'s releases on GitHub.</string>
     <string name="updates_install">Install %1$s  ›</string>
     <string name="updates_check_failed">Couldn\'t check · Try again  ›</string>
     <string name="updates_up_to_date">Up to date</string>
     <string name="report_send">Send report</string>
     <string name="report_no">No</string>
-    <string name="report_send_hint">Sends the last crash, recent error types and retry results, the Alder version, and the TV model. It has no account details.</string>
-    <string name="report_crashed_title">Alder stopped last time</string>
+    <string name="report_send_hint">Sends the last crash, recent error types and retry results, the Tarn version, and the TV model. It has no account details.</string>
+    <string name="report_crashed_title">Tarn stopped last time</string>
     <string name="report_crashed_desc">Send a report to help fix it? It includes the crash, recent error types and retry results, and the TV model.</string>
     <string name="report_sent_title">Report sent</string>
     <string name="report_sent_desc">Thank you. It helps fix the problem.</string>
@@ -420,7 +420,7 @@
     <string name="streams_tag_hard_subs">Hard subs</string>
     <string name="no_sources_failed">Couldn\'t get sources from %1$s. Try again, or check the add-on in Stremio.</string>
     <string name="no_sources_torrents">%1$s found only torrents. A TV plays torrents through a debrid service, such as Real-Debrid, connected in the add-on\'s settings.</string>
-    <string name="no_sources_links">%1$s only has links that open in a browser or on YouTube, which Alder can\'t play.</string>
+    <string name="no_sources_links">%1$s only has links that open in a browser or on YouTube, which Tarn can\'t play.</string>
     <plurals name="no_sources_unplayable">
         <item quantity="one">%1$d source needs a video format this TV can\'t decode.</item>
         <item quantity="other">%1$d sources need a video format this TV can\'t decode.</item>
@@ -514,7 +514,7 @@
     <string name="profiles_remove_desc">This signs %1$s out on this TV. Their Stremio account, history and addons stay as they are.</string>
     <string name="profiles_continue">Continue    →</string>
     <string name="profiles_name_to_continue">Enter a name to continue.</string>
-    <string name="profiles_welcome">Welcome to Alder</string>
+    <string name="profiles_welcome">Welcome to Tarn</string>
     <string name="profiles_new">New profile</string>
     <string name="profiles_name_colour">Give this profile a name. Select the portrait to choose a picture.</string>
     <string name="profiles_your_name">Your name</string>
@@ -525,7 +525,7 @@
     <string name="profiles_scan">Scan with %1$s\'s phone. Stremio opens and asks to sign in this TV.</string>
     <string name="profiles_or_go_to">Or go to %1$s and enter</string>
     <string name="profiles_sharing_phone">Sharing a phone? Approve each person\'s code on their own phone or in a private browser window. Signing out of Stremio there can sign this TV out too.</string>
-    <string name="profiles_new_to_stremio">New to Stremio? Make an account and add your add-ons in the Stremio app or at web.stremio.com. Alder brings them to the TV.</string>
+    <string name="profiles_new_to_stremio">New to Stremio? Make an account and add your add-ons in the Stremio app or at web.stremio.com. Tarn brings them to the TV.</string>
     <string name="profiles_step">step %1$d of %2$d</string>
     <string name="profiles_step_sign_in">sign in again</string>
     <string name="profiles_step_new">New profile · %1$s</string>
@@ -536,13 +536,13 @@
     <string name="profiles_other_account">Use another account</string>
     <string name="profiles_continue_anyway">Continue anyway</string>
     <string name="profiles_same_account_desc">Approve the code with %1$s\'s own account: on %1$s\'s phone, or in a private browser window. Signing out of Stremio on the phone can sign %2$s out of this TV.</string>
-    <string name="profiles_continue_to_alder">Continue to Alder</string>
+    <string name="profiles_continue_to_alder">Continue to Tarn</string>
     <string name="profiles_recommendations">Recommendations for %1$s</string>
     <string name="profiles_watchly_steps">"1.  Scan with %1$s's phone to open Watchly\n2.  Connect %1$s's Stremio account there\n3.  Install it to %1$s's Stremio account\n\n%1$s's own \"Top Picks\" then show up on Home. You can finish this later."</string>
     <string name="profiles_all_set">You\'re all set</string>
     <string name="profiles_ready">%1$s\'s profile is ready. You can add more add-ons later in Settings.</string>
     <string name="display_resolution">Display resolution</string>
-    <string name="display_resolution_hint">Choose the TV resolution Alder uses to pick a source. Use 4K if your box reports 1080p but outputs 4K.</string>
+    <string name="display_resolution_hint">Choose the TV resolution Tarn uses to pick a source. Use 4K if your box reports 1080p but outputs 4K.</string>
     <string name="error_sign_in">sign in to Stremio again</string>
     <string name="error_response">invalid response</string>
     <string name="error_missing">no longer available</string>
@@ -571,7 +571,7 @@
     <string name="filmography_empty">No other titles found in your catalogs.</string>
     <string name="trailer_no_app">No app on this TV can play the trailer. Install YouTube to watch it.</string>
     <string name="catalog_incomplete">Some catalogs couldn\'t load</string>
-    <string name="progress_saved_on_tv">Progress saved on this TV. Alder will try to sync it again.</string>
+    <string name="progress_saved_on_tv">Progress saved on this TV. Tarn will try to sync it again.</string>
     <string name="library_load_failed">Couldn\'t load your Stremio library</string>
     <string name="list_added_on">Added %1$s</string>
 

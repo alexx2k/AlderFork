@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="tarn_midnight">#0B1624</color>
+    <color name="tarn_deep_blue">#1E3A54</color>
+    <color name="tarn_slate_blue">#3F6D89</color>
+    <color name="tarn_lake_blue">#8CB9CF</color>
+    <color name="tarn_silver">#E6F1F6</color>
+    <color name="tarn_black">#000000</color>
+</resources>
