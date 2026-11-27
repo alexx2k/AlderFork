@@ -16,14 +16,14 @@ android {
         minSdk = 23
         targetSdk = 36
 
-        versionCode = 120
-        versionName = "1.2.0"
+        versionCode = 150
+        versionName = "1.5.0"
         // TVs are ARM; the x86 builds of ffmpeg's native code would only add size.
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
     }
 
     // Release key lives outside the repo; keystore.properties (git-ignored) points at it. Without that file
-    // (a fresh clone) release builds fall back to the debug key, so anyone can still build and sideload.
+    // (a fresh clone) release builds require the release key unless -PdebugKey is explicitly supplied.
     val keys = rootProject.file("keystore.properties").takeIf { it.exists() }
         ?.let { f -> Properties().apply { f.inputStream().use { load(it) } } }
     signingConfigs {
