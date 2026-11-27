@@ -1,4 +1,4 @@
-import {array,object,string,jsonRequest,JsonObject} from './stremio.ts';
+import {array,object,string,jsonRequest} from './stremio.ts';
 export type ContentType='movie'|'series';
 export type Title={id:string;type:ContentType;name:string;year:string;genre:string;description:string;theme:string;poster?:string;background?:string};
 export type Catalog={key:string;name:string;addon:string;type:ContentType;id:string;base:string;required:Record<string,string>;search:boolean;searchRequiredOnly:boolean};
@@ -39,7 +39,7 @@ export function catalogues(descriptors:unknown[]):Catalog[]{
    const searchRequiredOnly=requiredNames.every(n=>n==='search');
    if(!browse&&!(search&&searchRequiredOnly))return;
    // Search-only catalogues are retained for search, not requested on the home screen.
-   if(!browse)required.search='';
+   if(!browse||requiredNames.includes('search'))required.search='';
    out.push({key:'a'+index+'c'+i,name:string(c.name)||id,addon,type,id,base,required,search,searchRequiredOnly});
   });
  });

@@ -77,7 +77,7 @@ function App(){
   authRef.current=key;setAuth(key);setAccountStatus('');
   try{if(!sessionStore.current)throw Error();await sessionStore.current.save(key);}
   catch{setAccountStatus('Account linked for this session only; storage failed.');}
-  if(authRef.current===key){location.hash='';setPending('nav-Home');}
+  if(authRef.current===key){history.replaceState(null,'',location.pathname+location.search);lastHash.current='';setRoute({kind:'home'});setPending('nav-Home');}
  };
  const signOut=async()=>{
   const key=authRef.current;
@@ -97,7 +97,12 @@ function App(){
     setAddons(descriptors);
     const catalogs=catalogues(descriptors);
     setStatus('Loading catalogues…');
-    const result=await loadShelves(catalogs,signal);
+    const received=new Map<string,Shelf>();
+    const result=await loadShelves(catalogs,signal,undefined,undefined,row=>{
+     if(signal.aborted||authRef.current!==key)return;
+     received.set(row.key,row);
+     setRows(catalogs.map(c=>received.get(c.key)).filter((s):s is Shelf=>!!s&&s.titles.length>0));
+    });
     if(signal.aborted||authRef.current!==key)return;
     setRows(result.shelves.filter(s=>s.titles.length));
     const count=result.shelves.filter(s=>s.titles.length).length;
@@ -194,7 +199,7 @@ function Diagnostics(){
    probeJson('Add-on manifest',endpoint),
    probeJson('Public Cinemeta catalogue','https://v3-cinemeta.strem.io/catalog/movie/top.json')
   ]);
-  if(alive.current){setResults(checks);setRunning(false);focus('network');}
+  if(alive.current){setResults(checks);setRunning(false);if(document.activeElement===document.body)requestAnimationFrame(()=>focus('network'));}
  };
  const play=(name:string,url:string)=>{
   const v=video.current;if(!v)return;
