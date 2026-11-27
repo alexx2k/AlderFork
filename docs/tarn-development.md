@@ -24,7 +24,7 @@ $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 & $adb shell am start -n dev.tarn.dev/dev.tarn.ProfilesActivity
 ```
 
-Replace FIRE_TV_IP with the address displayed on your TV and accept the device's debugging prompt. If the branch exists locally, use a different worktree name or switch to the existing branch with a clean working tree. If Android SDK is elsewhere, change the adb path. Debug uses dev.tarn.dev, separate from production. The release build with -PdebugKey uses dev.tarn and is CI-only; never publish it. Do not uninstall an existing production app merely to resolve a signing mismatch. The new Tarn package is intentionally a fresh install; no Alder Fork migration is required. For baseline measurements, pass `-Package dev.alderfork.dev` and `-ActivityClass dev.alder.ProfilesActivity`.
+Replace FIRE_TV_IP with the address displayed on your TV and accept the device's debugging prompt. If the branch exists locally, use a different worktree name or switch to the existing branch with a clean working tree. If Android SDK is elsewhere, change the adb path. Debug uses dev.tarn.dev, separate from production. An earlier Alder Fork debug installation (`dev.alderfork.dev`) may coexist and can be removed manually. The release build with -PdebugKey uses dev.tarn and is CI-only; never publish it. Do not uninstall an existing production app merely to resolve a signing mismatch. The new Tarn package is intentionally a fresh install; no Alder Fork migration is required. For baseline measurements, pass `-Package dev.alderfork.dev` and `-ActivityClass dev.alder.ProfilesActivity`.
 
 ## Physical checklist
 
@@ -50,3 +50,7 @@ Targets: same or better median cold launch and playback startup; no meaningful m
 ## Verification status
 
 Static connector inspection and GitHub comparison establish the modified files and preserved Gradle build configuration. Local Android SDK/dependency access and physical Fire TV are unavailable in this development environment. Added TarnPaletteTest checks WCAG contrast on opaque surfaces; standalone calculation confirms minimum 5.24:1 for the tested text combinations and 5.57:1 lake-blue focus against deep blue. PNG signatures, dimensions and chunk CRCs checked; all eight locale resource key/placeholder sequences unchanged. These checks do not establish successful Android compilation, installation, device rendering or performance. Existing automated tests should be run unchanged and failures investigated. Original branding board was unavailable; the vectors are provisional. No trademark clearance claimed.
+
+## Repository rename and release
+
+Rename the repository in GitHub Settings → General → Repository name to `Tarn`, then update `origin` to `https://github.com/alexx2k/Tarn.git`. This affects all worktrees. Rename the local directory only after closing Android Studio; moving a linked worktree requires `git worktree move` from the primary worktree. Do not publish the CI APK. Build `packageTarnRelease` with the production keystore (without `-PdebugKey`), attach `Tarn-2.0.0.apk` to tag `v2.0.0` only after validation and approval. The updater targets the new repository and ignores old APK names. Historical feature scripts still target their original branches.

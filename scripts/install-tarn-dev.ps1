@@ -24,7 +24,7 @@ if ((& git branch --show-current).Trim() -ne $branch) { throw "Run this from the
 & git pull --ff-only origin $branch
 Check-Exit "Pull development branch"
 
-& .\gradlew.bat --no-configuration-cache testDebugUnitTest packageTarnDebug
+& .\gradlew.bat -PdebugKey --no-configuration-cache testDebugUnitTest packageTarnDebug
 Check-Exit "Build and unit tests"
 
 $apk = Join-Path $root "app\build\outputs\tarn\Tarn-dev.apk"

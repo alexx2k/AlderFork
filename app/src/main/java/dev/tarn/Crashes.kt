@@ -51,6 +51,7 @@ internal object Crashes {
 
     /** Posts the saved crash to the crash worker (crash-worker/), which files it as a GitHub issue. Blocks. */
     fun send(c: Context) {
+        if (ENDPOINT.isEmpty()) return
         val report = last(c) ?: return
         Http.post(ENDPOINT, report, timeoutMs = 15_000, headers = mapOf("X-Alder" to "1"))
         c.getSharedPreferences("app", Context.MODE_PRIVATE).edit().putLong("crashSent", lastTime(c)).apply()

@@ -1,26 +1,26 @@
-/* House Lights tokens, shared with the Alder apps (design/DESIGN_SYSTEM.md "Tokens"). */
+/* Tarn Editorial palette; legacy CSS token names retained for layout compatibility. */
 :root {
-  --color-night: #0e0c0a;
-  --color-night-raised: #17130f;
-  --color-cream: #f3eee6;
-  --color-cream-soft: #d6cbbd;
-  --color-tungsten: #f3d9b1;
-  --color-muted: #b9aa99;
-  --color-faint: #857869;
-  --color-rule: #332b24;
-  --color-bezel: #050403;
-  --color-walnut: #4a3020;
-  --color-walnut-light: #6b4a32;
-  --color-focus: #f3d9b1;
+  --color-night: #000000;
+  --color-night-raised: #0b1624;
+  --color-cream: #e6f1f6;
+  --color-cream-soft: #c3d5df;
+  --color-tungsten: #8cb9cf;
+  --color-muted: #9bb0c0;
+  --color-faint: #849bad;
+  --color-rule: #24384a;
+  --color-bezel: #000000;
+  --color-walnut: #1e3a54;
+  --color-walnut-light: #3f6d89;
+  --color-focus: #8cb9cf;
 
-  --glass-fill: rgba(30, 24, 19, .4);
+  --glass-fill: rgba(11, 22, 36, .4);
   --glass-blur: 22px;
-  --glass-edge: rgba(243, 238, 230, .09);
-  --glass-highlight: rgba(243, 238, 230, .14);
-  --glow-tungsten: 0 0 10px rgba(243, 217, 177, .9);
-  --glow-screen: 0 0 120px -20px rgba(160, 180, 175, .28);
+  --glass-edge: rgba(230, 241, 246, .09);
+  --glass-highlight: rgba(230, 241, 246, .14);
+  --glow-tungsten: 0 0 10px rgba(140, 185, 207, .9);
+  --glow-screen: 0 0 120px -20px rgba(140, 185, 207, .28);
 
-  --font-display: "Instrument Serif", Georgia, serif;
+  --font-display: Inter, system-ui, sans-serif;
   --font-body: Inter, system-ui, sans-serif;
 
   --radius-pill: 999px;
