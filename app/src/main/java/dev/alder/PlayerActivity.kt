@@ -975,19 +975,19 @@ class PlayerActivity : Screen() {
             addView(View(context).apply {
                 background = GradientDrawable(
                     GradientDrawable.Orientation.LEFT_RIGHT,
-                    intArrayOf(0xEB0E0C0A.toInt(), 0x990E0C0A.toInt(), 0x330E0C0A)
+                    intArrayOf(0xEB000000.toInt(), 0x99000000.toInt(), 0x33000000)
                 )
             }, FrameLayout.LayoutParams(-1, -1))
             addView(View(context).apply {
                 background = GradientDrawable(
                     GradientDrawable.Orientation.BOTTOM_TOP,
-                    intArrayOf(0xF70E0C0A.toInt(), 0xB30E0C0A.toInt(), 0x000E0C0A)
+                    intArrayOf(0xF7000000.toInt(), 0xB3000000.toInt(), 0x00000000)
                 )
             }, FrameLayout.LayoutParams(-1, -1))
             addView(View(context).apply {
                 background = GradientDrawable(
                     GradientDrawable.Orientation.TOP_BOTTOM,
-                    intArrayOf(0x8C0E0C0A.toInt(), 0x000E0C0A)
+                    intArrayOf(0x8C000000.toInt(), 0x00000000)
                 )
             }, FrameLayout.LayoutParams(-1, dp(120), Gravity.TOP))
         }
@@ -1003,7 +1003,7 @@ class PlayerActivity : Screen() {
 
     private fun buildLoading() = FrameLayout(this).apply {
         visibility = View.GONE
-        addView(View(context).apply { setBackgroundColor(0x800E0C0A.toInt()) }, FrameLayout.LayoutParams(-1, -1))
+        addView(View(context).apply { setBackgroundColor(0x80000000.toInt()) }, FrameLayout.LayoutParams(-1, -1))
         val center = column(Gravity.CENTER_HORIZONTAL).apply {
             addView(ring(), LinearLayout.LayoutParams(dp(40), dp(40)))
             addView(status, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
@@ -1864,11 +1864,11 @@ class PlayerActivity : Screen() {
             minHeight = dp(46)
             setPadding(dp(16), dp(10), dp(16), dp(10))
             fun updateFocus(focused: Boolean) {
-                setTextColor(if (focused) 0xFF161619.toInt() else Color.WHITE)
+                setTextColor(if (focused) BASE else TEXT)
                 background = GradientDrawable().apply {
                     cornerRadius = dp(9).toFloat()
-                    setColor(if (focused) 0xFFF5F3F0.toInt() else 0xFF29292F.toInt())
-                    setStroke(dp(if (focused) 2 else 1), if (focused) TUNGSTEN else 0xFF52525C.toInt())
+                    setColor(if (focused) TUNGSTEN else GLASS)
+                    setStroke(dp(if (focused) 2 else 1), if (focused) TEXT else GLASS_EDGE)
                 }
             }
             setOnFocusChangeListener { _, focused -> updateFocus(focused) }
@@ -2247,10 +2247,10 @@ class PlayerActivity : Screen() {
     private fun pillBackground(snapMode: Boolean) = GradientDrawable().apply {
         cornerRadius = dp(12).toFloat()
         if (snapMode) {
-            setColor(0xE60E0C0A.toInt())
+            setColor(0xE6000000.toInt())
             setStroke(dp(1), Screen.TUNGSTEN_RIM)
         } else {
-            setColor(0xCC0E0C0A.toInt())
+            setColor(0xCC000000.toInt())
         }
     }
 
@@ -2452,11 +2452,11 @@ class PlayerActivity : Screen() {
             alpha = 0f
             addView(View(context).apply {
                 background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-                    intArrayOf(0x990E0C0A.toInt(), 0x000E0C0A))
+                    intArrayOf(0x99000000.toInt(), 0x00000000))
             }, FrameLayout.LayoutParams(-1, dp(120), Gravity.TOP))
             addView(View(context).apply {
                 background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP,
-                    intArrayOf(0xBF0E0C0A.toInt(), 0x590E0C0A, 0x000E0C0A))
+                    intArrayOf(0xBF000000.toInt(), 0x59000000, 0x00000000))
             }, FrameLayout.LayoutParams(-1, dp(220), Gravity.BOTTOM))
             addView(playerLogo, FrameLayout.LayoutParams(dp(150), dp(50)).apply {
                 leftMargin = dp(PAD); topMargin = dp(26)
@@ -2530,9 +2530,9 @@ class PlayerActivity : Screen() {
 
     /** Monochrome House Lights brand badge: custom vector marks for Dolby / DTS / Subtitles / Debrid, or crisp typographic lockups. */
     private fun badgeView(b: PlayerBadge): View {
-        val rim = if (b.accent) 0x80F3D9B1.toInt() else 0x66FFF0DC
+        val rim = if (b.accent) 0x808CB9CF.toInt() else 0x668CB9CF
         val frame = GradientDrawable().apply {
-            setColor(0xEB0E0C0A.toInt())
+            setColor(0xEB000000.toInt())
             cornerRadius = dp(4).toFloat()
             setStroke(dp(1), rim)
         }
@@ -2958,7 +2958,7 @@ class PlayerActivity : Screen() {
                     setStroke(dp(1), TUNGSTEN_RIM)
                 }
                 isSelected -> GradientDrawable().apply {
-                    setColor(0x3DF3D9B1.toInt())
+                    setColor(0x3D8CB9CF.toInt())
                     cornerRadius = dp(13).toFloat()
                 }
                 else -> GradientDrawable().apply {
@@ -3086,8 +3086,8 @@ class PlayerActivity : Screen() {
                 val p = text(colorLabel, SMALL, bold = true, color = if (isCur) TUNGSTEN else TEXT_2).apply {
                     gravity = Gravity.CENTER
                     maxLines = 1
-                    background = if (isCur) rounded(0x3DF3D9B1.toInt(), 8) else glass(8)
-                    rowFocus(8, rest = { if (currentSubColor == colorValue) rounded(0x3DF3D9B1.toInt(), 8) else glass(8) }) { has ->
+                    background = if (isCur) rounded(0x3D8CB9CF.toInt(), 8) else glass(8)
+                    rowFocus(8, rest = { if (currentSubColor == colorValue) rounded(0x3D8CB9CF.toInt(), 8) else glass(8) }) { has ->
                         setTextColor(if (has || currentSubColor == colorValue) TEXT else TEXT_2)
                     }
                     setOnClickListener { selectColor(colorValue) }
@@ -3100,7 +3100,7 @@ class PlayerActivity : Screen() {
             colorPillUpdaters[slot] = {
                 pills.forEachIndexed { i, pill ->
                     val active = colors[i].first == currentSubColor
-                    pill.background = if (active) rounded(0x3DF3D9B1.toInt(), 8) else glass(8)
+                    pill.background = if (active) rounded(0x3D8CB9CF.toInt(), 8) else glass(8)
                     pill.setTextColor(if (active) TUNGSTEN else TEXT_2)
                 }
             }
@@ -3125,9 +3125,9 @@ class PlayerActivity : Screen() {
         }
 
         fun trackRowRest(selected: Boolean) = if (selected) GradientDrawable().apply {
-            setColor(0x24F3D9B1.toInt())
+            setColor(0x248CB9CF.toInt())
             cornerRadius = dp(8).toFloat()
-            setStroke(dp(1), 0x4DF3D9B1.toInt())
+            setStroke(dp(1), 0x4D8CB9CF.toInt())
         } else null
 
         class TrackRowHolder(
@@ -3167,7 +3167,7 @@ class PlayerActivity : Screen() {
             }
             val badge = text(badgeText, 10f, bold = true, color = if (isSelected) TUNGSTEN else TEXT_2).apply {
                 setPadding(dp(5), dp(1), dp(5), dp(1))
-                background = rounded(if (isSelected) 0x3DF3D9B1.toInt() else 0x22FFFFFF.toInt(), 4)
+                background = rounded(if (isSelected) 0x3D8CB9CF.toInt() else 0x22FFFFFF.toInt(), 4)
                 visibility = if (badgeText.isNotEmpty()) View.VISIBLE else View.GONE
             }
 
@@ -3313,7 +3313,7 @@ class PlayerActivity : Screen() {
                     }
                     holder.badge.text = badgeLabel
                     holder.badge.setTextColor(if (isSel) TUNGSTEN else TEXT_2)
-                    holder.badge.background = rounded(if (isSel) 0x3DF3D9B1.toInt() else 0x22FFFFFF.toInt(), 4)
+                    holder.badge.background = rounded(if (isSel) 0x3D8CB9CF.toInt() else 0x22FFFFFF.toInt(), 4)
                     holder.badge.visibility = if (badgeLabel.isNotEmpty()) View.VISIBLE else View.GONE
 
                     if (!holder.row.isFocused) {
@@ -3443,7 +3443,7 @@ class PlayerActivity : Screen() {
                 }
                 holder.badge.text = badgeLabel
                 holder.badge.setTextColor(if (isSel) TUNGSTEN else TEXT_2)
-                holder.badge.background = rounded(if (isSel) 0x3DF3D9B1.toInt() else 0x22FFFFFF.toInt(), 4)
+                holder.badge.background = rounded(if (isSel) 0x3D8CB9CF.toInt() else 0x22FFFFFF.toInt(), 4)
                 holder.badge.visibility = if (badgeLabel.isNotEmpty()) View.VISIBLE else View.GONE
 
                 if (!holder.row.isFocused) {
@@ -3514,7 +3514,7 @@ class PlayerActivity : Screen() {
             var clearOn = dialogueProcessor.enabled
             val clearStatus = text(if (clearOn) R.string.state_on else R.string.state_off, 10f, bold = true, color = if (clearOn) TUNGSTEN else TEXT_3).apply {
                 setPadding(dp(7), dp(2), dp(7), dp(2))
-                background = rounded(if (clearOn) 0x3DF3D9B1.toInt() else 0x1AFFFFFF.toInt(), 4)
+                background = rounded(if (clearOn) 0x3D8CB9CF.toInt() else 0x1AFFFFFF.toInt(), 4)
             }
             val clearRow = LinearLayout(this).apply {
                 gravity = Gravity.CENTER_VERTICAL
@@ -3536,7 +3536,7 @@ class PlayerActivity : Screen() {
                     Settings.setClearDialogue(this@PlayerActivity, clearOn)
                     clearStatus.text = getString(if (clearOn) R.string.state_on else R.string.state_off)
                     clearStatus.setTextColor(if (clearOn) TUNGSTEN else TEXT_3)
-                    clearStatus.background = rounded(if (clearOn) 0x3DF3D9B1.toInt() else 0x1AFFFFFF.toInt(), 4)
+                    clearStatus.background = rounded(if (clearOn) 0x3D8CB9CF.toInt() else 0x1AFFFFFF.toInt(), 4)
                 }
             }
             audioPanel.addView(clearRow, LinearLayout.LayoutParams(-1, dp(42)))
@@ -3765,7 +3765,7 @@ class PlayerActivity : Screen() {
             text(label, SMALL, bold = true).apply {
                 gravity = Gravity.CENTER
                 maxLines = 1
-                rowFocus(8, rest = { if (chosen == value) rounded(0x3DF3D9B1.toInt(), 8) else glass(8) }) { has ->
+                rowFocus(8, rest = { if (chosen == value) rounded(0x3D8CB9CF.toInt(), 8) else glass(8) }) { has ->
                     setTextColor(if (has || chosen == value) TEXT else TEXT_2)
                 }
                 row.addView(this, LinearLayout.LayoutParams(0, dp(30), 1f).apply { if (i < options.lastIndex) marginEnd = dp(gap) })
@@ -3773,7 +3773,7 @@ class PlayerActivity : Screen() {
         }
         fun paint() = pills.forEachIndexed { i, pill ->
             val on = options[i].first == chosen
-            pill.background = if (on) rounded(0x3DF3D9B1.toInt(), 8) else glass(8)
+            pill.background = if (on) rounded(0x3D8CB9CF.toInt(), 8) else glass(8)
             pill.setTextColor(if (on) TUNGSTEN else TEXT_2)
         }
         pills.forEachIndexed { i, pill -> pill.setOnClickListener { chosen = options[i].first; pick(chosen); paint() } }
@@ -3944,7 +3944,7 @@ private class SeekBar(context: Context) : View(context) {
             canvas.drawRoundRect(knob, y - line / 2, to, y + line / 2, line / 2, line / 2, paint)
         }
         if (isIndeterminate) {
-            stretch(width - knob, 0x33F3EEE6)
+            stretch(width - knob, 0x33E6F1F6)
             val trackW = width - 2 * knob
             val centerX = knob + trackW * pulseFraction
             val halfSpan = trackW * 0.22f
@@ -3956,11 +3956,11 @@ private class SeekBar(context: Context) : View(context) {
             return
         }
         // A light track: the dark one vanished over a dark picture.
-        stretch(width - knob, 0x40F3EEE6)
+        stretch(width - knob, 0x40E6F1F6)
 
         // Tint spans for Intro / Recap if present
         if (duration > 0) {
-            paint.color = 0x33F3D9B1.toInt()
+            paint.color = 0x338CB9CF.toInt()
             for (m in markers) {
                 if (m.endMs != null && m.endMs > m.timeMs) {
                     val x1 = x(m.timeMs)
@@ -3970,7 +3970,7 @@ private class SeekBar(context: Context) : View(context) {
             }
         }
 
-        stretch(x(buffered), 0x73F3EEE6)
+        stretch(x(buffered), 0x73E6F1F6)
         paint.setShadowLayer(4 * d, 0f, 0f, Screen.TUNGSTEN_GLOW)
         stretch(x(position), Screen.TUNGSTEN)
         paint.clearShadowLayer()
@@ -3983,9 +3983,9 @@ private class SeekBar(context: Context) : View(context) {
             for (m in markers) {
                 if (m.timeMs > 0 && m.timeMs < duration) {
                     val mx = x(m.timeMs)
-                    paint.color = 0xFF0E0C0A.toInt()
+                    paint.color = 0xFF000000.toInt()
                     canvas.drawRect(mx - gapHalf, y - line / 2 - 1f, mx + gapHalf, y + line / 2 + 1f, paint)
-                    paint.color = if (m.type != MarkerType.CHAPTER) Screen.TUNGSTEN else 0xCCF3EEE6.toInt()
+                    paint.color = if (m.type != MarkerType.CHAPTER) Screen.TUNGSTEN else 0xCCE6F1F6.toInt()
                     canvas.drawRect(mx - tickHalf, y - line / 2 - tickExtra, mx + tickHalf, y + line / 2 + tickExtra, paint)
                 }
             }

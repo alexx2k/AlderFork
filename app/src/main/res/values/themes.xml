@@ -2,9 +2,16 @@
 <resources>
     <!-- Focus lifts cards above neighbours without casting a downward shadow. -->
     <style name="Alder" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/tarn_black</item>
+        <item name="android:colorAccent">@color/tarn_lake_blue</item>
         <item name="android:spotShadowAlpha">0</item>
         <item name="android:ambientShadowAlpha">0</item>
         <item name="android:windowAnimationStyle">@style/Alder.Screens</item>
+    </style>
+
+    <!-- Static launch window on Android 6–11; no timer or startup work. -->
+    <style name="Alder.Start">
+        <item name="android:windowBackground">@drawable/tarn_start_window</item>
     </style>
 
     <!-- A screen drawn over another without stopping it (the source list over the player). Its own art covers it. -->

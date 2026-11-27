@@ -108,15 +108,15 @@ class SearchActivity : Screen() {
         root.addView(art, FrameLayout.LayoutParams(-1, -1))
         root.addView(View(this).apply {
             background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(0xA60E0C0A.toInt(), 0x8C0E0C0A.toInt(), 0x660E0C0A, 0x1A0E0C0A))
+                intArrayOf(0xA6000000.toInt(), 0x8C000000.toInt(), 0x66000000, 0x1A000000))
         }, FrameLayout.LayoutParams(-1, -1))
         root.addView(View(this).apply {
             background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP,
-                intArrayOf(0xF70E0C0A.toInt(), 0xBF0E0C0A.toInt(), 0x000E0C0A))
+                intArrayOf(0xF7000000.toInt(), 0xBF000000.toInt(), 0x00000000))
         }, FrameLayout.LayoutParams(-1, dp(260), Gravity.BOTTOM))
         root.addView(View(this).apply {
             background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(0x8C0E0C0A.toInt(), 0x000E0C0A))
+                intArrayOf(0x8C000000.toInt(), 0x00000000))
         }, FrameLayout.LayoutParams(-1, dp(80), Gravity.TOP))
         headerBar = header()
         root.addView(headerBar, FrameLayout.LayoutParams(-1, dp(76)))

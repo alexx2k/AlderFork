@@ -689,7 +689,7 @@ class DetailsActivity : Screen() {
         guide = FrameLayout(this).apply { visibility = View.GONE }
         guide.addView(View(this).apply {
             background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(0xD90E0C0A.toInt(), 0x800E0C0A.toInt(), 0x000E0C0A))
+                intArrayOf(0xD9000000.toInt(), 0x80000000.toInt(), 0x00000000))
         }, FrameLayout.LayoutParams(-1, dp(136), Gravity.TOP))
         val smallLogo = ImageView(this).apply { scaleType = ImageView.ScaleType.FIT_START }
         guide.addView(smallLogo, FrameLayout.LayoutParams(dp(150), dp(42)).apply {
@@ -1049,7 +1049,7 @@ class DetailsActivity : Screen() {
         infoOverlay = FrameLayout(this)
         infoOverlay.addView(View(this).apply {
             background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(0xEB0E0C0A.toInt(), 0xD90E0C0A.toInt(), 0x990E0C0A.toInt()))
+                intArrayOf(0xEB000000.toInt(), 0xD9000000.toInt(), 0x99000000.toInt()))
         }, FrameLayout.LayoutParams(-1, -1))
 
         val content = column(Gravity.START).apply {
@@ -1116,7 +1116,7 @@ class DetailsActivity : Screen() {
                 val avatarFrame = FrameLayout(this).apply {
                     background = GradientDrawable().apply {
                         shape = GradientDrawable.OVAL
-                        setColor(0x33F3D9B1.toInt())
+                        setColor(0x338CB9CF.toInt())
                     }
                     clipToOutline = true
                     outlineProvider = object : android.view.ViewOutlineProvider() {
@@ -1124,7 +1124,7 @@ class DetailsActivity : Screen() {
                             outline.setOval(0, 0, view.width, view.height)
                     }
                 }
-                val initials = text(actor.initials, 15f, bold = true, color = 0xFFF3D9B1.toInt(), serif = true).apply {
+                val initials = text(actor.initials, 15f, bold = true, color = 0xFF8CB9CF.toInt(), serif = true).apply {
                     gravity = Gravity.CENTER
                     includeFontPadding = false
                 }
@@ -1264,7 +1264,7 @@ class DetailsActivity : Screen() {
         val overlay = FrameLayout(this).apply { visibility = View.GONE }
         overlay.addView(View(this).apply {
             background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP,
-                intArrayOf(0xF70E0C0A.toInt(), 0xA60E0C0A.toInt(), 0x000E0C0A))
+                intArrayOf(0xF7000000.toInt(), 0xA6000000.toInt(), 0x00000000))
         }, FrameLayout.LayoutParams(-1, dp(280), Gravity.BOTTOM))
         val content = column(Gravity.START)
         val captionPill = caption("").apply {
@@ -1419,7 +1419,7 @@ class DetailsActivity : Screen() {
 
                 val avatarSize = dp(20)
                 val avatarFrame = FrameLayout(context).apply {
-                    background = rounded(0x33F3D9B1.toInt(), 10)
+                    background = rounded(0x338CB9CF.toInt(), 10)
                     clipToOutline = true
                     outlineProvider = object : android.view.ViewOutlineProvider() {
                         override fun getOutline(view: View, outline: android.graphics.Outline) =

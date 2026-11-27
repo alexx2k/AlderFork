@@ -601,7 +601,7 @@ class ProfilesActivity : Screen() {
                     })
                     // Opaque focus background instead of the usual translucent tint.
                     val focusedBackground = GradientDrawable().apply {
-                        setColor(0xFF292929.toInt())
+                        setColor(TarnPalette.DEEP_BLUE)
                         cornerRadius = dp(9).toFloat()
                     }
                     cell.isFocusable = true

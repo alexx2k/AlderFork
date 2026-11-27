@@ -42,6 +42,7 @@
 
         <activity
             android:name=".ProfilesActivity"
+            android:theme="@style/Alder.Start"
             android:exported="true"
             android:screenOrientation="landscape">
             <intent-filter>

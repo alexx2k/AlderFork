@@ -648,8 +648,8 @@ class SettingsActivity : Screen() {
                 detailRows.addView(brand(SERIF_TITLE), LinearLayout.LayoutParams(-2, -2).apply {
                     marginStart = dp(12); bottomMargin = dp(14)
                 })
-                actionRow("Alder", getString(R.string.version, Updates.mine(this)), getString(R.string.about_hint)) {
-                    choose("Alder", listOf(getString(R.string.action_ok)), getString(R.string.about_desc) + "\n\n" + getString(R.string.tmdb_notice)) {}
+                actionRow(getString(R.string.app_name), getString(R.string.version, Updates.mine(this)), getString(R.string.about_hint)) {
+                    choose(getString(R.string.app_name), listOf(getString(R.string.action_ok)), getString(R.string.about_desc) + "\n\n" + getString(R.string.tmdb_notice)) {}
                 }
                 actionRow(getString(R.string.whats_new), getString(R.string.version, Updates.mine(this)), getString(R.string.whats_new_hint)) { whatsNew() }
                 // Only while a crash waits to be sent: answered "No" on Home, or the send failed.

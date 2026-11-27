@@ -361,13 +361,13 @@ class MainActivity : Screen() {
     private fun shade(canvas: Canvas, w: Int, h: Int, bright: Boolean) {
         val shade = Paint().apply {
             shader = LinearGradient(0f, 0f, w * 0.66f, 0f,
-                intArrayOf(0xF70E0C0A.toInt(), if (bright) 0xBF0E0C0A.toInt() else 0x990E0C0A.toInt(), 0x000E0C0A),
+                intArrayOf(0xF7000000.toInt(), if (bright) 0xBF000000.toInt() else 0x99000000.toInt(), 0x00000000),
                 floatArrayOf(0f, 0.62f, 1f), Shader.TileMode.CLAMP)
         }
         canvas.drawRect(0f, 0f, w * 0.66f, h.toFloat(), shade)
-        shade.shader = LinearGradient(0f, h.toFloat(), 0f, h * 0.55f, 0xF70E0C0A.toInt(), 0x000E0C0A, Shader.TileMode.CLAMP)
+        shade.shader = LinearGradient(0f, h.toFloat(), 0f, h * 0.55f, 0xF7000000.toInt(), 0x00000000, Shader.TileMode.CLAMP)
         canvas.drawRect(0f, h * 0.55f, w.toFloat(), h.toFloat(), shade)
-        shade.shader = LinearGradient(0f, 0f, 0f, h * 0.14f, 0x8C0E0C0A.toInt(), 0x000E0C0A, Shader.TileMode.CLAMP)
+        shade.shader = LinearGradient(0f, 0f, 0f, h * 0.14f, 0x8C000000.toInt(), 0x00000000, Shader.TileMode.CLAMP)
         canvas.drawRect(0f, 0f, w.toFloat(), h * 0.14f, shade)
         for (edge in listOf(GradientDrawable.Orientation.LEFT_RIGHT, GradientDrawable.Orientation.RIGHT_LEFT,
             GradientDrawable.Orientation.TOP_BOTTOM, GradientDrawable.Orientation.BOTTOM_TOP)) {
@@ -498,7 +498,7 @@ class MainActivity : Screen() {
             addView(topShade, FrameLayout.LayoutParams(-1, dp(HEADER_H + 180)))
             listShade = View(context).apply {
                 background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                    intArrayOf(0xDC2C211B.toInt(), 0xB3171412.toInt(), 0xE60E0C0A.toInt()))
+                    intArrayOf(0xDC1E3A54.toInt(), 0xB30B1624.toInt(), 0xE6000000.toInt()))
                 visibility = View.GONE
             }
             addView(listShade, FrameLayout.LayoutParams(-1, -1))
@@ -1568,7 +1568,7 @@ class MainActivity : Screen() {
         listShade.visibility = if (grid) View.VISIBLE else View.GONE
         // The focused title's art shows behind its name and details, then darkens fully before the posters start.
         listShade.background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(0x800E0C0A.toInt(), 0xD90E0C0A.toInt(), 0xF20E0C0A.toInt(), 0xF50E0C0A.toInt()))
+            intArrayOf(0x80000000.toInt(), 0xD9000000.toInt(), 0xF2000000.toInt(), 0xF5000000.toInt()))
         val g = ++generation
         loadMoreSections = null
         restoreCatalogFocus = null

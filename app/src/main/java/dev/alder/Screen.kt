@@ -51,16 +51,16 @@ class FadedArt(context: Context, private val bottomFrom: Float = 0.45f, private 
     override fun onDraw(canvas: Canvas) {
         val layer = canvas.saveLayer(0f, 0f, width.toFloat(), height.toFloat(), null)
         super.onDraw(canvas)
-        for (s in listOf(left, bottom)) {
-            mask.shader = s
-            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), mask)
-        }
+        mask.shader = left
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), mask)
+        mask.shader = bottom
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), mask)
         canvas.restoreToCount(layer)
     }
 }
 
 /** Keeps text readable straight on art: a soft dark shadow instead of a panel over the picture. */
-fun TextView.onArt() = apply { setShadowLayer(resources.displayMetrics.density * 8, 0f, resources.displayMetrics.density, 0xCC000000.toInt()) }
+fun TextView.onArt() = apply { setShadowLayer(resources.displayMetrics.density * 3, 0f, resources.displayMetrics.density, 0xCC000000.toInt()) }
 
 internal fun filmGlow(pixels: IntArray): Int {
     require(pixels.isNotEmpty())
@@ -143,7 +143,6 @@ abstract class Screen : Activity() {
     override fun onDestroy() {
         phoneEntry?.close()
         phoneEntry = null
-        frostHosts.clear()
         main.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
@@ -193,13 +192,13 @@ abstract class Screen : Activity() {
     // Read once for the whole app, not per screen: Inter alone is 870 KB, read twice, on the main thread.
     private val fonts get() = loadedFonts ?: Fonts(applicationContext.assets).also { loadedFonts = it }
 
-    /** Shared House Lights typography. */
+    /** Shared Inter typography; existing title-size hierarchy is retained. */
     internal fun text(value: String, sp: Float, bold: Boolean = false, color: Int = TEXT, serif: Boolean = false) =
         TextView(this).apply {
             text = value
             textSize = sp
             setTextColor(color)
-            typeface = if (serif) fonts.serif else if (bold) fonts.semiBold else fonts.medium
+            typeface = if (bold || serif) fonts.semiBold else fonts.medium
             LEADING[sp]?.let { lead ->
                 val want = android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP, lead, resources.displayMetrics)
                 setLineSpacing(want - paint.getFontMetricsInt(null), 1f)
@@ -252,8 +251,8 @@ abstract class Screen : Activity() {
             if (art !== shadeSource) return@background
             // A bright film keeps the shade dark across the whole text column, not just at the screen's edge.
             windowShade?.background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                if (bright) intArrayOf(0xF70E0C0A.toInt(), 0xE00E0C0A.toInt(), 0x800E0C0A.toInt(), 0x000E0C0A)
-                else intArrayOf(0xEB0E0C0A.toInt(), 0x000E0C0A, 0x000E0C0A))
+                if (bright) intArrayOf(0xF7000000.toInt(), 0xE0000000.toInt(), 0x80000000.toInt(), 0x00000000)
+                else intArrayOf(0xEB000000.toInt(), 0x00000000, 0x00000000))
         }
     }
 
@@ -265,22 +264,15 @@ abstract class Screen : Activity() {
         setContentView(FrameLayout(this).apply {
             addView(backdrop, FrameLayout.LayoutParams(-1, -1))
             windowShade = View(context).apply {
-                background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xEB0E0C0A.toInt(), 0x000E0C0A, 0x000E0C0A))
+                background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xEB000000.toInt(), 0x00000000, 0x00000000))
             }.also { addView(it, FrameLayout.LayoutParams(-1, -1)) }
             addView(View(context).apply {
-                background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, intArrayOf(0xF70E0C0A.toInt(), 0x000E0C0A, 0x000E0C0A))
+                background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, intArrayOf(0xF7000000.toInt(), 0x00000000, 0x00000000))
             }, FrameLayout.LayoutParams(-1, -1))
             addView(View(context).apply {
                 background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-                    intArrayOf(0x8C0E0C0A.toInt(), 0x000E0C0A, 0x000E0C0A, 0x000E0C0A, 0x000E0C0A, 0x000E0C0A, 0x000E0C0A))
+                    intArrayOf(0x8C000000.toInt(), 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000))
             }, FrameLayout.LayoutParams(-1, -1))
-            for (edge in listOf(GradientDrawable.Orientation.LEFT_RIGHT, GradientDrawable.Orientation.RIGHT_LEFT,
-                GradientDrawable.Orientation.TOP_BOTTOM, GradientDrawable.Orientation.BOTTOM_TOP)) {
-                addView(View(context).apply {
-                    background = GradientDrawable(edge,
-                        intArrayOf(0x73000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000))
-                }, FrameLayout.LayoutParams(-1, -1))
-            }
             addView(content, FrameLayout.LayoutParams(-1, -1))
         })
         updateWindowShade()
@@ -301,9 +293,9 @@ abstract class Screen : Activity() {
         val n = m.size + 8
         val px = maxOf(1, maxPx / n)
         val bmp = Bitmap.createBitmap(n * px, n * px, Bitmap.Config.RGB_565)
-        bmp.eraseColor(TEXT)
+        bmp.eraseColor(Color.WHITE)
         val canvas = Canvas(bmp)
-        val paint = Paint().apply { color = BASE }
+        val paint = Paint().apply { color = Color.BLACK }
         for (r in m.indices) for (c in m.indices) if (m[r][c]) {
             canvas.drawRect(((c + 4) * px).toFloat(), ((r + 4) * px).toFloat(), ((c + 5) * px).toFloat(), ((r + 5) * px).toFloat(), paint)
         }
@@ -312,36 +304,15 @@ abstract class Screen : Activity() {
 
     internal fun rounded(color: Int, radiusDp: Int) = GradientDrawable().apply { setColor(color); cornerRadius = dp(radiusDp).toFloat() }
 
-    /** House Lights' single glass recipe; focus brightens the face (no rim: dots are the only indicator). */
-    internal fun glass(radiusDp: Int, focused: Boolean = false): Drawable {
-        val face = GradientDrawable().apply {
-            setColor(if (focused) GLASS_FOCUSED else GLASS)
-            cornerRadius = dp(radiusDp).toFloat()
-            setStroke(dp(1), GLASS_EDGE)
-        }
-        return LayerDrawable(arrayOf(face, Highlight(dp(radiusDp).toFloat())))
+    /** Tarn's opaque controls: a stable surface and a clear, geometric focus outline. */
+    internal fun glass(radiusDp: Int, focused: Boolean = false): Drawable = GradientDrawable().apply {
+        setColor(if (focused) GLASS_FOCUSED else GLASS)
+        cornerRadius = dp(radiusDp).toFloat()
+        setStroke(dp(if (focused) 2 else 1), if (focused) TUNGSTEN else GLASS_EDGE)
     }
 
-    /** A stable reading surface over moving video, which cannot use the artwork frost. */
-    protected fun videoGlass(radiusDp: Int): Drawable =
-        LayerDrawable(arrayOf(rounded(VIDEO_GLASS_BASE, radiusDp), glass(radiusDp)))
-
-    /** The glass's top highlight, like CSS `inset 0 1px 0`: a 1 dp sliver that follows the corners and thins out down
-     *  their curve, rather than a flat bar that stops short of them and reads as a stray line. */
-    private inner class Highlight(private val radius: Float) : Drawable() {
-        private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = GLASS_HIGHLIGHT }
-        override fun draw(canvas: Canvas) = canvas.drawPath(highlight(RectF(bounds), radius), paint)
-        override fun setAlpha(alpha: Int) {}
-        override fun setColorFilter(colorFilter: ColorFilter?) {}
-        @Deprecated("Drawable API") override fun getOpacity() = PixelFormat.TRANSLUCENT
-    }
-
-    private fun highlight(box: RectF, radius: Float): Path {
-        val r = minOf(radius, box.height() / 2, box.width() / 2) // as GradientDrawable clamps a pill's radius
-        val shape = Path().apply { addRoundRect(box, r, r, Path.Direction.CW) }
-        val lower = Path().apply { addRoundRect(RectF(box).apply { offset(0f, dp(1).toFloat()) }, r, r, Path.Direction.CW) }
-        return shape.apply { op(lower, Path.Op.DIFFERENCE) }
-    }
+    /** Stable reading surface over moving video. */
+    protected fun videoGlass(radiusDp: Int): Drawable = glass(radiusDp)
 
     protected fun pill(words: Int, icon: Int = 0): TextView = pill(getString(words), icon)
 
@@ -448,7 +419,7 @@ abstract class Screen : Activity() {
         layoutParams = LinearLayout.LayoutParams(dp(ICON_BUTTON_H), dp(ICON_BUTTON_H))
     }
 
-    /** The warm-white primary action; focus lifts and grows it with a centered tungsten glow. */
+    /** Silver primary action; lake-blue focus fill, outline and scale. */
     protected fun pill(label: String, icon: Int = 0): TextView = text(label, SMALL, bold = true).apply {
         isFocusable = true
         gravity = Gravity.CENTER_VERTICAL
@@ -457,28 +428,10 @@ abstract class Screen : Activity() {
         compoundDrawablePadding = dp(6)
         if (icon != 0) setCompoundDrawablesRelative(getDrawable(icon)?.mutate()?.apply { setBounds(0, 0, dp(16), dp(16)) }, null, null, null)
         fun style(focused: Boolean) {
-            val r = dp(BUTTON_H / 2).toFloat()
-            background = object : Drawable() {
-                private val face = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = TEXT }
-                private val rim = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    style = Paint.Style.STROKE
-                    strokeWidth = dp(1).toFloat()
-                    color = TUNGSTEN
-                }
-                override fun draw(canvas: Canvas) {
-                    val box = RectF(bounds)
-                    canvas.drawRoundRect(box, r, r, face)
-                    if (focused) canvas.drawRoundRect(box, r, r, rim)
-                }
-                override fun setAlpha(alpha: Int) {
-                    face.alpha = alpha
-                    rim.alpha = alpha
-                }
-                override fun setColorFilter(colorFilter: ColorFilter?) {
-                    face.colorFilter = colorFilter
-                    rim.colorFilter = colorFilter
-                }
-                @Deprecated("Drawable API") override fun getOpacity() = PixelFormat.TRANSLUCENT
+            background = GradientDrawable().apply {
+                cornerRadius = dp(BUTTON_H / 2).toFloat()
+                setColor(if (focused) TUNGSTEN else TEXT)
+                if (focused) setStroke(dp(2), TarnPalette.DEEP_BLUE)
             }
             setTextColor(BASE)
             compoundDrawablesRelative[0]?.setTint(BASE)
@@ -550,6 +503,7 @@ abstract class Screen : Activity() {
     protected fun listChipBackground(focused: Boolean) = GradientDrawable().apply {
         cornerRadius = dp(CHIP_H / 2).toFloat()
         setColor(if (focused) CHIP_FOCUSED else CHIP_REST)
+        if (focused) setStroke(dp(2), TUNGSTEN)
     }
 
     /** A [chip]'s open state: the tungsten dot and full-strength words. */
@@ -589,12 +543,15 @@ abstract class Screen : Activity() {
     /** A hairline under a list row. */
     protected fun divider() = View(this).apply { setBackgroundColor(GLASS_EDGE) }
 
-    /** Alder's mark beside the serif "Alder": top left of the picker and sign-in, and Settings › About. */
+    /** One native vector lockup; decorative branding never takes D-pad focus. */
     protected fun brand(size: Float = WORDMARK) = LinearLayout(this).apply {
         gravity = Gravity.CENTER_VERTICAL
-        val mark = (size * 1.3f).toInt() // the mark's art fills about two thirds of its square
-        addView(ImageView(context).apply { setImageResource(R.drawable.ic_alder_mark) }, LinearLayout.LayoutParams(dp(mark), dp(mark)))
-        addView(text("Alder", size, serif = true).onArt(), wrap().apply { marginStart = dp(4) })
+        addView(ImageView(context).apply {
+            setImageResource(R.drawable.tarn_lockup)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            contentDescription = getString(R.string.app_name)
+            isFocusable = false
+        }, LinearLayout.LayoutParams(dp((size * 4.2f).toInt()), dp((size * 1.3f).toInt())))
     }
 
     /** The source's tag beside a rating ("IMDb", "Letterboxd"), as tall as the letters. */
@@ -744,7 +701,7 @@ abstract class Screen : Activity() {
             visibility = View.GONE
             isFocusable = true
             isClickable = true
-            addView(View(context).apply { setBackgroundColor(0x800E0C0A.toInt()) }, FrameLayout.LayoutParams(-1, -1))
+            addView(View(context).apply { setBackgroundColor(0x80000000.toInt()) }, FrameLayout.LayoutParams(-1, -1))
             val center = column(Gravity.CENTER_HORIZONTAL).apply {
                 addView(ring(), LinearLayout.LayoutParams(dp(40), dp(40)))
                 addView(label, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
@@ -754,7 +711,7 @@ abstract class Screen : Activity() {
         return veil to label
     }
 
-    /** One list-row focus treatment across settings, episodes, sources and menus. */
+    /** One high-contrast list-row focus treatment across settings, episodes, sources and menus. */
     protected fun View.rowFocus(radiusDp: Int = 8, rest: () -> android.graphics.drawable.Drawable? = { null }, also: (Boolean) -> Unit = {}) {
         isFocusable = true
         background = rest()
@@ -762,117 +719,37 @@ abstract class Screen : Activity() {
             v.background = if (has) GradientDrawable().apply {
                 setColor(ROW_FOCUSED)
                 cornerRadius = dp(radiusDp).toFloat()
+                setStroke(dp(2), TUNGSTEN)
             } else rest()
             also(has)
         }
     }
 
-    /** Focus lifts and subtly scales the card above its neighbours with no outline or heavy shadow. */
+    /** Focus lifts and outlines a card without adding a heavy shadow. */
     internal fun View.lift(on: Boolean, scale: Float = CARD_GROW, shadow: Boolean = true) {
-        foreground = null
+        foreground = if (on) GradientDrawable().apply {
+            setColor(Color.TRANSPARENT)
+            cornerRadius = dp(CARD_RADIUS).toFloat()
+            setStroke(dp(2), TUNGSTEN)
+        } else null
         if (android.os.Build.VERSION.SDK_INT >= 28 && !shadow) outlineSpotShadowColor = Color.TRANSPARENT
         grow(on, scale)
             .translationZ(if (on) (if (shadow) dp(CARD_LIFT).toFloat() else 1f) else 0f).start()
     }
 
-    /** The screen's art, behind its glass: what [glassOver] frosts. Screens with art behind them name it. */
+    /** Screen artwork; retained for existing subclass contracts. */
     protected open val backdrop: ImageView? get() = null
 
-    private class FrostHost(val view: View, var attached: Boolean = view.isAttachedToWindow)
-    private var frostSource: Bitmap? = null
-    private var frostFor: Bitmap? = null
-    private var frostBitmap: Bitmap? = null
-    private val frostHosts = mutableListOf<FrostHost>()
-
     /**
-     * Frosted glass, as the episode list draws it: the art behind, blurred, seen through a rounded pane under the
-     * glass tint. A background for [host] (pills, the top bar, panels); without a [backdrop] it's the plain tint.
+     * Keep the shared API for callers, but use an opaque surface instead of sampling, blurring
+     * and drawing backdrop bitmaps. No per-host listeners, background jobs or drawing-time paths.
      */
-    /** [shade]: how much of the screen's own shade lies over the art there (0..1), so glass over a shaded part of the art
-     *  is as dark as the art around it instead of a milky patch of the unshaded picture. */
-    protected fun glassOver(host: View, radiusDp: Int, shade: Float = 0f, keepPrevious: Boolean = true): Drawable {
-        // No art to frost (Settings): the glass sits on the base colour, so a dialog doesn't show the rows under it.
-        val behind = backdrop ?: return LayerDrawable(arrayOf(rounded(BASE, radiusDp), glass(radiusDp)))
-        frostHosts.removeAll { it.attached && !it.view.isAttachedToWindow }
-        if (frostHosts.none { it.view === host }) {
-            val entry = FrostHost(host)
-            frostHosts += entry
-            host.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
-                override fun onViewAttachedToWindow(v: View) {
-                    entry.attached = true
-                    if (frostHosts.none { it === entry }) frostHosts += entry
-                }
+    @Suppress("UNUSED_PARAMETER")
+    protected fun glassOver(host: View, radiusDp: Int, shade: Float = 0f, keepPrevious: Boolean = true): Drawable =
+        glass(radiusDp)
 
-                override fun onViewDetachedFromWindow(v: View) {
-                    frostHosts.remove(entry)
-                }
-            })
-        }
-        return Frost(host, behind, dp(radiusDp).toFloat(), shade, keepPrevious)
-    }
-
-    /** The art behind changed: glass redraws with the new picture once it's blurred. */
-    protected fun refrost() {
-        frostHosts.removeAll { it.attached && !it.view.isAttachedToWindow }
-        frostHosts.toList().forEach { if (it.view.isAttachedToWindow) it.view.invalidate() }
-        updateWindowShade()
-    }
-
-    /** The art blurred once per picture ([Images.frost]); the last one stays up while the next is made. */
-    private fun frosted(d: Drawable?, keepPrevious: Boolean): Bitmap? {
-        val src = (d as? BitmapDrawable)?.bitmap ?: return frostBitmap.takeIf { keepPrevious }
-        if (src !== frostSource) {
-            frostSource = src
-            background({ Images.frost(src, FROST_W) }) { r ->
-                if (frostSource === src) {
-                    frostBitmap = r.getOrNull()
-                    frostFor = src
-                    refrost()
-                }
-            }
-        }
-        return frostBitmap.takeIf { keepPrevious || frostFor === src }
-    }
-
-    private inner class Frost(private val host: View, private val behind: ImageView, private val radius: Float,
-                              private val shade: Float, private val keepPrevious: Boolean) : Drawable() {
-        private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
-        private val tint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = GLASS }
-        private val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = GLASS_EDGE; style = Paint.Style.STROKE; strokeWidth = dp(1).toFloat() }
-        private val shine = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = GLASS_HIGHLIGHT }
-        private val path = Path()
-        private val at = IntArray(2)
-        private val art = IntArray(2)
-
-        override fun draw(canvas: Canvas) {
-            path.reset()
-            path.addRoundRect(RectF(bounds), radius, radius, Path.Direction.CW)
-            val d = behind.drawable
-            frosted(d, keepPrevious)?.let { f ->
-                canvas.save()
-                canvas.clipPath(path)
-                // The blurred art lines up with the sharp art behind: where the host sits on screen, through the same crop.
-                // On screen, not in the window: a menu's glass lives in a dialog's window over the screen's art.
-                host.getLocationOnScreen(at)
-                behind.getLocationOnScreen(art)
-                canvas.translate((art[0] - at[0]).toFloat(), (art[1] - at[1]).toFloat())
-                canvas.concat(behind.imageMatrix)
-                // As bright as the sharp art around it: a dimmed backdrop (Settings') dims its frosted copy too.
-                if (behind.alpha < 1f) canvas.drawColor(BASE)
-                paint.alpha = (behind.alpha * 255).toInt()
-                canvas.drawBitmap(f, null, Rect(0, 0, d?.intrinsicWidth ?: f.width, d?.intrinsicHeight ?: f.height), paint)
-                if (shade > 0f) canvas.drawColor(Color.argb((shade * 255).toInt(), 14, 12, 10))
-                canvas.restore()
-            }
-            canvas.drawPath(path, tint)
-            canvas.drawPath(path, edge)
-            canvas.drawPath(highlight(RectF(bounds), radius), shine)
-        }
-
-        override fun setAlpha(alpha: Int) {}
-        override fun setColorFilter(colorFilter: ColorFilter?) {}
-        @Deprecated("Drawable API") override fun getOpacity() = PixelFormat.TRANSLUCENT
-    }
+    /** Existing artwork-change callbacks still maintain the readability shade. */
+    protected fun refrost() = updateWindowShade()
 
     /** A thin rounded watched-so-far bar over a dark track. */
     internal fun progressBar(progress: Float, color: Int = TUNGSTEN) = LinearLayout(this).apply {
@@ -974,7 +851,7 @@ abstract class Screen : Activity() {
         val header = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             addView(brand(WORDMARK))
-            addView(View(context).apply { setBackgroundColor(0x50DFB886) }, LinearLayout.LayoutParams(dp(1), dp(25)).apply {
+            addView(View(context).apply { setBackgroundColor(0x508CB9CF) }, LinearLayout.LayoutParams(dp(1), dp(25)).apply {
                 marginStart = dp(12)
                 marginEnd = dp(14)
             })
@@ -985,7 +862,7 @@ abstract class Screen : Activity() {
             addView(text(label, SMALL, color = TUNGSTEN))
         }
         root.addView(header, LinearLayout.LayoutParams(-1, dp(34)))
-        root.addView(View(this).apply { setBackgroundColor(0x40DFB886) }, LinearLayout.LayoutParams(-1, dp(1)).apply {
+        root.addView(View(this).apply { setBackgroundColor(0x408CB9CF) }, LinearLayout.LayoutParams(-1, dp(1)).apply {
             topMargin = dp(4)
             bottomMargin = dp(14)
         })
@@ -1004,14 +881,14 @@ abstract class Screen : Activity() {
         val caption = text("", BODY, color = TEXT_2)
         val summary = text("", 16f, color = TEXT_2).apply {
             setPadding(dp(12), 0, 0, 0)
-            background = LayerDrawable(arrayOf(rounded(0xA9EAC68C.toInt(), 0))).apply {
+            background = LayerDrawable(arrayOf(rounded(0xA98CB9CF.toInt(), 0))).apply {
                 setLayerGravity(0, Gravity.START or Gravity.FILL_VERTICAL)
                 setLayerWidth(0, dp(1))
             }
         }
         val pathView = text("", SMALL, color = TEXT_2).apply {
             setPadding(dp(12), dp(8), dp(12), dp(8))
-            background = panel(7, 0xFF2C221B.toInt(), 0xFF271E18.toInt(), 0x48DFB886)
+            background = panel(7, 0xFF1E3A54.toInt(), 0xFF0B1624.toInt(), 0x488CB9CF)
         }
 
         var hero = true
@@ -1025,18 +902,18 @@ abstract class Screen : Activity() {
             }
         }.apply {
             scaleType = ImageView.ScaleType.FIT_CENTER
-            background = rounded(0xFF120E0B.toInt(), 7)
+            background = rounded(0xFF0B1624.toInt(), 7)
             clipToOutline = true
         }
         val frame = FrameLayout(this).apply {
-            background = panel(10, 0xFF31271F.toInt(), 0xFF241C16.toInt(), 0x7AD9B889)
+            background = panel(10, 0xFF1E3A54.toInt(), 0xFF0B1624.toInt(), 0x7A8CB9CF)
             setPadding(dp(3), dp(3), dp(3), dp(3))
             addView(picture, FrameLayout.LayoutParams(-1, -2))
         }
         val handoff = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(20), dp(24), dp(20), dp(24))
-            background = panel(10, 0xFF342820.toInt(), 0xFF2C221C.toInt(), 0x60DFB886)
+            background = panel(10, 0xFF1E3A54.toInt(), 0xFF0B1624.toInt(), 0x608CB9CF)
         }
         fun detail(view: View, top: Int, width: Int = -1) =
             left.addView(view, LinearLayout.LayoutParams(width, -2).apply { topMargin = dp(top) })
@@ -1049,7 +926,7 @@ abstract class Screen : Activity() {
 
         val right = column(Gravity.START).apply {
             clipChildren = true
-            background = panel(10, 0xFF30251F.toInt(), 0xFF241C18.toInt(), 0x42DFB886)
+            background = panel(10, 0xFF1E3A54.toInt(), 0xFF0B1624.toInt(), 0x428CB9CF)
             setPadding(dp(11), dp(10), dp(11), dp(8))
         }
         page.addView(right, LinearLayout.LayoutParams(0, -1, 1f).apply { marginStart = dp(30) })
@@ -1064,7 +941,7 @@ abstract class Screen : Activity() {
         }
         listScroll.addView(list, FrameLayout.LayoutParams(-1, -2))
         right.addView(listScroll, LinearLayout.LayoutParams(-1, 0, 1f))
-        right.addView(View(this).apply { setBackgroundColor(0x40DFB886) }, LinearLayout.LayoutParams(-1, dp(1)))
+        right.addView(View(this).apply { setBackgroundColor(0x408CB9CF) }, LinearLayout.LayoutParams(-1, dp(1)))
         val gotIt = pill(R.string.action_got_it).apply { setOnClickListener { dialog.dismiss() } }
         val hints = LinearLayout(this).apply {
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
@@ -1107,7 +984,7 @@ abstract class Screen : Activity() {
                 gravity = Gravity.CENTER_VERTICAL
                 minimumHeight = dp(68)
                 setPadding(dp(12), dp(8), dp(12), dp(8))
-                background = panel(8, 0xFF211914.toInt(), 0xFF1C1511.toInt(), 0x42DFB886)
+                background = panel(8, 0xFF0B1624.toInt(), 0xFF0B1624.toInt(), 0x428CB9CF)
             }
             handoff.addView(card().apply { addView(brand(24f)) }, LinearLayout.LayoutParams(0, -2, 1f))
             handoff.addView(text(if (handoff.layoutDirection == View.LAYOUT_DIRECTION_RTL) "←" else "→", 27f, color = TUNGSTEN).apply {
@@ -1127,7 +1004,7 @@ abstract class Screen : Activity() {
             }, LinearLayout.LayoutParams(0, -2, 1.15f))
         }
 
-        val neutral = 0xFF34271F.toInt()
+        val neutral = 0xFF1E3A54.toInt()
         fun show(change: Change) {
             val title = change.title
             titleView.text = title.ifEmpty { change.text }
@@ -1145,7 +1022,7 @@ abstract class Screen : Activity() {
             val ambient = accent?.let { color ->
                 Color.rgb((Color.red(color) + 112) / 4, (Color.green(color) + 82) / 4, (Color.blue(color) + 66) / 4)
             } ?: neutral
-            root.background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(ambient, 0xFF140F0D.toInt()))
+            root.background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(ambient, 0xFF0B1624.toInt()))
             left.setPadding(0, dp(if (hero) 8 else if (bitmap != null || change.player != null) 32 else 56), 0, dp(4))
             picture.setImageBitmap(bitmap)
             picture.requestLayout()
@@ -1168,7 +1045,7 @@ abstract class Screen : Activity() {
         var first: View? = null
         var shown: View? = null
         fun section(name: String) {
-            if (list.childCount > 0) list.addView(View(this).apply { setBackgroundColor(0x40DFB886) },
+            if (list.childCount > 0) list.addView(View(this).apply { setBackgroundColor(0x408CB9CF) },
                 LinearLayout.LayoutParams(-1, dp(1)).apply { topMargin = dp(8); marginStart = dp(6); marginEnd = dp(6) })
             list.addView(text(name.uppercase(), 10f, bold = true, color = TEXT_2).apply {
                 letterSpacing = 0.09f
@@ -1192,14 +1069,14 @@ abstract class Screen : Activity() {
                 row.addView(ImageView(this).apply {
                     setImageBitmap(thumbnail)
                     scaleType = ImageView.ScaleType.FIT_CENTER
-                    background = rounded(0xFF241B16.toInt(), 3)
+                    background = rounded(0xFF0B1624.toInt(), 3)
                     clipToOutline = true
                     importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 }, LinearLayout.LayoutParams(dp(41), dp(23)).apply { marginEnd = dp(8) })
             }
             val name = text(change.title.ifEmpty { change.text }, 13f, color = TEXT_2)
             row.addView(name, LinearLayout.LayoutParams(0, -2, 1f))
-            val selected = panel(6, 0xFF48372A.toInt(), 0xFF423228.toInt(), 0xCFF3D9B1.toInt())
+            val selected = panel(6, 0xFF1E3A54.toInt(), 0xFF1E3A54.toInt(), 0xCF8CB9CF.toInt())
             fun activate() {
                 if (shown != row) {
                     shown?.background = null
@@ -1244,7 +1121,7 @@ abstract class Screen : Activity() {
         background = glassOver(this, 14, shade = FROST_READING)
     }
 
-    // House Lights' shared values. Screens keep their layout and content; the helpers above own component styling.
+    // Shared Tarn design tokens. Legacy names remain for source compatibility. Screens keep their layout and content; the helpers above own component styling.
     // Inter is a variable font. Android 6 and 7 have no Typeface.Builder to pick its weight (calling it crashed Alder at
     // launch there), so they get Inter's default weight and a synthetic bold for semi-bold.
     private class Fonts(assets: android.content.res.AssetManager) {
@@ -1254,7 +1131,6 @@ abstract class Screen : Activity() {
         val semiBold: Typeface = if (android.os.Build.VERSION.SDK_INT >= 26)
             Typeface.Builder(assets, "fonts/inter.ttf").setFontVariationSettings("'wght' 600").setWeight(600).build()
         else Typeface.create(medium, Typeface.BOLD)
-        val serif: Typeface = Typeface.createFromAsset(assets, "fonts/instrument_serif.ttf")
     }
 
     companion object {
@@ -1282,11 +1158,11 @@ abstract class Screen : Activity() {
         const val ENTER_MS = 240L // a panel, overlay or line arrives
         const val PAGE_MS = 300L // a page's content changes; screens open and close
         const val IDLE_MS = 400L // the UI dims or comes back
-        const val ART_MS = 600L // a backdrop crossfades
-        const val LIGHTS_MS = 800L // first art after launch: the lights rise
+        const val ART_MS = 240L // a backdrop crossfades
+        const val LIGHTS_MS = 240L // first art after launch: the lights rise
         const val PUSH_IN_MS = 20_000L // the backdrop's slow push-in
         const val PUSH_IN = 1.03f
-        const val ARRIVE = 1.04f // a title page's art starts this close and settles back to 1
+        const val ARRIVE = 1.0f // a title page's art starts this close and settles back to 1
         val EASE_OUT: android.animation.TimeInterpolator = android.view.animation.DecelerateInterpolator(1.5f)
         val EASE_IN: android.animation.TimeInterpolator = android.view.animation.AccelerateInterpolator(1.5f)
         val SETTLE: android.animation.TimeInterpolator = android.view.animation.OvershootInterpolator(1.2f)
@@ -1304,7 +1180,7 @@ abstract class Screen : Activity() {
         const val PANEL_W = 0.573f // share of the screen a list panel takes, beside its side note
         const val DOT = "  ·  "
 
-        const val WORDMARK = 22f // sp, "Alder" beside its mark
+        const val WORDMARK = 22f // lockup sizing unit
         const val SERIF_HERO = 38f
         const val SERIF_TITLE = 28.5f
         const val SERIF_NAME = 19f
@@ -1314,27 +1190,27 @@ abstract class Screen : Activity() {
         const val CODE = 36f
         val LEADING = mapOf(SERIF_HERO to 40f, SERIF_TITLE to 30f, SERIF_NAME to 21f, BODY to 20f, SMALL to 17f, CODE to 40f)
 
-        const val BASE = 0xFF0E0C0A.toInt()
-        const val CARD_PLACEHOLDER = 0xFF28221E.toInt()
+        const val BASE = TarnPalette.BLACK
+        const val CARD_PLACEHOLDER = TarnPalette.MIDNIGHT
         const val CARD_DIM = 0.45f
         const val GRID_DIM = 0.25f
         const val CARD_CONTINUE_DIM = 0.45f
-        const val TEXT = 0xFFF3EEE6.toInt()
-        const val TEXT_2 = 0xB8F3EEE6.toInt()
-        const val TEXT_3 = 0x73F3EEE6
-        const val TUNGSTEN = 0xFFF3D9B1.toInt()
-        const val TUNGSTEN_RIM = 0x99F3D9B1.toInt()
-        const val TUNGSTEN_GLOW = 0x59F3D9B1
-        const val GLASS = 0x4D28221C
-        const val GLASS_FOCUSED = 0x3DF3EEE6 // a lit face: with no rim, the fill alone carries focus
-        const val GLASS_EDGE = 0x24FFF0DC
-        const val GLASS_HIGHLIGHT = 0x4DFFF5E6
-        const val VIDEO_GLASS_BASE = 0xD90E0C0A.toInt()
-        const val VIDEO_CONTROL_BASE = 0xA60E0C0A.toInt()
-        const val ROW_FOCUSED = 0x29F3EEE6
-        const val CHIP_REST = 0xE6191512.toInt() // list chips over posters: near-solid smoked glass
-        const val CHIP_FOCUSED = 0xFF4C4136.toInt()
-        const val PROGRESS_TRACK = 0x9938322C.toInt() // visible over both light and dark poster art without a scrim
+        const val TEXT = TarnPalette.SILVER
+        const val TEXT_2 = TarnPalette.SECONDARY
+        const val TEXT_3 = TarnPalette.MUTED
+        const val TUNGSTEN = TarnPalette.LAKE_BLUE
+        const val TUNGSTEN_RIM = TarnPalette.LAKE_BLUE
+        const val TUNGSTEN_GLOW = 0x00000000
+        const val GLASS = TarnPalette.MIDNIGHT
+        const val GLASS_FOCUSED = TarnPalette.DEEP_BLUE
+        const val GLASS_EDGE = TarnPalette.SLATE_BLUE
+        const val GLASS_HIGHLIGHT = TarnPalette.LAKE_BLUE
+        const val VIDEO_GLASS_BASE = TarnPalette.MIDNIGHT
+        const val VIDEO_CONTROL_BASE = 0xD90B1624.toInt()
+        const val ROW_FOCUSED = TarnPalette.DEEP_BLUE
+        const val CHIP_REST = TarnPalette.MIDNIGHT
+        const val CHIP_FOCUSED = TarnPalette.DEEP_BLUE
+        const val PROGRESS_TRACK = TarnPalette.TRACK
         internal val pool = Executors.newFixedThreadPool(6)
     }
 }
