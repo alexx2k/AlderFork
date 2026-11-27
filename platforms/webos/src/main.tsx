@@ -106,7 +106,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
    }catch(error){
     if(signal.aborted||authRef.current!==key)return;
     if(error instanceof ApiError&&error.code===1){
-     authRef.current=null;setRows([]);setAddons([]);onExpired();
+     authRef.current=null;setRows([]);setAddons([]);setLoading(false);setStatus('Account session expired. Returning to profiles…');onExpired();
     }else setStatus('Could not load your account or catalogues. Check the connection and select Refresh.');
    }finally{if(!signal.aborted&&authRef.current===key)setLoading(false);}
   })();

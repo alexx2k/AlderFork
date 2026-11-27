@@ -84,7 +84,7 @@ export function mergeStreamAddons(own,lent){
  own.forEach(raw=>addKey(obj(raw)));
  for(const raw of lent){
   const d=obj(raw),manifest=obj(d.manifest),id=string(manifest.id),url=string(d.transportUrl);
-  if(!url||ids.has(id)||urls.has(url)||obj(d.flags).official===true||/watchly|trakt|simkl|syncribullet|aiolists/i.test(string(manifest.name)))continue;
+  if(!url||ids.has(id)||urls.has(url)||[true,'true'].includes(obj(d.flags).official)||/watchly|trakt|simkl|syncribullet|aiolists/i.test(string(manifest.name)))continue;
   const resources=Array.isArray(manifest.resources)?manifest.resources.filter(r=>r==='stream'||obj(r).name==='stream'):[];
   if(!resources.length)continue;
   out.push({...d,manifest:{...manifest,resources}});addKey(d);

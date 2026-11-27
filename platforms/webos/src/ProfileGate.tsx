@@ -85,7 +85,7 @@ export function ProfileGate({renderApp,renderDiagnostics}:Props){
  const disconnect=(expired:boolean)=>{
   if(!active)return;const current=active;const d=model.current;if(!d)return;
   const owner=ownerFor(d,current.profile.id);if(!owner||(!expired&&current.profile.mode!=='stremio'))return;
-  void run(async()=>{const token=owner.authKey;await commit(setCredential(d,owner.id,null));switchProfile();setError(expired?'Account session expired. Relink '+owner.name+' to restore streaming.':'Signed out. Profile and local history retained.');if(!expired&&token)revokeSession(token).catch(()=>{});});
+  void run(async()=>{const token=owner.authKey;await commit(setCredential(d,owner.id,null));switchProfile();setError(expired?'Account session expired. Relink '+owner.name+' to restore streaming.':'Signed out. Profile and local history retained.');if(!expired&&token&&!model.current!.profiles.some(x=>x.authKey===token))revokeSession(token).catch(()=>{});});
  };
  const saveDraft=(draft:Draft,owner:string|null)=>{if(step.kind!=='edit'||!model.current)return;const id=step.id;
   if(id){void run(async()=>{await commit(editProfile(model.current!,id,draft));setStep({kind:'pick'});});return;}
@@ -101,7 +101,7 @@ export function ProfileGate({renderApp,renderDiagnostics}:Props){
   });
  };
  const remove=(id:string)=>{void run(async()=>{const d=model.current!;const p=d.profiles.find(x=>x.id===id);await commit(removeProfile(d,id));try{deleteHistory(localStorage,id);}catch{setError('Profile removed, but local history cleanup failed.');}if(p?.mode==='stremio'&&p.authKey&&!model.current!.profiles.some(x=>x.authKey===p.authKey))revokeSession(p.authKey).catch(()=>{});setStep({kind:'pick'});});};
- useLayoutEffect(()=>{if(active)return;const id=step.kind==='diagnostics'?'diagnostics-back':step.kind==='pin'?'unlock-1':step.kind==='edit'?'profile-name':step.kind==='link'?'retry-link':step.kind==='delete'?'delete-cancel':data?.profiles.length?'pick-'+data.profiles[0].id:'add-profile';jump(id);},[active,step,data]);
+ useLayoutEffect(()=>{if(active||busy)return;const id=step.kind==='diagnostics'?'diagnostics-back':step.kind==='pin'?'unlock-1':step.kind==='edit'?'profile-name':step.kind==='link'?'retry-link':step.kind==='delete'?'delete-cancel':data?.profiles.length?'pick-'+data.profiles[0].id:'add-profile';jump(id);},[active,step,data,busy]);
  useEffect(()=>{if(active)return;const handler=(e:KeyboardEvent)=>{
   const target=e.target as HTMLElement,typing=target.tagName==='INPUT';
   if(isBack(e.key,e.keyCode)){if(step.kind!=='pick'){e.preventDefault();if(!lock.current)pick();}return;}
@@ -112,7 +112,7 @@ export function ProfileGate({renderApp,renderDiagnostics}:Props){
   const current=document.activeElement as HTMLElement;const next=items.includes(current)?nextFocus(r(current),items.map(r),dir):items[0]?.id;
   if(next)document.getElementById(next)?.focus();
  };document.addEventListener('keydown',handler);return()=>document.removeEventListener('keydown',handler);},[active,step]);
- if(active)return <>{renderApp(active.profile,active.token,historyNamespace(active.profile.id),switchProfile,()=>disconnect(false),()=>disconnect(true),lenderTokens(model.current!,active.profile.id))}{error&&<div className="profile-alert" role="status">{error}<button type="button" id="profile-dismiss-alert" data-focus onClick={()=>setError('')}>Dismiss</button></div>}</>;
+ if(active)return <>{renderApp(active.profile,active.token,historyNamespace(active.profile.id),()=>{if(!lock.current)switchProfile();},()=>disconnect(false),()=>disconnect(true),lenderTokens(model.current!,active.profile.id))}{error&&<div className="profile-alert" role="status">{error}<button type="button" id="profile-dismiss-alert" data-focus onClick={()=>setError('')}>Dismiss</button></div>}</>;
  const p=step.kind==='pin'||step.kind==='edit'||step.kind==='delete'?data?.profiles.find(p=>p.id===step.id):undefined;
  return <div className="app profile-app"><header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.4.0-dev.1 • Development</span></header>{error&&<p className="warn" role="status">{error}</p>}{busy&&<p role="status">Saving profile or migrating history…</p>}
  {!data?<section><p>{error?'Profile storage unavailable.':'Opening profiles…'}</p>{error&&btn('profile-retry','Retry',()=>setBoot(x=>x+1))}</section>:
