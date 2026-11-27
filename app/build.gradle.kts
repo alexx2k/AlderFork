@@ -6,18 +6,20 @@ plugins {
     id("com.android.application")
 }
 
+val tarnVersion = "2.0.0"
+
 // Framework Views only, like Plume. Media3, FFmpeg and Nuvio Engine handle playback.
 android {
-    namespace = "dev.alder"
+    namespace = "dev.tarn"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "dev.alderfork"
+        applicationId = "dev.tarn"
         minSdk = 23
         targetSdk = 36
 
-        versionCode = 150
-        versionName = "1.5.0"
+        versionCode = 200
+        versionName = tarnVersion
         // TVs are ARM; the x86 builds of ffmpeg's native code would only add size.
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
     }
@@ -50,7 +52,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
-            // -PdebugKey: an optimised build that installs over a debug one on a test TV (same key, data kept).
+            // -PdebugKey: CI-only release signing; application ID still differs from the development build.
             signingConfig = if (project.hasProperty("debugKey")) {
                 signingConfigs.getByName("debug")
             } else {
@@ -118,4 +120,19 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     // Android's org.json is a stub in local unit tests; the real one lets tests parse add-on and IMDb responses.
     testImplementation("org.json:json:20240303")
+}
+
+// Keep AGP's standard outputs intact; provide explicitly named distributable copies.
+tasks.register<Copy>("packageTarnDebug") {
+    dependsOn("assembleDebug")
+    from(layout.buildDirectory.file("outputs/apk/debug/app-debug.apk"))
+    into(layout.buildDirectory.dir("outputs/tarn"))
+    rename("app-debug[.]apk", "Tarn-dev.apk")
+}
+val tarnReleaseName = if (project.hasProperty("debugKey")) "Tarn-ci-$tarnVersion.apk" else "Tarn-$tarnVersion.apk"
+tasks.register<Copy>("packageTarnRelease") {
+    dependsOn("assembleRelease")
+    from(layout.buildDirectory.file("outputs/apk/release/app-release.apk"))
+    into(layout.buildDirectory.dir("outputs/tarn"))
+    rename("app-release[.]apk", tarnReleaseName)
 }
