@@ -12,7 +12,7 @@ npm.cmd run build
 ```
 Reopen dist in LG Simulator (File > Launch App). No new dependencies.
 - Home: existing layout, poster sizes, artwork and focus unchanged. 
-- Search: enter a title that is not present in Home and submit; check results across searchable add-ons, duplicate removal, failed add-on reporting, empty results, More results, title details and Back focus.
+- Search: enter a title that is not present in Home (physical keyboard or optional D-pad keyboard) and submit; check results across searchable add-ons, duplicate removal, failed add-on reporting, empty results, More results, title details and Back focus.
 - Discover: switch Movies/Series, select catalogue and genre, load more where skip is advertised, change filters while a request is running, retry errors. Unsupported genre/skip controls are not presented.
 - Details: open a movie and series from Home, Search and Discover; verify artwork, rating/runtime/cast where supplied, season sorting, specials, episode thumbnails and descriptions. Play movie or select episode: confirm development notice, no playback. Test Back to previous results and focus.
 - Settings: existing sign-in and sign-out, diagnostics and persistence remain available.

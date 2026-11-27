@@ -44,3 +44,6 @@ body{font-size:1.35vw}@media(max-width:1185px){body{font-size:16px}}button,input
 .episode-card .episode-hit,.episode-card .episode-hit:focus,.episode-card .episode-hit:hover{position:absolute;top:0;left:0;right:0;bottom:0;width:100%;height:100%;border:2px solid transparent;outline:0;background:transparent;padding:0;z-index:2;border-radius:6px}
 .episode-card:hover .episode-hit{border-color:var(--lake)}.episode-card:focus-within{background:var(--deep)}.episode-card .episode-hit:focus{border-color:var(--silver)}
 @media(max-width:800px){.title-copy{width:95%}.title-backdrop{width:100%}.title-shade{background:linear-gradient(90deg,rgba(11,22,36,.96),rgba(11,22,36,.65))}.episode-thumb{width:25vw;height:14.0625vw;flex-basis:25vw}}
+
+/* Optional D-pad keyboard; inline-block avoids flex sizing quirks in old TV engines. */
+.search-keys{max-width:44em;margin-top:1em;padding:.35em;background:var(--black);border-radius:6px}.search-keys button{display:inline-block;min-width:2.55em;text-align:center;margin:4px;background:var(--deep)}

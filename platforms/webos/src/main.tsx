@@ -48,11 +48,12 @@ function App(){
  const [query,setQuery]=useState('');
  const [showSearch,setShowSearch]=useState(false);
  const [searchTerm,setSearchTerm]=useState('');
+ const [keyboard,setKeyboard]=useState(false);
  const [searchLimit,setSearchLimit]=useState(30);
  const cache=useMemo(()=>new ContentCache(),[auth,refresh]);
  const discovery=useDiscovery(addons,!!auth&&shelf==='Discover'&&!showSearch,cache);
  const search=useRemoteSearch(addons,!!auth&&showSearch,searchTerm,cache);
- const submitSearch=()=>{const term=query.trim();setSearchLimit(30);if(term===searchTerm)search.retry();else setSearchTerm(term);};
+ const submitSearch=()=>{const term=query.trim();setKeyboard(false);setPending('search-submit');setSearchLimit(30);if(term===searchTerm)search.retry();else setSearchTerm(term);};
  const [rowLimit,setRowLimit]=useState(6);
  const [detail,setDetail]=useState<Title|null>(null);
  const [selectedTitle,setSelectedTitle]=useState<Title|null>(null);
@@ -61,7 +62,7 @@ function App(){
  const lastHash=useRef(location.hash);
  const [pending,setPending]=useState<string|null>(null);
  const go=(hash:string)=>{restored.current[location.hash]=(document.activeElement as HTMLElement)?.id||'link-account';location.hash=hash;};
- const back=()=>{if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){setShowSearch(false);setPending('search');}else if(shelf==='Discover'){setShelf('Home');setPending('nav-Home');}};
+ const back=()=>{if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){if(keyboard){setKeyboard(false);setPending('search-keyboard');}else{setShowSearch(false);setPending('search');}}else if(shelf==='Discover'){setShelf('Home');setPending('nav-Home');}};
  useEffect(()=>{
   const handler=()=>{const r=routeFromHash(location.hash);const old=lastHash.current;lastHash.current=location.hash;
    if(location.hash&&r.kind!=='home')history.replaceState({tarnRoute:true},'');
@@ -93,7 +94,7 @@ function App(){
   const key=authRef.current;
   try{if(sessionStore.current)await sessionStore.current.save(null);}
   catch{setAccountStatus('Could not clear account storage. Retry sign-out.');return;}
-  authRef.current=null;setAuth(null);setRows([]);setAddons([]);setDetail(null);setSelectedTitle(null);setQuery('');setSearchTerm('');setShowSearch(false);setAccountStatus('Signed out on this device.');setPending('link-account');
+  authRef.current=null;setAuth(null);setRows([]);setAddons([]);setDetail(null);setSelectedTitle(null);setQuery('');setSearchTerm('');setKeyboard(false);setShowSearch(false);setAccountStatus('Signed out on this device.');setPending('link-account');
   if(key)revokeSession(key).catch(()=>{});
  };
  useEffect(()=>{
@@ -156,7 +157,7 @@ function App(){
    if(dest)focus(dest);
   };
   document.addEventListener('keydown',handler);return()=>document.removeEventListener('keydown',handler);
- },[route,showSearch,shelf]);
+ },[route,showSearch,shelf,keyboard]);
  const save=async(name:string)=>{
   const next={...state,name:name.trim().slice(0,24)||'Viewer',updatedAt:Date.now()};setState(next);
   try{if(!store.current)throw Error();await store.current.save(next);setStorage('IndexedDB read/write passed');}
@@ -169,14 +170,14 @@ function App(){
  return <div className="app" onPointerDown={e=>{const b=(e.target as HTMLElement).closest<HTMLElement>('button[data-focus]');if(b)b.focus();}}>
  <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.2.0-dev.2 • Development</span></header>
  {route.kind==='home'?<main>
-  <nav>{['Home','Discover','Movies','Series'].map(n=><Btn key={n} id={'nav-'+n} className={shelf===n?'selected':''} onClick={()=>{setShelf(n);setShowSearch(false);setRowLimit(6);}}>{n}</Btn>)}
-  {auth&&<Btn id="search" onClick={()=>{setShowSearch(!showSearch);if(!showSearch)setTimeout(()=>document.getElementById('query')?.focus(),0);}}>Search</Btn>}
+  <nav>{['Home','Discover','Movies','Series'].map(n=><Btn key={n} id={'nav-'+n} className={shelf===n?'selected':''} onClick={()=>{setShelf(n);setShowSearch(false);setKeyboard(false);setRowLimit(6);}}>{n}</Btn>)}
+  {auth&&<Btn id="search" onClick={()=>{setShowSearch(!showSearch);setKeyboard(false);if(!showSearch)setTimeout(()=>document.getElementById('query')?.focus(),0);}}>Search</Btn>}
   <Btn id="settings" onClick={()=>go('#settings')}>Settings</Btn><Btn id="diagnostics" onClick={()=>go('#diagnostics')}>Diagnostics</Btn>
   <span className="profile">{state.name}</span></nav>
   {accountStatus&&<p className="warn" aria-live="polite">{accountStatus}</p>}
   {!accountReady?<p>Opening account storage…</p>:!auth?<section className="welcome"><p className="eyebrow">TARN</p><h1>Your living room, your library.</h1><p>Link your Stremio account to browse the catalogues from your installed add-ons.</p><Btn id="link-account" className="primary" onClick={()=>go('#signin')}>Link Stremio account</Btn></section>:<>
   <div className="catalog-status"><p aria-live="polite">{status}</p><Btn id="refresh-catalogues" disabled={loading} onClick={()=>setRefresh(x=>x+1)}>{loading?'Loading…':'Refresh catalogues'}</Btn></div>
-  {showSearch?<section className="search"><h1>Search</h1><input id="query" data-focus value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'||e.keyCode===13){e.preventDefault();submitSearch();focus('search-submit');}}} placeholder="Search movies and series…" aria-label="Search installed add-ons"/><div className="controls"><Btn id="search-submit" className="primary" onClick={submitSearch}>{search.loading?'Search again':'Search'}</Btn><Btn id="close-search" onClick={()=>{setShowSearch(false);setPending('search');}}>Close search</Btn></div><p aria-live="polite">{search.status}</p></section>:
+  {showSearch?<section className="search"><h1>Search</h1><input id="query" data-focus maxLength={120} value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'||e.keyCode===13){e.preventDefault();submitSearch();focus('search-submit');}}} placeholder="Search movies and series…" aria-label="Search installed add-ons"/><div className="controls"><Btn id="search-submit" className="primary" onClick={submitSearch}>{search.loading?'Search again':'Search'}</Btn><Btn id="search-keyboard" onClick={()=>{setKeyboard(!keyboard);if(!keyboard)setPending('key-A');}}>{keyboard?'Hide keyboard':'On-screen keyboard'}</Btn><Btn id="close-search" onClick={()=>{setShowSearch(false);setKeyboard(false);setPending('search');}}>Close search</Btn></div>{keyboard&&<div className="search-keys" aria-label="On-screen search keyboard">{'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('').map(k=><Btn key={k} id={'key-'+k} onClick={()=>setQuery(q=>(q+k).slice(0,120))}>{k}</Btn>)}<Btn id="key-space" onClick={()=>setQuery(q=>(q+' ').slice(0,120))}>Space</Btn><Btn id="key-delete" onClick={()=>setQuery(q=>q.slice(0,-1))}>Delete</Btn><Btn id="key-clear" onClick={()=>setQuery('')}>Clear</Btn><Btn id="key-search" onClick={submitSearch}>Search</Btn></div>}<p aria-live="polite">{search.status}</p></section>:
   shelf==='Discover'?<DiscoverFilters model={discovery}/>:featured&&<section className="hero"><Artwork key={titleKey(featured)} title={featured} wide/><div className="hero-copy"><p className="eyebrow">FEATURED</p><h1>{featured.name}</h1><p>{[featured.year,featured.genre].filter(Boolean).join(' · ')}</p><p className="synopsis">{featured.description}</p><Btn id="featured" className="primary" onClick={()=>openTitle(featured)}>View details</Btn></div></section>}
   {!showSearch&&shelf!=='Discover'&&visible.length===0&&!loading&&<p>No catalogues available for this view. Try Refresh or check your installed add-ons.</p>}
   {visible.slice(0,rowLimit).map(r=><section className="shelf" key={r.key}><h2>{r.name} <small>· {r.addon}</small></h2><div className="cards live-cards">{r.titles.map((t,i)=><div className="poster-card" key={titleKey(t)}><Artwork title={t}/><span className="poster-title" aria-hidden="true">{t.name}</span><small aria-hidden="true">{t.year||t.genre||'\u00a0'}</small><button type="button" className="poster-hit" data-focus id={'card-'+r.key+'-'+i} aria-label={[t.name,t.year].filter(Boolean).join(', ')} onClick={()=>openTitle(t)}/></div>)}</div></section>)}
