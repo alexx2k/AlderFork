@@ -15,7 +15,7 @@ export function ContinueWatching({rows,onResume,onOptions}:{rows:Row[];onResume:
  return <section className="shelf continue-shelf"><h2>Continue Watching</h2><div className="continue-cards">{rows.map((row,i)=><ContinueCard key={keyFor(row.title)} row={row} index={i} onResume={()=>onResume(row)} onOptions={()=>onOptions(row)}/>)}</div></section>;
 }
 function ContinueCard({row,index,onResume,onOptions}:{row:Row;index:number;onResume:()=>void;onOptions:()=>void}){
- const long=useRef(false),timer=useRef<number|undefined>(undefined);
+ const long=useRef(false),timer=useRef<number|undefined>(undefined),keyHandled=useRef(0);
  const clear=()=>{if(timer.current!==undefined)window.clearTimeout(timer.current);timer.current=undefined;};
  useEffect(()=>clear,[]);
  const episode=row.title.episodes?.find(e=>e.id===row.videoId),match=row.videoId.match(/:(\d+):(\d+)$/);
@@ -24,9 +24,9 @@ function ContinueCard({row,index,onResume,onOptions}:{row:Row;index:number;onRes
  const label=[episodeLabel,row.next?'Next episode':remaining?remaining+' min remaining':'Resume'].filter(Boolean).join(' · ');
  return <div className="continue-card"><CardImage row={row} landscape/><div className="continue-progress"><div style={{width:(row.duration>0&&!row.next?Math.min(100,100*row.position/row.duration):0)+'%'}}/></div><strong>{row.title.name}</strong><small>{label}</small>
  <button data-focus type="button" className="continue-hit" id={'continue-'+index} aria-label={'Resume '+row.title.name}
- onClick={()=>{if(!long.current)onResume();long.current=false;}}
+ onClick={()=>{if(!long.current&&Date.now()-keyHandled.current>300)onResume();long.current=false;}}
  onKeyDown={e=>{if(e.key==='Enter'||e.keyCode===13){if(e.repeat&&timer.current===undefined)return;if(!e.repeat){long.current=false;clear();timer.current=window.setTimeout(()=>{long.current=true;timer.current=undefined;onOptions();},650);}e.preventDefault();}else if(e.key==='ContextMenu'||e.keyCode===93){e.preventDefault();onOptions();}}}
- onKeyUp={e=>{if(e.key==='Enter'||e.keyCode===13){e.preventDefault();const held=long.current;clear();if(!held)onResume();long.current=false;}}} onBlur={clear} onContextMenu={e=>{e.preventDefault();onOptions();}}/>
+ onKeyUp={e=>{if(e.key==='Enter'||e.keyCode===13){e.preventDefault();keyHandled.current=Date.now();const held=long.current;clear();if(!held)onResume();long.current=false;}}} onBlur={clear} onContextMenu={e=>{e.preventDefault();onOptions();}}/>
  <button data-focus type="button" className="continue-more" id={'continue-more-'+index} aria-label={'Options for '+row.title.name} onClick={onOptions}>⋯</button></div>;
 }
 export function MyList({rows,onOpen}:{rows:Row[];onOpen:(title:Title)=>void}){

@@ -21,5 +21,5 @@ export function listRows(rows:Record<string,Row>):Row[];
 export function fromRemote(raw:unknown,old?:Row):Row|null;
 export function wireItem(title:Title,at:number):Record<string,unknown>;
 export function applyWire(raw:Record<string,unknown>|undefined,action:Action,inflate:Inflate,deflate:Deflate):Record<string,unknown>;
-export function reduceLibrary(data:LibraryData,action:Action,cloud:boolean,inflate:Inflate):LibraryData;
+export function reduceLibrary(data:LibraryData,action:Action,cloud:boolean,inflate:Inflate,inflight?:Set<string>):LibraryData;
 export function importRemote(data:LibraryData,items:Record<string,unknown>[],inflate:Inflate):LibraryData;

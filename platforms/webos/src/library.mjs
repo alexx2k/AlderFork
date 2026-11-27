@@ -14,7 +14,7 @@ export function makeRow(title){
 }
 export function mergeTitle(old,title){
  const t=titleSnapshot(title);
- return {...old,...t,name:t.name===t.id?old.name:t.name,poster:t.poster||old.poster,background:t.background||old.background,episodes:t.episodes.length?t.episodes:old.episodes||[]};
+ return {...old,...t,name:t.name===t.id?old.name:t.name,year:t.year||old.year,genre:t.genre||old.genre,description:t.description||old.description,poster:t.poster||old.poster,background:t.background||old.background,episodes:t.episodes.length?t.episodes:old.episodes||[]};
 }
 export function isComplete(position,duration){return duration>0&&position>=duration*.9;}
 export function nextEpisode(title,videoId,seen=[],now=Date.now()){
@@ -86,15 +86,16 @@ export function applyWire(raw,action,inflate,deflate){
  const date=new Date(action.at).toISOString(),video=action.videoId||str(s.video_id)||t.id;
  if(action.kind==='list'){out.removed=!action.on;out.temp=false;out._mtime=date;return out;}
  // Protect newer playback on other devices. Explicit list edits remain independent.
- if(['progress','hide'].includes(action.kind)&&stamp(s.lastWatched)>action.at)return old;
+ if(['progress','hide'].includes(action.kind)&&Math.max(stamp(s.lastWatched),stamp(old._mtime))>action.at)return old;
  if(action.kind==='hide'){s.timeOffset=0;out._mtime=date;return out;}
  const episodes=t.episodes||[];
  const complete=action.kind==='watched'||action.kind==='progress'&&(action.ended||isComplete(action.position,action.duration));
  if(t.type==='series'&&(complete||action.kind==='unwatch')&&episodes.some(e=>e.id===video)){
   const prior=watchedFromField(str(s.watched),episodes,inflate);
-  // Do not replace an unreadable or unmappable nonempty bitfield.
-  const anchor=str(s.watched).split(':').slice(0,-2).join(':');
-  if(!s.watched||episodes.some(e=>e.id===anchor)){
+  // If any existing watched bits cannot be mapped safely, retain the remote field unchanged.
+  let safe=!s.watched;
+  if(s.watched)try{const parts=str(s.watched).split(':'),payload=parts.pop(),length=Number(parts.pop()),anchor=parts.join(':'),at=episodes.findIndex(e=>e.id===anchor),bits=inflate(payload);let count=0;for(const b of bits)for(let bit=0;bit<8;bit++)if(b&(1<<bit))count++;safe=at>=0&&Number.isSafeInteger(length)&&length>0&&bits.length<=12500&&count===prior.length;}catch{}
+  if(safe){
    const seen=action.kind==='unwatch'?prior.filter(id=>id!==video):Array.from(new Set(prior.concat(video)));
    s.watched=watchedField(episodes,seen,deflate);
   }
@@ -119,14 +120,14 @@ export function applyWire(raw,action,inflate,deflate){
  }
  out._mtime=date;return out;
 }
-export function reduceLibrary(data,action,cloud,inflate){
+export function reduceLibrary(data,action,cloud,inflate,inflight=new Set()){
  const key=keyFor(action.title),row=data.rows[key]||makeRow(action.title);
  const rows={...data.rows,[key]:applyAction(row,action,inflate)};
  const pending={...data.pending};
  if(cloud){
   // Retain ordered explicit actions; coalesce adjacent progress for the same video, never across completion.
   const q=(pending[key]||[]).slice(),last=q[q.length-1];
-  if(action.kind==='progress'&&last?.kind==='progress'&&last.videoId===action.videoId&&!last.ended&&!isComplete(last.position,last.duration)&&!action.ended&&!isComplete(action.position,action.duration)){
+  if(action.kind==='progress'&&last?.kind==='progress'&&last.videoId===action.videoId&&!inflight.has(last.id)&&!last.ended&&!isComplete(last.position,last.duration)&&!action.ended&&!isComplete(action.position,action.duration)){
    q[q.length-1]={...action,played:n(last.played)+n(action.played)};
   }else q.push(action);
   pending[key]=q;
@@ -138,8 +139,8 @@ export function importRemote(data,items,inflate){
  for(const raw of items){
   const key=keyFor({type:raw.type,id:raw._id}),old=rows[key],r=fromRemote(raw,old);if(!r)continue;
   // Keep un-synced newer local history imported from pre-library builds.
-  let merged=old&&old.updatedAt>r.updatedAt?{...r,videoId:old.videoId,position:old.position,duration:old.duration,next:old.next,updatedAt:old.updatedAt,hidden:old.hidden,watched:old.watched,unwatched:old.unwatched}:r;
-  for(const a of data.pending[key]||[])merged=applyAction(merged,a,inflate);
+  let merged=old&&old.updatedAt>Math.max(r.updatedAt,stamp(raw._mtime))?{...r,videoId:old.videoId,position:old.position,duration:old.duration,next:old.next,updatedAt:old.updatedAt,hidden:old.hidden,watched:old.watched,unwatched:old.unwatched}:r;
+  for(const a of data.pending[key]||[])if(!['progress','hide'].includes(a.kind)||Math.max(stamp(raw._mtime),r.updatedAt)<=a.at)merged=applyAction(merged,a,inflate);
   rows[key]=merged;
  }
  return {...data,rows};

@@ -70,7 +70,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  const [pending,setPending]=useState<string|null>(null);
  const go=(hash:string)=>{restored.current[location.hash]=(document.activeElement as HTMLElement)?.id||'link-account';location.hash=hash;};
  const closePlayer=()=>{setPlaying(null);setPending(playbackFocus.current);};
- const startPlayer=(intent:PlaybackIntent,title:Title,startOver=false)=>{playbackFocus.current=(document.activeElement as HTMLElement)?.id||'back';setContinueMenu(null);setPlaying({intent,account:namespace,title,startAt:startOver?0:library.position(title,intent)});setPending('player-back');};
+ const startPlayer=(intent:PlaybackIntent,title:Title,startOver=false)=>{playbackFocus.current=continueMenu?'continue-'+Math.max(0,continueRows(library.data.rows).findIndex(r=>keyFor(r.title)===keyFor(title))):(document.activeElement as HTMLElement)?.id||'back';setContinueMenu(null);setPlaying({intent,account:namespace,title,startAt:startOver?0:library.position(title,intent)});setPending('player-back');};
  const back=()=>{if(continueMenu){setContinueMenu(null);setPending('continue-'+Math.max(0,continueRows(library.data.rows).findIndex(r=>keyFor(r.title)===keyFor(continueMenu.title))));return;}if(confirmSignOut){setConfirmSignOut(false);return;}if(playing){closePlayer();return;}if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){if(keyboard){setKeyboard(false);setPending('search-keyboard');}else{setShowSearch(false);setPending('search');}}else if(shelf==='Discover'||shelf==='My List'){setShelf('Home');setPending('nav-Home');}};
  useEffect(()=>{
   const handler=()=>{const r=routeFromHash(location.hash);const old=lastHash.current;lastHash.current=location.hash;
@@ -139,7 +139,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
    if(isBack(e.key,e.keyCode)){if(continueMenu||confirmSignOut||playing||route.kind!=='home'||showSearch||shelf==='Discover'||shelf==='My List'){e.preventDefault();back();}return;}
    const dir=directionFor(e.key,e.keyCode);if(!dir)return;
    e.preventDefault();
-   const items=buttons(),active=document.activeElement as HTMLElement;
+   const items=continueMenu?buttons().filter(x=>x.closest('.continue-menu')):buttons(),active=document.activeElement as HTMLElement;
    const dest=active&&items.includes(active)?nextFocus(rect(active),items.map(rect),dir):items[0]?.id;
    if(dest)focus(dest);
   };

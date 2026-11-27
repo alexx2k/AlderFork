@@ -147,7 +147,7 @@ export function Player({intent,addons,lenders,account,startAt,onProgress,onExit}
   startClock();v.src=activeSources.current[attempt.index].url;v.load();play();
   return()=>{alive=false;cancelTimers();listeners.forEach(([event,fn])=>v.removeEventListener(event,fn));v.audioTracks?.removeEventListener?.('change',refreshAudio);v.audioTracks?.removeEventListener?.('addtrack',refreshAudio);v.textTracks.removeEventListener?.('addtrack',refreshEmbedded);v.textTracks.removeEventListener?.('removetrack',refreshEmbedded);v.pause();v.removeAttribute('src');v.load();};
  },[attempt?.serial]);
- useEffect(()=>{const flush=()=>persist(true);window.addEventListener('pagehide',flush);document.addEventListener('visibilitychange',flush);return()=>{window.removeEventListener('pagehide',flush);document.removeEventListener('visibilitychange',flush);persist(true);};},[]);
+ useEffect(()=>{const flush=()=>persist(true);const hidden=()=>{if(document.visibilityState==='hidden')persist();};window.addEventListener('pagehide',flush);document.addEventListener('visibilitychange',hidden);return()=>{window.removeEventListener('pagehide',flush);document.removeEventListener('visibilitychange',hidden);persist(true);};},[]);
  useEffect(()=>{
   if(!attempt||!source){setAddonSubs([]);setSubtitleLoading(false);return;}
   const c=new AbortController();setAddonSubs([]);setSubtitleLoading(true);
