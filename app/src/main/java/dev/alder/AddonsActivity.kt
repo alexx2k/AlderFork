@@ -18,6 +18,9 @@ class AddonsActivity : Screen() {
     private lateinit var helpName: TextView
     private lateinit var helpBody: TextView
     private var addons: List<Addon> = emptyList()
+    // Stremio replaces the account's whole list on each save: no save before the list arrived, one save at a time.
+    private var loaded = false
+    private var saving = false
 
     private val scene by lazy { ImageView(this).apply {
         scaleType = ImageView.ScaleType.CENTER_CROP
@@ -79,7 +82,7 @@ class AddonsActivity : Screen() {
     private fun load() {
         val key = authKey ?: return
         background({ Stremio.addons(key, refresh = true) }) { result ->
-            result.onSuccess { addons = it; show() }
+            result.onSuccess { addons = it; loaded = true; show() }
                 .onFailure { show(message = addonFailure(R.string.addons_unreachable, it), retry = ::load) }
         }
     }
@@ -122,9 +125,11 @@ class AddonsActivity : Screen() {
             list.addView(row, LinearLayout.LayoutParams(-1, dp(ROW_H2)))
             if (addon.transportUrl == focus || (focus == null && focused == null)) focused = row
         }
-        val add = row(addons.size, null)
-        list.addView(add, LinearLayout.LayoutParams(-1, dp(ROW_H2)).apply { topMargin = dp(8) })
-        if (focus == ADD_URL || focused == null) focused = add
+        if (loaded) {
+            val add = row(addons.size, null)
+            list.addView(add, LinearLayout.LayoutParams(-1, dp(ROW_H2)).apply { topMargin = dp(8) })
+            if (focus == ADD_URL || focused == null) focused = add
+        }
         if (!loading) focused?.post { focused?.requestFocus() }
     }
 
@@ -229,7 +234,10 @@ class AddonsActivity : Screen() {
 
     private fun save(next: List<Addon>, focus: String?) {
         val key = authKey ?: return
+        if (!loaded || saving) return
+        saving = true
         background({ Stremio.setAddons(key, next) }) { result ->
+            saving = false
             result.onSuccess { addons = next; show(focus) }
                 .onFailure { show(focus, addonFailure(R.string.addons_save_failed, it), retry = { save(next, focus) }) }
         }

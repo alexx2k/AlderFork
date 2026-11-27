@@ -73,16 +73,43 @@ object Stremio {
 
     // Items saved here whose save may not have reached Stremio yet: the player saves as it closes, and the page behind
     // it asks Stremio at the same moment, so without this it showed the progress from before.
+    // Once Stremio took a save, the copy is kept 30 s more for answers already on the way, then Stremio's own copy
+    // counts again: before, a TV clock running fast kept the TV's copy over newer progress from the phone.
     private val saving = java.util.concurrent.ConcurrentHashMap<String, JSONObject>()
+    private val savedAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
-    private fun newest(authKey: String, ids: List<String>, items: List<JSONObject>): List<JSONObject> {
+    private fun pendingSave(key: String): JSONObject? =
+        saving[key]?.takeIf { savedAt[key]?.let { System.currentTimeMillis() - it < 30_000 } ?: true }
+
+    internal fun recordSavingForTest(authKey: String, item: JSONObject, savedAtMs: Long? = null) {
+        val key = "$authKey/${item.optString("_id")}"
+        saving[key] = item
+        if (savedAtMs == null) savedAt.remove(key) else savedAt[key] = savedAtMs
+    }
+
+    internal fun clearSavingForTest() {
+        saving.clear()
+        savedAt.clear()
+    }
+
+    internal fun newest(authKey: String, ids: List<String>, items: List<JSONObject>): List<JSONObject> {
         val pending = ProgressSaves.pending(authKey).values.map(::JSONObject)
         val latest = items.associateByTo(linkedMapOf()) { it.optString("_id") }
+        val prefix = "$authKey/"
+        saving.keys.asSequence()
+            .filter { it.startsWith(prefix) }
+            .map { it.removePrefix(prefix) }
+            .filter { ids.isEmpty() || it in ids }
+            .forEach { id ->
+                pendingSave("$authKey/$id")?.let { saved ->
+                    if (newerProgress(saved, latest[id])) latest[id] = saved
+                }
+            }
         pending.filter { ids.isEmpty() || it.optString("_id") in ids }.forEach { item ->
             val id = item.optString("_id")
             if (newerProgress(item, latest[id])) latest[id] = applyProgress(item, latest[id])
         }
-        return latest.map { (id, item) -> saving["$authKey/$id"]?.takeIf { newerProgress(it, item) } ?: item }
+        return latest.map { (id, item) -> pendingSave("$authKey/$id")?.takeIf { newerProgress(it, item) } ?: item }
     }
 
     /** The whole library as it was last time, from disk, or null. */
@@ -104,20 +131,28 @@ object Stremio {
 
     @Synchronized
     fun saveLibrary(authKey: String, items: List<JSONObject>) {
-        items.forEach { saving["$authKey/${it.optString("_id")}"] = it }
+        val keys = items.map { "$authKey/${it.optString("_id")}" }
+        items.forEachIndexed { i, item -> saving[keys[i]] = item; savedAt.remove(keys[i]) }
         val body = JSONObject().put("authKey", authKey).put("collection", "libraryItem").put("changes", JSONArray(items))
         try { result(post("datastorePut", body)) }
         catch (error: Throwable) {
-            items.forEach { saving.remove("$authKey/${it.optString("_id")}", it) }
+            items.forEachIndexed { i, item -> saving.remove(keys[i], item) }
             throw error
         }
+        val now = System.currentTimeMillis()
+        items.forEachIndexed { i, item -> if (saving[keys[i]] === item) savedAt[keys[i]] = now }
     }
 
     @Synchronized
-    internal fun editLibrary(authKey: String, id: String, fallback: JSONObject, change: (JSONObject) -> Unit): JSONObject {
+    internal fun editLibrary(
+        authKey: String, id: String, fallback: JSONObject, listDates: android.content.SharedPreferences? = null,
+        change: (JSONObject) -> Unit,
+    ): JSONObject {
         val entry = library(authKey, listOf(id)).firstOrNull()?.let { JSONObject(it.toString()) } ?: fallback
+        val wasInList = Library.inList(entry)
         change(entry)
         saveLibrary(authKey, listOf(entry))
+        if (listDates != null && (!wasInList || !Library.inList(entry))) Library.recordListDate(listDates, entry)
         return entry
     }
 
@@ -130,7 +165,7 @@ object Stremio {
         val changes = items.mapNotNull { item ->
             val id = item.getString("_id")
             val saved = remote[id]
-            if (newerProgress(item, saved) && newerProgress(item, saving["$authKey/$id"])) applyProgress(item, saved) else null
+            if (newerProgress(item, saved) && newerProgress(item, pendingSave("$authKey/$id"))) applyProgress(item, saved) else null
         }
         if (changes.isNotEmpty()) saveLibrary(authKey, changes)
         val body = libraryBody(authKey, emptyList())

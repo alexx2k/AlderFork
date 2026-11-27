@@ -1,6 +1,7 @@
 package dev.alder
 
 import android.content.Context
+import android.content.SharedPreferences
 import org.json.JSONObject
 
 /**
@@ -37,10 +38,19 @@ internal object ProfileLibrary {
         profile: Profile,
         id: String,
         fallback: JSONObject,
+        listDates: SharedPreferences? = null,
         change: (JSONObject) -> Unit
     ): JSONObject = when (profile.libraryMode) {
-        LibraryMode.STREMIO -> Stremio.editLibrary(profile.authKey, id, fallback, change)
-        LibraryMode.LOCAL -> LocalLibrary.editLibrary(context, profile.id, id, fallback, change)
+        LibraryMode.STREMIO -> Stremio.editLibrary(profile.authKey, id, fallback, listDates, change)
+        LibraryMode.LOCAL -> {
+            var wasInList = false
+            LocalLibrary.editLibrary(context, profile.id, id, fallback) { entry ->
+                wasInList = Library.inList(entry)
+                change(entry)
+            }.also { entry ->
+                if (listDates != null && (!wasInList || !Library.inList(entry))) Library.recordListDate(listDates, entry)
+            }
+        }
     }
 
     /** A local checkpoint must never be added to Stremio's pending upload queue. */

@@ -76,7 +76,7 @@ internal object Crashes {
     // ponytail: 20+ letters and digits in a row reads as a key; a long class name with a dot or $ stays readable.
     internal fun redact(text: String): String = text
         .replace(Regex("""(https?|wss?|magnet):\S+""")) { m ->
-            Regex("""^\w+://([^/?#\s:]+)""").find(m.value)?.let { "${m.groupValues[1]}://${it.groupValues[1]}/…" } ?: "${m.groupValues[1]}:…"
+            Regex("""^\w+://(?:[^/?#\s@]+@)?([^/?#\s:]+)""").find(m.value)?.let { "${m.groupValues[1]}://${it.groupValues[1]}/…" } ?: "${m.groupValues[1]}:…"
         }
         .replace(Regex("""[A-Za-z0-9_\-]{20,}""")) { m -> if (m.value.any(Char::isDigit) || m.value.contains('-')) "…" else m.value }
 

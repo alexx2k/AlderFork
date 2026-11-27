@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="card_watched">تمت المشاهدة</string>
+    <string name="card_progress">تمت مشاهدة %1$d%%</string>
 
     <!-- Shared -->
     <string name="action_ok">موافق</string>
@@ -22,34 +24,31 @@
     <string name="whats_new">ما الجديد</string>
     <string name="whats_new_no_notes">لا توجد ملاحظات للإصدار %1$s.</string>
     <string name="whats_new_version">الإصدار %1$s</string>
+    <string name="whats_new_preview">معاينة الإصدار</string>
+    <string name="whats_new_example_player">مثال على مشغّل خارجي</string>
     <string name="whats_new_group">جديد</string>
-    <plurals name="whats_new_highlights">
-        <item quantity="zero">ما الجديد · لا تغييرات بارزة</item>
-        <item quantity="one">ما الجديد · تغيير بارز واحد</item>
-        <item quantity="two">ما الجديد · تغييران بارزان</item>
-        <item quantity="few">ما الجديد · %1$d تغييرات بارزة</item>
-        <item quantity="many">ما الجديد · %1$d تغييرًا بارزًا</item>
-        <item quantity="other">ما الجديد · %1$d تغيير بارز</item>
-    </plurals>
-    <string name="whats_new_all">كل التغييرات (%1$d)</string>
     <string name="whats_new_highlights_short">أبرز التغييرات</string>
-    <string name="whats_new_back">← العودة إلى أبرز التغييرات</string>
-    <plurals name="whats_new_see_all">
-        <item quantity="zero">لا توجد تغييرات</item>
-        <item quantity="one">عرض تغيير واحد  →</item>
-        <item quantity="two">عرض التغييرين  →</item>
-        <item quantity="few">عرض كل التغييرات الـ %1$d  →</item>
-        <item quantity="many">عرض كل التغييرات الـ %1$d  →</item>
-        <item quantity="other">عرض كل التغييرات الـ %1$d  →</item>
-    </plurals>
 
     <!-- Home -->
     <string name="tab_home">الرئيسية</string>
+    <string name="tab_discover">اكتشف</string>
+    <string name="discover_genre">النوع</string>
+    <string name="discover_year">العقد</string>
+    <string name="discover_all_genres">كل الأنواع</string>
+    <string name="discover_all_decades">كل العقود</string>
+    <string name="discover_all_services">كل الخدمات</string>
+    <string name="discover_before_1980">قبل 1980</string>
+    <string name="discover_on">الخدمة</string>
+    <string name="discover_sort_popular">الأكثر شعبية</string>
+    <string name="discover_sort_top">الأعلى تقييمًا</string>
+    <string name="discover_sort_new">الأحدث</string>
+    <string name="discover_empty">لا شيء يطابق هذه الاختيارات. جرّب اختيارات أقل.</string>
+    <string name="tmdb_notice">يستخدم هذا المنتج واجهة TMDB البرمجية، لكنه غير معتمد أو مصدّق من TMDB.</string>
     <string name="tab_shows">المسلسلات</string>
     <string name="tab_movies">الأفلام</string>
     <string name="tab_live">البث المباشر</string>
     <string name="tab_anime">الأنمي</string>
-    <string name="tab_my_list">قائمتي</string>
+    <string name="tab_my_list">My Alder</string>
     <string name="nav_profile">الملف الشخصي</string>
     <string name="nav_search">بحث</string>
     <string name="updates_ready">Alder %1$s جاهز للتثبيت</string>
@@ -61,7 +60,6 @@
     <string name="menu_settings">الإعدادات</string>
     <string name="action_play">تشغيل</string>
     <string name="action_resume">متابعة</string>
-    <string name="new_episode">حلقة جديدة</string>
     <string name="stopped_at">توقّفت عند %1$s</string>
     <string name="time_left_hours">متبقٍّ %1$d ساعة و%2$d دقيقة</string>
     <string name="time_left_minutes">متبقٍّ %1$d دقيقة</string>
@@ -85,21 +83,14 @@
     <string name="list_sort_recent">المضافة مؤخرًا</string>
     <string name="list_sort_name">أبجديًا</string>
     <string name="list_sort_unwatched">غير المشاهَد أولًا</string>
-    <plurals name="list_title_count">
-        <item quantity="zero">لا عناوين</item>
-        <item quantity="one">عنوان واحد</item>
-        <item quantity="two">عنوانان</item>
-        <item quantity="few">%1$d عناوين</item>
-        <item quantity="many">%1$d عنوانًا</item>
-        <item quantity="other">%1$d عنوان</item>
-    </plurals>
     <string name="list_empty">تظهر هنا العناوين التي تحفظها بزر +</string>
-    <string name="list_empty_movies">لا توجد أفلام في قائمتي</string>
-    <string name="list_empty_shows">لا توجد مسلسلات في قائمتي</string>
-    <string name="list_empty_unwatched">لا توجد عناوين غير مشاهَدة في قائمتي</string>
-    <string name="action_remove_from_list">إزالة من قائمتي</string>
+    <string name="list_empty_movies">لا توجد أفلام في My Alder</string>
+    <string name="list_empty_shows">لا توجد مسلسلات في My Alder</string>
+    <string name="list_empty_unwatched">لا توجد عناوين غير مشاهَدة في My Alder</string>
+    <string name="list_clear_filters">مسح الفلاتر</string>
+    <string name="action_remove_from_list">إزالة من My Alder</string>
     <string name="action_mark_watched">وضع علامة تمت المشاهدة</string>
-    <string name="list_update_failed">تعذّر تحديث قائمتي</string>
+    <string name="list_update_failed">تعذّر تحديث My Alder</string>
     <string name="check_connection">تحقّق من الاتصال وحاول مرة أخرى.</string>
     <string name="action_choose_source">اختر مصدرًا</string>
     <string name="action_remove_from_continue">إزالة من متابعة المشاهدة</string>
@@ -118,7 +109,7 @@
     <string name="action_more_info">مزيد من المعلومات</string>
     <string name="action_start_over">إعادة من البداية</string>
     <string name="action_trailer">إعلان تشويقي</string>
-    <string name="action_add_to_list">إضافة إلى قائمتي</string>
+    <string name="action_add_to_list">إضافة إلى My Alder</string>
     <string name="season_specials">حلقات خاصة</string>
     <string name="season_number">الموسم %1$d</string>
     <string name="episode_number">الحلقة %1$d</string>
@@ -149,7 +140,6 @@
     <string name="player_starting_stream">جارٍ بدء البث…</string>
     <string name="player_source_failed_next">تعذّر تشغيل هذا المصدر · جارٍ تجربة المصدر التالي</string>
     <string name="player_source_failed_choose">تعذّر تشغيل هذا المصدر · اختر مصدرًا آخر</string>
-    <string name="player_keeps_buffering">يتوقّف للتحميل باستمرار</string>
     <string name="player_switch_prompt">هل تريد التبديل إلى دقة %1$dp؟</string>
     <string name="player_switch_desc">توقّف هذا المصدر بدقة %1$dp ثلاث مرات خلال دقيقة. قد يعمل ملف أصغر من %2$s بسلاسة أكبر.</string>
     <string name="player_switch_to">التبديل إلى دقة %1$dp</string>
@@ -158,25 +148,18 @@
     <string name="player_source_failed">تعذّر تشغيل المصدر</string>
     <string name="player_try_another">جرّب مصدرًا آخر</string>
     <string name="player_next_episode">الحلقة التالية</string>
-    <string name="player_up_next">التالي</string>
     <string name="player_exit_home">الخروج إلى الرئيسية</string>
     <string name="player_still_watching">هل ما زلت تشاهد؟</string>
-    <string name="player_still_prompt_description">الحلقة التالية جاهزة عندما تكون مستعدًا.</string>
-    <string name="player_still_episode">الموسم %1$d، الحلقة %2$d</string>
-    <string name="player_still_keep_watching">متابعة المشاهدة</string>
-    <string name="player_still_dont_ask">لا تسأل مرة أخرى</string>
-    <string name="player_still_stop">إيقاف المشاهدة</string>
     <string name="player_sleep_paused">أوقف مؤقت النوم التشغيل مؤقتًا.</string>
     <string name="skip_intro">تخطّي المقدّمة</string>
     <string name="skip_recap">تخطّي الملخّص</string>
-    <string name="player_paused">متوقّف مؤقتًا</string>
     <string name="player_seek">تقديم أو ترجيع</string>
     <string name="player_audio_subtitles">الصوت والترجمة</string>
+    <string name="player_speed">سرعة التشغيل</string>
+    <string name="player_speed_passthrough_note">يتوقف الصوت مؤقتًا عند التبديل إلى 1× أو منها.</string>
     <string name="player_change_stream">تغيير المصدر</string>
     <string name="player_pause">إيقاف مؤقت</string>
     <string name="player_info">معلومات</string>
-    <string name="key_play_pause">تشغيل / إيقاف مؤقت</string>
-    <string name="key_seek">تقديم أو ترجيع على الشريط</string>
     <string name="player_live">مباشر</string>
     <string name="player_chapters">%1$s  ·  ▲ الفصول</string>
     <string name="player_cannot_seek">هذا المصدر لا يدعم التقديم · اختر تغيير المصدر لتجربة مصدر آخر</string>
@@ -194,14 +177,11 @@
     <string name="track_preferred">مفضّل</string>
     <string name="track_recent">الأخيرة</string>
     <string name="track_in_file">في الملف</string>
-    <string name="subtitles_heading">الترجمة · %1$s</string>
     <string name="quick_timing">ضبط سريع للتوقيت</string>
     <string name="subtitle_color">لون الترجمة</string>
     <string name="tracks_pinned">مثبّتة</string>
     <string name="all_languages">كل اللغات (%1$d)</string>
-    <string name="audio_heading">الصوت · %1$s</string>
     <string name="all_audio_tracks">كل المسارات الصوتية (%1$d)</string>
-    <string name="audio_enhancement">تحسين الصوت</string>
     <string name="clear_dialogue">حوار واضح</string>
     <string name="clear_dialogue_hint">رفع صوت الحوار فوق الموسيقى والمؤثرات</string>
     <string name="timing_earlier_heading">أبكر</string>
@@ -215,7 +195,6 @@
     <string name="size_extra_large">كبير جدًا</string>
     <string name="color">اللون</string>
     <string name="background_box">مربّع خلفية</string>
-    <string name="playback_sleep">التشغيل والنوم</string>
     <string name="sleep_timer">مؤقت النوم</string>
     <string name="player_change_stream_arrow">تغيير المصدر  →</string>
     <string name="subtitles_off">إيقاف الترجمة</string>
@@ -281,7 +260,7 @@
     <string name="player_no_other_app">لا يوجد مشغّل فيديو آخر على هذا التلفزيون. يشغّل Alder الفيديو.</string>
     <string name="clear_dialogue_setting_hint">يرفع صوت الحوار فوق الموسيقى والمؤثرات العالية عند استخدام مكبّرات التلفزيون.</string>
     <string name="dubbed">الإصدارات المدبلجة</string>
-    <string name="dubbed_hint">خيار اللغة الأصلية أولًا يؤخّر الإصدارات المدبلجة. خيار لغتي أولًا يستخدم لغة الصوت لهذا الملف الشخصي.</string>
+    <string name="dubbed_hint">خيار اللغة الأصلية أولًا يؤخّر الإصدارات المدبلجة. يتحقق خيار لغتي أولًا من لغة الصوت في مشغّل Alder قبل التشغيل التلقائي. يمكنك أيضًا اختيار أي مصدر يدويًا.</string>
     <string name="dubbed_original">اللغة الأصلية أولًا</string>
     <string name="dubbed_mine">لغتي أولًا</string>
     <string name="subs_default">الترجمة تلقائيًا</string>
@@ -342,6 +321,10 @@
     <string name="ratings_source">التقييمات</string>
     <string name="ratings_source_hint">اختر التقييمات التي تظهر في صفحات العناوين وفي الرئيسية. يتوفّر Letterboxd للأفلام فقط ويتطلّب مفتاح MDBList. تستخدم المسلسلات IMDb دائمًا.</string>
     <string name="ratings_both">كلاهما</string>
+    <string name="episode_badges">شارات الحلقات الجديدة</string>
+    <string name="episode_badges_hint">اختر الرقم على ملصقات المسلسلات. «المعروضة حديثًا» تعدّ الحلقات التي صدرت بعد آخر مشاهدة. «الموسم الحالي» تعدّ الحلقات المتبقية في الموسم الذي تشاهده.</string>
+    <string name="episode_badges_aired">المعروضة حديثًا</string>
+    <string name="episode_badges_season">الموسم الحالي</string>
     <string name="mdblist_key">مفتاح MDBList</string>
     <string name="mdblist_key_hint">مفتاح API المجاني من mdblist.com/preferences. يستخدمه Alder لجلب تقييمات Letterboxd فقط.</string>
     <string name="key_not_set">غير مضبوط</string>
@@ -389,15 +372,14 @@
     <string name="unhide_row_hint">اختر صفًا لإعادته.</string>
     <string name="custom">مخصّص</string>
     <string name="source_choice">اختيار المصدر</string>
-    <string name="source_choice_hint">أفضل صورة: Blu-ray الكامل وDolby Vision أولًا. متوازن: ملفات أصغر. بدء سريع: إصدارات الويب. ترتيب الإضافة: اتّبع ترتيب الإضافة.</string>
-    <string name="preset_addon_order">ترتيب الإضافة</string>
+    <string name="source_choice_hint">أفضل صورة: Blu-ray الكامل وDolby Vision أولًا. متوازن: ملفات أصغر. بدء سريع: إصدارات الويب. أي إصدار: أوضح نسخة، أيًّا كان الإصدار.</string>
+    <string name="preset_addon_order">أي إصدار</string>
     <string name="preset_best_picture">أفضل صورة</string>
     <string name="preset_balanced">متوازن</string>
     <string name="preset_fast_start">بدء سريع</string>
 
     <!-- Search -->
     <string name="search_clear">مسح البحث</string>
-    <string name="search_voice_unavailable">البحث الصوتي غير متاح</string>
     <string name="search_space">مسافة</string>
     <string name="search_recent">الأخيرة</string>
     <string name="search_recent_hint">%1$s. اضغط مطولًا على موافق لإزالته من عمليات البحث الأخيرة</string>
@@ -568,8 +550,6 @@
     <string name="profiles_watchly_steps">"1.  امسح الرمز بهاتف %1$s لفتح Watchly\n2.  اربط حساب Stremio الخاص بـ %1$s هناك\n3.  ثبّت الإضافة في حساب Stremio الخاص بـ %1$s\n\nتظهر بعدها أفضل الاختيارات الخاصة بـ %1$s في الرئيسية. يمكنك إكمال هذه الخطوات لاحقًا."</string>
     <string name="profiles_all_set">أصبح كل شيء جاهزًا</string>
     <string name="profiles_ready">الملف الشخصي لـ %1$s جاهز. يمكنك إضافة المزيد من الإضافات لاحقًا في الإعدادات.</string>
-    <string name="catalog_jump_to">انتقال إلى</string>
-    <string name="catalog_jump_top">الأعلى</string>
     <string name="display_resolution">دقة العرض</string>
     <string name="display_resolution_hint">اختر دقة التلفزيون التي يعتمد عليها Alder لاختيار المصدر. اختر 4K إذا أبلغ جهاز البث عن 1080p بينما يعرض بدقة 4K.</string>
     <string name="error_sign_in">سجّل الدخول إلى Stremio مجددًا</string>
@@ -579,11 +559,42 @@
     <string name="error_network">خطأ في الشبكة</string>
     <string name="library_edit_failed">تعذّر حفظ حالة المشاهدة</string>
     <string name="search_incomplete">نتائج البحث غير مكتملة</string>
+    <string name="catalog_addon_failed">تعذّر تحميل %1$s</string>
+    <string name="failure_web_page">يرسل صفحة ويب بدلًا من العناوين</string>
+    <string name="failure_advice_sign_in">سجّل الدخول إلى Stremio مرة أخرى.</string>
+    <string name="failure_advice_access">تحقّق من المفتاح أو الحساب في إعدادات هذه الإضافة في Stremio.</string>
+    <string name="failure_advice_timeout">تحقّق من اتصالك بالإنترنت، ثم حاول مرة أخرى.</string>
+    <string name="failure_advice_address">تحقّق من اتصالك بالإنترنت. إذا كان يعمل، فربما انتقلت الإضافة: حدّثها في Stremio.</string>
+    <string name="failure_advice_connection">ربما الخدمة متوقفة. حاول مرة أخرى لاحقًا.</string>
+    <string name="failure_advice_secure">تحقّق من التاريخ والوقت في التلفزيون، ثم حاول مرة أخرى.</string>
+    <string name="failure_advice_busy">انتظر دقيقة، ثم حاول مرة أخرى.</string>
+    <string name="failure_advice_server">تواجه الخدمة مشكلة. حاول مرة أخرى لاحقًا.</string>
+    <string name="failure_advice_response">إذا استمر ذلك، فحدّث الإضافة أو أزِلها في Stremio.</string>
+    <string name="failure_advice_missing">جرّب إضافة أو مصدرًا آخر.</string>
+    <string name="failure_advice_format">جرّب مصدرًا آخر.</string>
+    <string name="failure_advice_network">تحقّق من اتصالك بالإنترنت، ثم حاول مرة أخرى.</string>
+    <string name="failure_advice_web_page">ربما انتقلت الإضافة أو أُغلقت: حدّثها أو أزِلها في Stremio.</string>
+    <string name="failure_advice_other">حاول مرة أخرى. إذا استمر ذلك، فأرسل تقريرًا من الإعدادات › حول.</string>
+    <string name="filmography_failed">تعذّر الحصول على أعمال هذا الشخص</string>
+    <string name="trailer_no_app">لا يوجد تطبيق على هذا التلفزيون يمكنه تشغيل الإعلان. ثبّت YouTube لمشاهدته.</string>
     <string name="catalog_incomplete">تعذّر تحميل بعض قوائم العرض</string>
     <string name="progress_saved_on_tv">تم حفظ تقدّم المشاهدة على هذا التلفزيون. سيحاول Alder مزامنته مجددًا.</string>
     <string name="library_load_failed">تعذّر تحميل مكتبتك في Stremio</string>
+    <string name="filmography_loading">جارٍ البحث عن العناوين…</string>
+    <string name="filmography_empty">لم يتم العثور على عناوين أخرى في قوائمك.</string>
+    <string name="streams_no_preferred_audio">لا توجد مصادر تطابق لغات التشغيل التلقائي. اختر مصدرًا للمتابعة.</string>
+    <string name="audio_fallback">لغة الصوت الاحتياطية</string>
+    <string name="audio_fallback_hint">مع خيار لغتي أولًا، يحاول Alder تشغيل لغتك المفضلة ثم اللغة الاحتياطية ثم الإنجليزية. اختر إيقاف لاستخدام لغتك المفضلة فقط.</string>
+    <string name="failure_preferred_audio">لا يوجد مسار صوتي مدعوم بلغتك المفضلة</string>
+    <string name="failure_advice_preferred_audio">اختر مصدرًا يوفر لغة الصوت التي تفضلها.</string>
+    <string name="list_added_on">تاريخ الإضافة %1$s</string>
 
-    <!-- Profile and avatar features (v1.1.0) -->
+    <!-- Alder Fork additions -->
+    <string name="player_still_prompt_description">الحلقة التالية جاهزة عندما تكون مستعدًا.</string>
+    <string name="player_still_episode">الموسم %1$d، الحلقة %2$d</string>
+    <string name="player_still_keep_watching">متابعة المشاهدة</string>
+    <string name="player_still_dont_ask">لا تسأل مرة أخرى</string>
+    <string name="player_still_stop">إيقاف المشاهدة</string>
     <string name="profiles_avatar">تغيير صورة الملف الشخصي</string>
     <string name="profiles_avatar_setup">اختيار صورة الملف الشخصي</string>
     <string name="profiles_avatar_choose">تصفّح الصور الرمزية الجاهزة</string>

@@ -11,15 +11,26 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLException
 
-internal enum class Failure(val message: Int) {
-    SIGN_IN(R.string.error_sign_in), ACCESS(R.string.failure_refused), TIMEOUT(R.string.failure_timeout),
-    ADDRESS(R.string.failure_no_address), CONNECTION(R.string.failure_connection), SECURE(R.string.failure_secure),
-    BUSY(R.string.failure_too_many), SERVER(R.string.failure_server), RESPONSE(R.string.error_response),
-    MISSING(R.string.error_missing), FORMAT(R.string.error_format), NETWORK(R.string.error_network),
-    OTHER(R.string.failure_error),
+internal enum class Failure(val message: Int, val advice: Int) {
+    SIGN_IN(R.string.error_sign_in, R.string.failure_advice_sign_in),
+    ACCESS(R.string.failure_refused, R.string.failure_advice_access),
+    TIMEOUT(R.string.failure_timeout, R.string.failure_advice_timeout),
+    ADDRESS(R.string.failure_no_address, R.string.failure_advice_address),
+    CONNECTION(R.string.failure_connection, R.string.failure_advice_connection),
+    SECURE(R.string.failure_secure, R.string.failure_advice_secure),
+    BUSY(R.string.failure_too_many, R.string.failure_advice_busy),
+    SERVER(R.string.failure_server, R.string.failure_advice_server),
+    RESPONSE(R.string.error_response, R.string.failure_advice_response),
+    MISSING(R.string.error_missing, R.string.failure_advice_missing),
+    FORMAT(R.string.error_format, R.string.failure_advice_format),
+    PREFERRED_AUDIO(R.string.failure_preferred_audio, R.string.failure_advice_preferred_audio),
+    NETWORK(R.string.error_network, R.string.failure_advice_network),
+    WEB_PAGE(R.string.failure_web_page, R.string.failure_advice_web_page),
+    OTHER(R.string.failure_error, R.string.failure_advice_other),
 }
 
 internal fun failureOf(error: Throwable): Failure = when (error) {
+    is WebPageAnswer -> Failure.WEB_PAGE
     is Stremio.ApiException -> if (error.code == Stremio.NO_SESSION) Failure.SIGN_IN else Failure.SERVER
     is HttpError -> when (error.code) {
         401, 403 -> Failure.ACCESS
@@ -38,8 +49,18 @@ internal fun failureOf(error: Throwable): Failure = when (error) {
     else -> Failure.OTHER
 }
 
-internal fun Context.failureMessage(title: Int, failure: Failure) =
-    "${getString(title)} · ${getString(failure.message)}"
+/**
+ * Every error's words, in one place: what failed and why ("Couldn't load this title · timed out"), whose answer it was
+ * when known ("… · Torrentio: timed out"), then what to do. [advice] false for one-line places (a toast, a status line).
+ */
+internal fun Context.failureMessage(title: Int, failure: Failure, source: String? = null, advice: Boolean = true) =
+    failureMessage(getString(title), failure, source, advice)
+
+internal fun Context.failureMessage(title: String, failure: Failure, source: String? = null, advice: Boolean = true): String {
+    val reason = getString(failure.message)
+    val first = "$title · ${if (source.isNullOrBlank()) reason else "$source: $reason"}"
+    return if (advice) "$first\n${getString(failure.advice)}" else first
+}
 
 internal fun playbackFailure(code: Int, cause: Throwable?): Failure {
     val response = cause as? HttpDataSource.InvalidResponseCodeException

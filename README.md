@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/home-dune.png" alt="Alder home screen with Continue Watching" width="100%">
+  <img src="docs/home-multiverse.png" alt="Alder home screen with Doctor Strange in the Multiverse of Madness in Continue Watching" width="100%">
 </p>
 
 Alder is an Android TV app for your Stremio account. Your account, add-ons, library and watch progress stay exactly where they are, and everything you watch syncs back to Stremio on your phone and computer. What changes is the app on the TV: built for a remote, simple enough for anyone in the family, and quiet enough that the film is the main thing on screen.
@@ -36,12 +36,12 @@ Alder makes that choice for them:
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/picker.jpg" alt="Profile picker"><br><b>Who's watching.</b> One profile per person, each its own Stremio account.</td>
+    <td width="50%"><img src="docs/picker.jpg" alt="Profile picker"><br><b>Who's here tonight?</b> One profile per person, each its own Stremio account.</td>
     <td width="50%"><img src="docs/title.png" alt="Title page"><br><b>Title page.</b> Full-screen art, details and one clear button to Play or Resume.</td>
   </tr>
   <tr>
     <td><img src="docs/sources.jpg" alt="Sources list"><br><b>Sources, when you want them.</b> Hold OK to see every source in plain columns: quality, release, size. Best match is marked.</td>
-    <td><img src="docs/tracks.jpg" alt="Audio and subtitles panel"><br><b>Audio and subtitles in one panel.</b> English original picked over the dubs on its own.</td>
+    <td><img src="docs/tracks.jpg" alt="Audio and subtitles panel"><br><b>Audio and subtitles in one panel.</b> Choose a track or adjust subtitle timing and style.</td>
   </tr>
   <tr>
     <td><img src="docs/controls.jpg" alt="Player controls"><br><b>A calm player.</b> Time left, when it ends, and the few controls that matter.</td>
@@ -49,7 +49,7 @@ Alder makes that choice for them:
   </tr>
   <tr>
     <td><img src="docs/settings.jpg" alt="Stream settings"><br><b>Preferences in plain words.</b> Best picture, Balanced or Fast start; no release jargon needed.</td>
-    <td><img src="docs/library.png" alt="My List"><br><b>Your Stremio library.</b> Find saved films and shows, sort them and pick up where you left off.</td>
+    <td><img src="docs/library.png" alt="My Alder library"><br><b>My Alder.</b> Find saved films and shows, filter by genre or decade, and pick up where you left off.</td>
   </tr>
 </table>
 

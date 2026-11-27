@@ -188,9 +188,9 @@ object MkvChapters {
     internal fun findSegmentDataStart(bytes: ByteArray): Long? {
         val reader = EbmlReader(bytes)
         while (reader.hasMore()) {
-            val (id, _, dataStart) = reader.readElement() ?: break
+            val (id, size, dataStart) = reader.readElement() ?: break
             if (id == ID_SEGMENT) return dataStart.toLong()
-            reader.skip(0)
+            reader.skip(size) // past the EBML header's body, to the Segment after it
         }
         return null
     }
@@ -263,6 +263,7 @@ object MkvChapters {
 
     private fun range(urlStr: String, start: Long, length: Int, headers: Map<String, String>): ByteArray? {
         var currentUrl = urlStr
+        val host = URL(urlStr).host
         for (redirect in 0..3) {
             val end = start + length - 1
             val c = URL(currentUrl).openConnection() as HttpURLConnection
@@ -271,7 +272,8 @@ object MkvChapters {
             c.connectTimeout = 8_000
             c.readTimeout = 8_000
             c.setRequestProperty("User-Agent", headers["User-Agent"] ?: Http.userAgent)
-            for ((k, v) in headers) if (!k.equals("User-Agent", ignoreCase = true)) c.setRequestProperty(k, v)
+            // The add-on's headers may carry a key: only the host it named gets them, not a host a redirect names.
+            if (c.url.host == host) for ((k, v) in headers) if (!k.equals("User-Agent", ignoreCase = true)) c.setRequestProperty(k, v)
             c.setRequestProperty("Range", "bytes=$start-$end")
 
             val code = c.responseCode

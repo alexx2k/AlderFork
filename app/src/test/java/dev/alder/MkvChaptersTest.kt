@@ -181,4 +181,13 @@ class MkvChaptersTest {
         assertEquals(0L, intros[0].startMs)
         assertEquals(45_000L, intros[0].endMs)
     }
+
+    @Test fun segmentStartIsFoundPastTheEbmlHeader() {
+        val header = element(0x1A45DFA3L, element(0x4286L, byteArrayOf(1)) + element(0x4282L, "matroska".toByteArray()))
+        val segment = element(0x18538067L, ByteArray(10))
+        val file = header + segment
+        // The Segment's data starts after its 4-byte id and 1-byte size.
+        assertEquals((header.size + 5).toLong(), MkvChapters.findSegmentDataStart(file))
+    }
+
 }

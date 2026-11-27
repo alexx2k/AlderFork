@@ -6,6 +6,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.net.HttpURLConnection
+import java.net.Socket
 import java.net.URL
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -34,6 +35,24 @@ class PhoneEntryTest {
             assertEquals("saved", send(entry.port, entry.path, "text=%20ab%2Bc12%20").second)
             assertEquals("ab+c12", got.get(2, TimeUnit.SECONDS))
             assertTrue(runCatching { send(entry.port, entry.path) }.isFailure) // closed after the key
+        } finally { entry.close() }
+    }
+
+    @Test fun idleConnectionDoesNotBlockPost() {
+        val got = CompletableFuture<String>()
+        val entry = PhoneEntry({ saved -> if (saved) "saved" else "form" }) { got.complete(it) }
+        try {
+            Socket("127.0.0.1", entry.port).use { _ ->
+                val startNanos = System.nanoTime()
+                val (code, body) = CompletableFuture.supplyAsync {
+                    send(entry.port, entry.path, "text=secret-key")
+                }.get(3, TimeUnit.SECONDS)
+                val elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos)
+                assertEquals(200, code)
+                assertEquals("saved", body)
+                assertEquals("secret-key", got.get(2, TimeUnit.SECONDS))
+                assertTrue("POST took ${elapsedMs}ms behind idle socket", elapsedMs < 3_000)
+            }
         } finally { entry.close() }
     }
 

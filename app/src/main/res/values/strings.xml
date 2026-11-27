@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="card_watched">Watched</string>
+    <string name="card_progress">%1$d%% watched</string>
     <string name="app_name" translatable="false">Alder Fork</string>
 
     <!-- Shared -->
@@ -23,26 +25,31 @@
     <string name="whats_new">What\'s new</string>
     <string name="whats_new_no_notes">There are no notes for version %1$s.</string>
     <string name="whats_new_version">Version %1$s</string>
+    <string name="whats_new_preview">Release preview</string>
+    <string name="whats_new_example_player">Example external player</string>
     <string name="whats_new_group">New</string>
-    <plurals name="whats_new_highlights">
-        <item quantity="one">What\'s new · %1$d highlight</item>
-        <item quantity="other">What\'s new · %1$d highlights</item>
-    </plurals>
-    <string name="whats_new_all">All changes (%1$d)</string>
     <string name="whats_new_highlights_short">Highlights</string>
-    <string name="whats_new_back">← Back to highlights</string>
-    <plurals name="whats_new_see_all">
-        <item quantity="one">See %1$d change  →</item>
-        <item quantity="other">See all %1$d changes  →</item>
-    </plurals>
 
     <!-- Home -->
     <string name="tab_home">Home</string>
+    <string name="tab_discover">Discover</string>
+    <string name="discover_genre">Genre</string>
+    <string name="discover_year">Decade</string>
+    <string name="discover_all_genres">All genres</string>
+    <string name="discover_all_decades">All decades</string>
+    <string name="discover_all_services">All services</string>
+    <string name="discover_before_1980">Before 1980</string>
+    <string name="discover_on">Service</string>
+    <string name="discover_sort_popular">Popular</string>
+    <string name="discover_sort_top">Top rated</string>
+    <string name="discover_sort_new">Newest</string>
+    <string name="discover_empty">Nothing matches these choices. Try fewer of them.</string>
+    <string name="tmdb_notice">This product uses the TMDB API but is not endorsed or certified by TMDB.</string>
     <string name="tab_shows">Shows</string>
     <string name="tab_movies">Movies</string>
     <string name="tab_live">Live</string>
     <string name="tab_anime">Anime</string>
-    <string name="tab_my_list">My List</string>
+    <string name="tab_my_list">My Alder</string>
     <string name="nav_profile">Profile</string>
     <string name="nav_search">Search</string>
     <string name="updates_ready">Alder %1$s is ready</string>
@@ -54,7 +61,6 @@
     <string name="menu_settings">Settings</string>
     <string name="action_play">Play</string>
     <string name="action_resume">Resume</string>
-    <string name="new_episode">New episode</string>
     <string name="stopped_at">Stopped at %1$s</string>
     <string name="time_left_hours">%1$dh %2$dm left</string>
     <string name="time_left_minutes">%1$d min left</string>
@@ -65,7 +71,7 @@
     </plurals>
     <string name="home_unreachable">Couldn\'t reach Stremio. Check the TV\'s connection.</string>
     <string name="row_continue">Continue Watching</string>
-    <string name="home_no_picks">Picks for you show here once Watchly is installed on this profile\'s Stremio account. Shows and Movies have more to browse.</string>
+    <string name="home_no_picks">No picks yet. Browse Shows or Movies, or add Watchly in Stremio.</string>
     <string name="page_no_movie_catalogs">None of your addons has movie catalogs. Add one (AIOMetadata, Cinemeta) in Stremio.</string>
     <string name="page_no_show_catalogs">None of your addons has show catalogs. Add one (AIOMetadata, Cinemeta) in Stremio.</string>
     <string name="page_no_live_catalogs">None of your addons has live catalogs. Add one in Stremio.</string>
@@ -74,17 +80,14 @@
     <string name="list_sort_recent">Recently added</string>
     <string name="list_sort_name">A–Z</string>
     <string name="list_sort_unwatched">Unwatched first</string>
-    <plurals name="list_title_count">
-        <item quantity="one">%1$d title</item>
-        <item quantity="other">%1$d titles</item>
-    </plurals>
     <string name="list_empty">Titles you save with + appear here</string>
-    <string name="list_empty_movies">No movies in My List</string>
-    <string name="list_empty_shows">No shows in My List</string>
-    <string name="list_empty_unwatched">No unwatched titles in My List</string>
-    <string name="action_remove_from_list">Remove from My List</string>
+    <string name="list_empty_movies">No movies in My Alder</string>
+    <string name="list_empty_shows">No shows in My Alder</string>
+    <string name="list_empty_unwatched">No unwatched titles in My Alder</string>
+    <string name="list_clear_filters">Clear filters</string>
+    <string name="action_remove_from_list">Remove from My Alder</string>
     <string name="action_mark_watched">Mark as watched</string>
-    <string name="list_update_failed">Couldn\'t update My List</string>
+    <string name="list_update_failed">Couldn\'t update My Alder</string>
     <string name="check_connection">Check the connection and try again.</string>
     <string name="action_choose_source">Choose a source</string>
     <string name="action_remove_from_continue">Remove from Continue Watching</string>
@@ -103,7 +106,7 @@
     <string name="action_more_info">More information</string>
     <string name="action_start_over">Start over</string>
     <string name="action_trailer">Trailer</string>
-    <string name="action_add_to_list">Add to My List</string>
+    <string name="action_add_to_list">Add to My Alder</string>
     <string name="season_specials">Specials</string>
     <string name="season_number">Season %1$d</string>
     <string name="episode_number">Episode %1$d</string>
@@ -133,9 +136,8 @@
     <string name="player_starting">Starting · %1$s</string>
     <string name="player_starting_stream">Starting stream…</string>
     <string name="streams_tag_p2p" translatable="false">P2P</string>
-    <string name="player_source_failed_next">That source failed · trying the next one</string>
+    <string name="player_source_failed_next">That source failed. Trying the next one.</string>
     <string name="player_source_failed_choose">That source failed · choose another source</string>
-    <string name="player_keeps_buffering">Keeps buffering</string>
     <string name="player_switch_prompt">Switch to %1$dp?</string>
     <string name="player_switch_desc">This %1$dp source stopped 3 times in a minute. A smaller file may play more smoothly from %2$s.</string>
     <string name="player_switch_to">Switch to %1$dp</string>
@@ -144,30 +146,21 @@
     <string name="player_source_failed">Source failed</string>
     <string name="player_try_another">Try another source</string>
     <string name="player_next_episode">Next episode</string>
-    <string name="player_up_next">Up next</string>
-    <string name="player_auto_next_in">Playing automatically in %1$d s</string>
-    <string name="player_watch_credits">Watch Credits</string>
     <string name="player_exit_home">Exit to Home</string>
     <string name="player_still_watching">Are You Still Watching?</string>
-    <string name="player_still_prompt_description">Your next episode is ready whenever you are.</string>
-    <string name="player_still_episode">S%1$d E%2$d</string>
-    <string name="player_still_keep_watching">Keep Watching</string>
-    <string name="player_still_dont_ask">Don\'t Ask Again</string>
-    <string name="player_still_stop">Stop Watching</string>
     <string name="player_sleep_paused">The sleep timer paused playback.</string>
     <string name="skip_intro">Skip intro</string>
     <string name="skip_recap">Skip recap</string>
-    <string name="player_paused">Paused</string>
     <string name="player_seek">Seek</string>
     <string name="player_audio_subtitles">Audio &amp; subtitles</string>
+    <string name="player_speed">Playback speed</string>
+    <string name="player_speed_passthrough_note">Audio pauses briefly when switching to or from 1×.</string>
     <string name="player_change_stream">Change stream</string>
     <string name="player_pause">Pause</string>
     <string name="player_info">Info</string>
-    <string name="key_play_pause">Play / pause</string>
-    <string name="key_seek">Seek on the bar</string>
     <string name="player_live">Live</string>
     <string name="player_chapters">%1$s  ·  ▲ Chapters</string>
-    <string name="player_cannot_seek">This source can\'t skip ahead · Change stream to try another</string>
+    <string name="player_cannot_seek">This source can\'t skip ahead. Change stream to try another.</string>
     <string name="tab_subtitles">Subtitles</string>
     <string name="tab_audio">Audio</string>
     <string name="tab_sync_style">Sync &amp; Style</string>
@@ -182,14 +175,11 @@
     <string name="track_preferred">Preferred</string>
     <string name="track_recent">Recent</string>
     <string name="track_in_file">in the file</string>
-    <string name="subtitles_heading">Subtitles · %1$s</string>
     <string name="quick_timing">Quick timing</string>
     <string name="subtitle_color">Subtitle color</string>
     <string name="tracks_pinned">Pinned</string>
     <string name="all_languages">All languages (%1$d)</string>
-    <string name="audio_heading">Audio · %1$s</string>
     <string name="all_audio_tracks">All audio tracks (%1$d)</string>
-    <string name="audio_enhancement">Audio enhancement</string>
     <string name="clear_dialogue">Clear dialogue</string>
     <string name="clear_dialogue_hint">Boost voices above music and effects</string>
     <string name="timing_earlier_heading">Earlier</string>
@@ -203,7 +193,6 @@
     <string name="size_extra_large">Extra large</string>
     <string name="color">Color</string>
     <string name="background_box">Background box</string>
-    <string name="playback_sleep">Playback &amp; sleep</string>
     <string name="sleep_timer">Sleep timer</string>
     <string name="player_change_stream_arrow">Change stream  →</string>
     <string name="subtitles_off">Subtitles off</string>
@@ -269,7 +258,7 @@
     <string name="player_no_other_app">No other video player is on this TV. Alder plays the video.</string>
     <string name="clear_dialogue_setting_hint">Lifts voices above music and loud effects when using TV speakers.</string>
     <string name="dubbed">Dubbed releases</string>
-    <string name="dubbed_hint">Original first puts dubbed releases last; My language first uses this profile\'s audio language.</string>
+    <string name="dubbed_hint">Original first puts dubbed releases last. My language first uses Alder’s player to check the audio before automatic playback. You can still choose any source.</string>
     <string name="dubbed_original">Original first</string>
     <string name="dubbed_mine">My language first</string>
     <string name="subs_default">Subtitles by default</string>
@@ -298,6 +287,8 @@
     <string name="more_filters_desc">Release groups, codecs, languages and more are set in your streaming add-on on your phone or at web.stremio.com. This TV follows its order.</string>
     <string name="audio_language">Audio language</string>
     <string name="audio_language_hint">The dub to start with when a file has several. Changeable while watching.</string>
+    <string name="audio_fallback">Fallback audio language</string>
+    <string name="audio_fallback_hint">With My language first, Alder tries your chosen language, this fallback, then English. Select Off to use only your chosen language.</string>
     <string name="subtitle_language">Subtitle language</string>
     <string name="subtitle_language_hint">Which subtitles start with the video, and which come first in the list while watching.</string>
     <string name="my_addons">My add-ons</string>
@@ -330,6 +321,10 @@
     <string name="ratings_source">Ratings</string>
     <string name="ratings_source_hint">Choose the ratings on title pages and Home. Letterboxd is for films only and needs an MDBList key. Shows always use IMDb.</string>
     <string name="ratings_both">Both</string>
+    <string name="episode_badges">New episode badges</string>
+    <string name="episode_badges_hint">Choose the number on series posters. Newly aired counts episodes that came out after you last watched. Current season counts the episodes left in the season you watch.</string>
+    <string name="episode_badges_aired">Newly aired</string>
+    <string name="episode_badges_season">Current season</string>
     <string name="mdblist_key">MDBList key</string>
     <string name="mdblist_key_hint">Your free API key from mdblist.com/preferences. Alder uses it only to get Letterboxd ratings.</string>
     <string name="key_not_set">Not set</string>
@@ -377,15 +372,14 @@
     <string name="unhide_row_hint">Select a row to put it back.</string>
     <string name="custom">Custom</string>
     <string name="source_choice">Source choice</string>
-    <string name="source_choice_hint">Best picture: full Blu-ray and Dolby Vision first. Balanced: smaller files. Fast start: web releases. Add-on\'s order: follow the add-on.</string>
-    <string name="preset_addon_order">Add-on\'s order</string>
+    <string name="source_choice_hint">Best picture: full Blu-ray and Dolby Vision first. Balanced: smaller files. Fast start: web releases. Any release: the sharpest copy, whatever the release.</string>
+    <string name="preset_addon_order">Any release</string>
     <string name="preset_best_picture">Best picture</string>
     <string name="preset_balanced">Balanced</string>
     <string name="preset_fast_start">Fast start</string>
 
     <!-- Search -->
     <string name="search_clear">Clear search</string>
-    <string name="search_voice_unavailable">Voice search unavailable</string>
     <string name="search_space">Space</string>
     <string name="search_recent">Recent</string>
     <string name="search_recent_hint">%1$s. Hold OK to remove from recent searches</string>
@@ -414,14 +408,13 @@
         <item quantity="other">%1$d sources</item>
     </plurals>
     <string name="streams_none_playable">No playable sources found.</string>
+    <string name="streams_no_preferred_audio">No sources match your automatic audio languages. Choose a source to continue.</string>
     <string name="streams_all_languages">All languages</string>
     <string name="streams_scan">Scan with your phone to set up %1$s</string>
     <string name="streams_scan_debrid">Add a debrid account there, such as Real-Debrid, and install it again. Then select Try again.</string>
     <string name="streams_scan_key">Enter a new key or sign in again there, and install it again. Then select Try again.</string>
     <string name="streams_auto">Auto</string>
     <string name="streams_best_match">Best match</string>
-    <string name="autoplay_fallback">Credits fallback</string>
-    <string name="autoplay_fallback_hint">When no credits timestamp is available, offer the next episode this many seconds before the end.</string>
     <string name="streams_tag_multi_audio">Multi audio</string>
     <string name="streams_tag_dub">Dub</string>
     <string name="streams_tag_hard_subs">Hard subs</string>
@@ -442,6 +435,8 @@
     <string name="failure_secure">secure connection failed</string>
     <string name="failure_not_sources">not a source list</string>
     <string name="failure_error">error</string>
+    <string name="failure_preferred_audio">no supported track in your preferred audio language</string>
+    <string name="failure_advice_preferred_audio">Choose a source with your audio language.</string>
 
     <!-- Add-ons -->
     <string name="addons_move_or_remove">Move or remove</string>
@@ -489,31 +484,6 @@
     </string-array>
 
     <!-- Profiles -->
-    <string name="profiles_avatar">Change profile picture</string>
-    <string name="profiles_avatar_setup">Choose profile picture</string>
-    <string name="profiles_avatar_choose">Browse pre-loaded avatars</string>
-    <string name="profiles_avatar_upload">Upload from your mobile phone</string>
-    <string name="profiles_avatar_upload_scan">Scan this code with your phone to choose and upload a picture.</string>
-    <string name="profiles_avatar_upload_wifi">Your phone and Fire Stick must be on the same Wi-Fi network.</string>
-    <string name="profiles_avatar_upload_waiting">Waiting for your photo…</string>
-    <string name="profiles_avatar_upload_unavailable">Could not start the upload server. Connect the Fire Stick to your home network and try again.</string>
-    <string name="profiles_avatar_title">Choose a picture for %1$s</string>
-
-    <string name="profiles_avatar_initials">Use initials instead</string>
-    <string name="profiles_avatar_load_failed">Could not load the icon catalogue.</string>
-    <string name="profiles_avatar_filter">Collection: %1$s</string>
-    <string name="profiles_avatar_all">All collections</string>
-    <string name="profiles_avatar_filter_title">Browse collection</string>
-    <string name="profiles_account_mode_title">How should this profile stream?</string>
-    <string name="profiles_share_account">Use an existing Stremio account (local profile)</string>
-    <string name="profiles_separate_account">Sign in to a separate Stremio account</string>
-    <string name="profiles_share_account_desc">Shared streaming addons, but this profile keeps its own watch history and My List on this TV.</string>
-    <string name="profiles_select_account">Share streaming access from</string>
-    <string name="profiles_missing_owner">Shared account unavailable</string>
-    <string name="profiles_missing_owner_desc">This profile\'s Stremio account owner is missing. Restore the account to use this profile.</string>
-    <string name="profiles_remove_owner_blocked">Account still in use</string>
-    <string name="profiles_remove_owner_blocked_desc">Remove the local profiles sharing this Stremio account before deleting its owner.</string>
-    <string name="profiles_remove_local_desc">Remove %1$s and permanently delete their viewing history and My List from this TV?</string>
     <string name="profiles_sign_in_again">Sign in again</string>
     <string name="profiles_whos_here">Who\'s here tonight?</string>
     <string name="profiles_hold_ok">Hold OK</string>
@@ -571,8 +541,6 @@
     <string name="profiles_watchly_steps">"1.  Scan with %1$s's phone to open Watchly\n2.  Connect %1$s's Stremio account there\n3.  Install it to %1$s's Stremio account\n\n%1$s's own \"Top Picks\" then show up on Home. You can finish this later."</string>
     <string name="profiles_all_set">You\'re all set</string>
     <string name="profiles_ready">%1$s\'s profile is ready. You can add more add-ons later in Settings.</string>
-    <string name="catalog_jump_to">Jump to</string>
-    <string name="catalog_jump_top">Top</string>
     <string name="display_resolution">Display resolution</string>
     <string name="display_resolution_hint">Choose the TV resolution Alder uses to pick a source. Use 4K if your box reports 1080p but outputs 4K.</string>
     <string name="error_sign_in">sign in to Stremio again</string>
@@ -582,7 +550,63 @@
     <string name="error_network">network error</string>
     <string name="library_edit_failed">Couldn\'t save the watched status</string>
     <string name="search_incomplete">Search results are incomplete</string>
+    <string name="catalog_addon_failed">%1$s couldn\'t load</string>
+    <string name="failure_web_page">it sends a web page, not titles</string>
+    <string name="failure_advice_sign_in">Sign in to Stremio again.</string>
+    <string name="failure_advice_access">Check the key or account in this add-on\'s settings in Stremio.</string>
+    <string name="failure_advice_timeout">Check your internet connection, then try again.</string>
+    <string name="failure_advice_address">Check your internet connection. If it works, the add-on may have moved: update it in Stremio.</string>
+    <string name="failure_advice_connection">The service may be down. Try again later.</string>
+    <string name="failure_advice_secure">Check the date and time on your TV, then try again.</string>
+    <string name="failure_advice_busy">Wait a minute, then try again.</string>
+    <string name="failure_advice_server">The service has a problem. Try again later.</string>
+    <string name="failure_advice_response">If this goes on, update or remove the add-on in Stremio.</string>
+    <string name="failure_advice_missing">Try another add-on or source.</string>
+    <string name="failure_advice_format">Try another source.</string>
+    <string name="failure_advice_network">Check your internet connection, then try again.</string>
+    <string name="failure_advice_web_page">The add-on may have moved or closed: update or remove it in Stremio.</string>
+    <string name="failure_advice_other">Try again. If this goes on, send a report from Settings › About.</string>
+    <string name="filmography_failed">Couldn\'t get this person\'s titles</string>
+    <string name="filmography_loading">Finding titles…</string>
+    <string name="filmography_empty">No other titles found in your catalogs.</string>
+    <string name="trailer_no_app">No app on this TV can play the trailer. Install YouTube to watch it.</string>
     <string name="catalog_incomplete">Some catalogs couldn\'t load</string>
     <string name="progress_saved_on_tv">Progress saved on this TV. Alder will try to sync it again.</string>
     <string name="library_load_failed">Couldn\'t load your Stremio library</string>
+    <string name="list_added_on">Added %1$s</string>
+
+    <!-- Alder Fork additions -->
+    <string name="player_auto_next_in">Playing automatically in %1$d s</string>
+    <string name="player_watch_credits">Watch Credits</string>
+    <string name="player_still_prompt_description">Your next episode is ready whenever you are.</string>
+    <string name="player_still_episode">S%1$d E%2$d</string>
+    <string name="player_still_keep_watching">Keep Watching</string>
+    <string name="player_still_dont_ask">Don\'t Ask Again</string>
+    <string name="player_still_stop">Stop Watching</string>
+    <string name="autoplay_fallback">Credits fallback</string>
+    <string name="autoplay_fallback_hint">When no credits timestamp is available, offer the next episode this many seconds before the end.</string>
+    <string name="profiles_avatar">Change profile picture</string>
+    <string name="profiles_avatar_setup">Choose profile picture</string>
+    <string name="profiles_avatar_choose">Browse pre-loaded avatars</string>
+    <string name="profiles_avatar_upload">Upload from your mobile phone</string>
+    <string name="profiles_avatar_upload_scan">Scan this code with your phone to choose and upload a picture.</string>
+    <string name="profiles_avatar_upload_wifi">Your phone and Fire Stick must be on the same Wi-Fi network.</string>
+    <string name="profiles_avatar_upload_waiting">Waiting for your photo…</string>
+    <string name="profiles_avatar_upload_unavailable">Could not start the upload server. Connect the Fire Stick to your home network and try again.</string>
+    <string name="profiles_avatar_title">Choose a picture for %1$s</string>
+    <string name="profiles_avatar_initials">Use initials instead</string>
+    <string name="profiles_avatar_load_failed">Could not load the icon catalogue.</string>
+    <string name="profiles_avatar_filter">Collection: %1$s</string>
+    <string name="profiles_avatar_all">All collections</string>
+    <string name="profiles_avatar_filter_title">Browse collection</string>
+    <string name="profiles_account_mode_title">How should this profile stream?</string>
+    <string name="profiles_share_account">Use an existing Stremio account (local profile)</string>
+    <string name="profiles_separate_account">Sign in to a separate Stremio account</string>
+    <string name="profiles_share_account_desc">Shared streaming addons, but this profile keeps its own watch history and My List on this TV.</string>
+    <string name="profiles_select_account">Share streaming access from</string>
+    <string name="profiles_missing_owner">Shared account unavailable</string>
+    <string name="profiles_missing_owner_desc">This profile\'s Stremio account owner is missing. Restore the account to use this profile.</string>
+    <string name="profiles_remove_owner_blocked">Account still in use</string>
+    <string name="profiles_remove_owner_blocked_desc">Remove the local profiles sharing this Stremio account before deleting its owner.</string>
+    <string name="profiles_remove_local_desc">Remove %1$s and permanently delete their viewing history and My List from this TV?</string>
 </resources>

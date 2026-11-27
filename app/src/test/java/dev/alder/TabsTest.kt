@@ -5,9 +5,9 @@ import org.junit.Test
 
 class TabsTest {
     @Test fun tabsFollowTheAddonsCatalogs() {
-        assertEquals(listOf("shows", "movies", "live", "type:trakt", "type:anime", "library"),
+        assertEquals(listOf("discover", "shows", "movies", "live", "type:trakt", "type:anime", "library"),
             tabsFor(listOf("movie", "series", "Trakt", "tv", "anime")))
-        assertEquals(listOf("shows", "movies", "library"), tabsFor(listOf("movie", "series")))
+        assertEquals(listOf("discover", "shows", "movies", "library"), tabsFor(listOf("movie", "series")))
     }
 
     @Test fun nothingSavedKeepsAldersOrder() {
@@ -16,7 +16,8 @@ class TabsTest {
     }
 
     @Test fun builtInTabsKeepTheirSavedOrderWithoutAddonData() =
-        assertEquals(listOf("library", "movies", "shows"),
+        // Discover is new to a saved order: it goes first, next to Home.
+        assertEquals(listOf("discover", "library", "movies", "shows"),
             orderTabs(listOf("library", "type:anime", "movies", "live", "shows"), tabsFor(emptyList())))
 
     @Test fun reorderingBuiltInTabsKeepsUnavailableAddonTabs() =
