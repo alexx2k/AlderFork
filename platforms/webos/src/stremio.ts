@@ -60,3 +60,15 @@ export async function getUserId(authKey:string,signal?:AbortSignal):Promise<stri
  const data=unwrap(await post('getUser',{type:'GetUser',authKey},signal));
  const id=string(data._id);if(!id)throw Error('Missing account identifier');return id;
 }
+
+export async function readLibraryItems(authKey:string,ids:string[]=[],signal?:AbortSignal):Promise<JsonObject[]>{
+ const raw=object(await post('datastoreGet',{authKey,collection:'libraryItem',ids,all:ids.length===0},signal));
+ if(raw.error)throw new ApiError(Number(object(raw.error).code)||0);
+ if(!Array.isArray(raw.result))throw Error('Invalid library response');
+ return raw.result.map(object).filter(x=>typeof x._id==='string');
+}
+export async function writeLibraryItems(authKey:string,changes:JsonObject[],signal?:AbortSignal):Promise<void>{
+ const raw=object(await post('datastorePut',{authKey,collection:'libraryItem',changes},signal));
+ if(raw.error)throw new ApiError(Number(object(raw.error).code)||0);
+ if(!Object.prototype.hasOwnProperty.call(raw,'result'))throw Error('Invalid library write response');
+}

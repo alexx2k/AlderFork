@@ -69,6 +69,7 @@ export function deleteHistory(storage,profileId){
  const prefixes=['progress','source'].map(kind=>historyPrefix(kind,historyNamespace(profileId)));
  const keys=[];for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key&&prefixes.some(p=>key.startsWith(p)))keys.push(key);}
  for(const key of keys)storage.removeItem(key);
+ const library='tarn.library.v1:'+encodeURIComponent(historyNamespace(profileId));storage.removeItem(library);storage.removeItem(library+':account');
 }
 
 export function lenderTokens(data,id){

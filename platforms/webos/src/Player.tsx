@@ -2,7 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import type {PlaybackIntent} from './liveCatalogue.ts';
 import {jsonRequest,installedAddons} from './stremio.ts';
 import {rankSources,resolveStreams,resolveSubtitles,uniqueSubtitles,parseCues,activeSubtitle,decodeSubtitle,preferResumeSource,seekPosition,Source,Subtitle,Resolution,SubtitleCue} from './playback.mjs';
-import {resumeFor,saveProgress,readSource,rememberSource} from './progress.ts';
+import {saveProgress,readSource,rememberSource} from './progress.ts';
 import {mergeStreamAddons} from './profiles.mjs';
 
 type AudioTrack={enabled:boolean;label?:string;language?:string};
@@ -20,7 +20,7 @@ function time(seconds:number){
 function button(id:string,label:string,action:()=>void,disabled=false){
  return <button type="button" data-focus id={id} onClick={action} disabled={disabled}>{label}</button>;
 }
-export function Player({intent,addons,lenders,account,onExit}:{intent:PlaybackIntent;addons:unknown[];lenders:string[];account:string;onExit:()=>void}){
+export function Player({intent,addons,lenders,account,startAt,onProgress,onExit}:{intent:PlaybackIntent;addons:unknown[];lenders:string[];account:string;startAt:number;onProgress:(position:number,duration:number,played:number,ended:boolean)=>void;onExit:()=>void}){
  const [resolution,setResolution]=useState<Resolution|null>(null);
  const [sources,setSources]=useState<Source[]>([]);
  const [addonSubs,setAddonSubs]=useState<Subtitle[]>([]);
@@ -28,7 +28,7 @@ export function Player({intent,addons,lenders,account,onExit}:{intent:PlaybackIn
  const [revision,setRevision]=useState(0);
  const [panel,setPanel]=useState<'sources'|'subtitles'|'audio'|null>(null);
  const [status,setStatus]=useState('Finding compatible sources…');
- const [position,setPosition]=useState(()=>resumeFor(account,intent));
+ const [position,setPosition]=useState(()=>startAt);
  const [duration,setDuration]=useState(0);
  const [paused,setPaused]=useState(true);
  const [subtitle,setSubtitle]=useState<Subtitle|null>(null);
@@ -40,8 +40,9 @@ export function Player({intent,addons,lenders,account,onExit}:{intent:PlaybackIn
  const [embeddedChoice,setEmbeddedChoice]=useState<number|null>(null);
  const [subtitleLoading,setSubtitleLoading]=useState(false);
  const video=useRef<NativeVideo|null>(null);
- const last=useRef({position:resumeFor(account,intent),duration:0});
+ const last=useRef({position:startAt,duration:0});
  const lastSaved=useRef(0);
+ const playedSinceSave=useRef(0),lastTick=useRef<number|null>(null),finished=useRef(false),lastReport=useRef('');
  const resume=useRef(last.current.position);
  const pendingSeek=useRef<number|null>(null);
  const tries=useRef(0);
@@ -54,7 +55,7 @@ export function Player({intent,addons,lenders,account,onExit}:{intent:PlaybackIn
  const clock=useRef<number|undefined>(undefined);
  const stall=useRef<number|undefined>(undefined);
  const source=attempt?sources[attempt.index]:undefined;
- const persist=()=>{const p=last.current;if(p.duration>0)saveProgress(account,intent,p.position,p.duration);};
+ const persist=(final=false)=>{const p=last.current;if(p.duration<=0||finished.current)return;saveProgress(account,intent,p.position,p.duration);const done=final&&p.position>=p.duration*.9;if(!final&&p.position>=p.duration*.9)return;const signature=p.position+'|'+p.duration+'|'+done;if(signature===lastReport.current&&!playedSinceSave.current)return;lastReport.current=signature;if(done)finished.current=true;const watched=playedSinceSave.current;playedSinceSave.current=0;onProgress(p.position,p.duration,watched,done);};
  const cancelTimers=()=>{if(clock.current!==undefined)window.clearTimeout(clock.current);if(stall.current!==undefined)window.clearTimeout(stall.current);clock.current=undefined;stall.current=undefined;};
  const begin=(index:number,manual=false)=>{
   if(!activeSources.current[index])return;
@@ -63,7 +64,7 @@ export function Player({intent,addons,lenders,account,onExit}:{intent:PlaybackIn
   const v=video.current;
   if(v&&started.current&&pendingSeek.current===null&&Number.isFinite(v.duration)&&v.duration>0){last.current={position:v.currentTime,duration:v.duration};resume.current=v.currentTime;persist();}
   else resume.current=last.current.position;
-  attempted.current.add(index);tries.current++;failed.current=false;started.current=false;pendingSeek.current=null;
+  lastTick.current=null;attempted.current.add(index);tries.current++;failed.current=false;started.current=false;pendingSeek.current=null;
   const next={index,serial:++serial.current};current.current=next;
   setAttempt(next);setPanel(null);setPaused(true);setStatus('Opening '+activeSources.current[index].name+'…');
   setSubtitle(null);setCues([]);setCaption('');setEmbedded([]);setEmbeddedChoice(null);setAddonSubs([]);setSubtitleStatus('');setAudio([]);
@@ -123,10 +124,11 @@ export function Player({intent,addons,lenders,account,onExit}:{intent:PlaybackIn
    setEmbedded(Array.from({length:v.textTracks.length},(_,index)=>({track:v.textTracks[index],index})).filter(x=>x.track.kind==='subtitles'||x.track.kind==='captions').map(x=>({index:x.index,label:x.track.label||x.track.language||'Embedded '+(x.index+1)})));
   };
   const playing=()=>{if(!valid())return;started.current=true;const successful=activeSources.current[attempt.index];if(successful)rememberSource(account,intent,successful);cancelTimers();setPaused(false);setStatus('Playing');refreshAudio();refreshEmbedded();};
-  const pausedEvent=()=>{if(valid()){setPaused(true);if(started.current){cancelTimers();persist();}}};
+  const pausedEvent=()=>{if(valid()){lastTick.current=null;setPaused(true);if(started.current){cancelTimers();persist();}}};
   const tick=()=>{
    if(!valid()||!started.current||!Number.isFinite(v.duration)||v.duration<=0)return;
    if(pendingSeek.current!==null){if(v.seeking||Math.abs(v.currentTime-pendingSeek.current)>3)return;pendingSeek.current=null;}
+   const before=lastTick.current;lastTick.current=v.currentTime;if(before!==null&&!v.paused&&!v.seeking){const delta=v.currentTime-before;if(delta>0&&delta<=3)playedSinceSave.current+=delta;}
    last.current={position:v.currentTime,duration:v.duration};setPosition(v.currentTime);setDuration(v.duration);
    if(Date.now()-lastSaved.current>=5000){lastSaved.current=Date.now();persist();}
   };
@@ -135,9 +137,9 @@ export function Player({intent,addons,lenders,account,onExit}:{intent:PlaybackIn
    setStatus('Buffering…');
    if(started.current&&stall.current===undefined)stall.current=window.setTimeout(()=>{stall.current=undefined;if(valid()&&!v.paused&&v.readyState<3)fallback(id,'Playback stalled.');},20000);
   };
-  const ended=()=>{if(!valid())return;cancelTimers();if(Number.isFinite(v.duration)){last.current={position:v.duration,duration:v.duration};setPosition(v.duration);persist();}setPaused(true);setStatus('Playback finished.');};
+  const ended=()=>{if(!valid())return;cancelTimers();if(Number.isFinite(v.duration)){last.current={position:v.duration,duration:v.duration};setPosition(v.duration);persist(true);}setPaused(true);setStatus('Playback finished.');};
   const error=()=>{if(valid())fallback(id,'Media playback error '+(v.error?.code||'unknown')+'.');};
-  const seeked=()=>{if(valid())pendingSeek.current=null;};
+  const seeked=()=>{if(valid()){pendingSeek.current=null;lastTick.current=null;}};
   const listeners:[string,()=>void][]=[['seeked',seeked],['loadedmetadata',metadata],['playing',playing],['pause',pausedEvent],['timeupdate',tick],['waiting',waiting],['stalled',waiting],['ended',ended],['error',error]];
   listeners.forEach(([event,fn])=>v.addEventListener(event,fn));
   v.audioTracks?.addEventListener?.('change',refreshAudio);v.audioTracks?.addEventListener?.('addtrack',refreshAudio);
@@ -145,7 +147,7 @@ export function Player({intent,addons,lenders,account,onExit}:{intent:PlaybackIn
   startClock();v.src=activeSources.current[attempt.index].url;v.load();play();
   return()=>{alive=false;cancelTimers();listeners.forEach(([event,fn])=>v.removeEventListener(event,fn));v.audioTracks?.removeEventListener?.('change',refreshAudio);v.audioTracks?.removeEventListener?.('addtrack',refreshAudio);v.textTracks.removeEventListener?.('addtrack',refreshEmbedded);v.textTracks.removeEventListener?.('removetrack',refreshEmbedded);v.pause();v.removeAttribute('src');v.load();};
  },[attempt?.serial]);
- useEffect(()=>{const flush=()=>persist();window.addEventListener('pagehide',flush);document.addEventListener('visibilitychange',flush);return()=>{window.removeEventListener('pagehide',flush);document.removeEventListener('visibilitychange',flush);persist();};},[]);
+ useEffect(()=>{const flush=()=>persist(true);window.addEventListener('pagehide',flush);document.addEventListener('visibilitychange',flush);return()=>{window.removeEventListener('pagehide',flush);document.removeEventListener('visibilitychange',flush);persist(true);};},[]);
  useEffect(()=>{
   if(!attempt||!source){setAddonSubs([]);setSubtitleLoading(false);return;}
   const c=new AbortController();setAddonSubs([]);setSubtitleLoading(true);
@@ -193,7 +195,7 @@ export function Player({intent,addons,lenders,account,onExit}:{intent:PlaybackIn
   if(!started.current){cancelTimers();clock.current=window.setTimeout(()=>fallback(attempt.serial,'Source did not start in time.'),25000);}
   v.play()?.catch(error=>{if(error?.name==='NotAllowedError'){cancelTimers();setStatus('Playback blocked by this device. Press Play again.');}else fallback(attempt.serial,'Could not play this source.');});
  };
- const seek=(delta:number)=>{const v=video.current;if(v&&Number.isFinite(v.duration)&&v.duration>0){pendingSeek.current=null;try{v.currentTime=seekPosition(v.currentTime,v.duration,delta);setPosition(v.currentTime);}catch{setStatus('Seeking is not available for this source.');}}};
+ const seek=(delta:number)=>{const v=video.current;if(v&&Number.isFinite(v.duration)&&v.duration>0){pendingSeek.current=null;lastTick.current=null;try{v.currentTime=seekPosition(v.currentTime,v.duration,delta);setPosition(v.currentTime);}catch{setStatus('Seeking is not available for this source.');}}};
  const tracks=uniqueSubtitles((source?.subtitles||[]).concat(addonSubs));
  const selectAudio=(index:number)=>{
   const list=video.current?.audioTracks;if(!list)return;
@@ -201,7 +203,7 @@ export function Player({intent,addons,lenders,account,onExit}:{intent:PlaybackIn
  };
  const retry=()=>{persist();cancelTimers();setRevision(x=>x+1);};
  const closePanel=()=>{const target=panel==='sources'?'player-sources':panel==='subtitles'?'player-subs':'player-audio';setPanel(null);requestAnimationFrame(()=>document.getElementById(target)?.focus());};
- const exit=()=>{persist();onExit();};
+ const exit=()=>{persist(true);onExit();};
  return <main className="player-page">
   <div className="player-video">{attempt&&source?<video key={attempt.serial} ref={video} playsInline preload="auto"/>:<div className="player-empty"><h1>{intent.name}</h1><p>{status}</p></div>}</div>
   {caption&&!panel&&<div className="player-caption" aria-hidden="true"><span>{caption}</span></div>}
