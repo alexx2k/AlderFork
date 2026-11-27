@@ -120,6 +120,11 @@ export function applyWire(raw,action,inflate,deflate){
  }
  out._mtime=date;return out;
 }
+export function applyQueue(raw,queue,inflate,deflate){
+ // A request might have succeeded even if its response was lost. Skip the acknowledged prefix.
+ const stamp=str(raw?._mtime),ack=stamp?queue.findIndex(a=>new Date(a.at).toISOString()===stamp):-1;
+ return queue.slice(ack+1).reduce((item,action)=>applyWire(item,action,inflate,deflate),raw);
+}
 export function reduceLibrary(data,action,cloud,inflate,inflight=new Set()){
  const key=keyFor(action.title),row=data.rows[key]||makeRow(action.title);
  const rows={...data.rows,[key]:applyAction(row,action,inflate)};

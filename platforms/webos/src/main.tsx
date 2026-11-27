@@ -148,8 +148,8 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  useEffect(()=>{library.enrich(rows.reduce<Title[]>((all,r)=>all.concat(r.titles),[]));},[rows]);
  useEffect(()=>{if(detail)library.enrich([detail]);},[detail]);
  // Hydrate imported history using the installed metadata providers, not invented title names.
- const hydrateKey=Object.values(library.data.rows).filter(r=>r.title.name===r.title.id||r.title.type==='series'&&!r.title.episodes?.length).map(r=>keyFor(r.title)).sort().join('\u0001');
- useEffect(()=>{if(!addons.length||!hydrateKey)return;const c=new AbortController();const targets=Object.values(library.data.rows).filter(r=>r.title.name===r.title.id||r.title.type==='series'&&!r.title.episodes?.length).slice(0,30);(async()=>{for(const row of targets){if(c.signal.aborted)return;const t=await loadDetails(addons,row.title,c.signal,(url,init,signal)=>cache.request(url,init,signal));if(!c.signal.aborted)library.enrich([t]);}})().catch(()=>{});return()=>c.abort();},[addons,hydrateKey,cache]);
+ const hydrateKey=Object.values(library.data.rows).filter(r=>r.title.name===r.title.id||!r.title.background||r.title.type==='series'&&!r.title.episodes?.length).map(r=>keyFor(r.title)).sort().join('\u0001');
+ useEffect(()=>{if(!addons.length||!hydrateKey)return;const c=new AbortController();const targets=Object.values(library.data.rows).filter(r=>r.title.name===r.title.id||!r.title.background||r.title.type==='series'&&!r.title.episodes?.length).slice(0,30);(async()=>{for(const row of targets){if(c.signal.aborted)return;const t=await loadDetails(addons,row.title,c.signal,(url,init,signal)=>cache.request(url,init,signal));if(!c.signal.aborted)library.enrich([t]);}})().catch(()=>{});return()=>c.abort();},[addons,hydrateKey,cache]);
  const visible:Shelf[]=showSearch?(search.items.length?[{key:'search-results',name:'Search results',addon:'Installed add-ons',type:'movie',titles:search.items.slice(0,searchLimit)}]:[]):shelf==='Discover'?(discovery.current&&discovery.items.length?[{key:'discover-results',name:discovery.current.name,addon:discovery.current.addon,type:discovery.current.type,titles:discovery.items}]:[]):rows.filter(r=>shelf==='Movies'?r.type==='movie':shelf==='Series'?r.type==='series':true).filter(r=>r.titles.length);
  const featured=visible.length?visible[0].titles[0]:null;
  const openTitle=(t:Title)=>{setSelectedTitle(t);go('#details/'+encodeURIComponent(titleKey(t)));};
@@ -157,8 +157,8 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  return <><div className="app" style={playing?{display:"none"}:undefined} onPointerDown={e=>{const b=(e.target as HTMLElement).closest<HTMLElement>('button[data-focus]');if(b)b.focus();}}>
  <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.4.0-dev.2 • Development</span></header>
  {route.kind==='home'?<main>
-  <nav>{['Home','Discover','Movies','Series','My List'].map(n=><Btn key={n} id={'nav-'+n} className={shelf===n?'selected':''} onClick={()=>{setShelf(n);setShowSearch(false);setKeyboard(false);setRowLimit(6);}}>{n}</Btn>)}
-  {auth&&<Btn id="search" onClick={()=>{setShowSearch(!showSearch);setKeyboard(false);if(!showSearch)setTimeout(()=>document.getElementById('query')?.focus(),0);}}>Search</Btn>}
+  <nav>{['Home','Discover','Movies','Series','My List'].map(n=><Btn key={n} id={'nav-'+n} className={shelf===n?'selected':''} onClick={()=>{setContinueMenu(null);setShelf(n);setShowSearch(false);setKeyboard(false);setRowLimit(6);}}>{n}</Btn>)}
+  {auth&&<Btn id="search" onClick={()=>{setContinueMenu(null);setShowSearch(!showSearch);setKeyboard(false);if(!showSearch)setTimeout(()=>document.getElementById('query')?.focus(),0);}}>Search</Btn>}
   <Btn id="settings" onClick={()=>go('#settings')}>Settings</Btn><Btn id="diagnostics" onClick={()=>go('#diagnostics')}>Diagnostics</Btn>
   <button id="switch-profile" type="button" data-focus className="profile profile-switch" onClick={onSwitch}><Portrait profile={profile}/><span>{profile.name}</span></button></nav>
   {!showSearch&&shelf==='Home'&&<ContinueWatching rows={continueRows(library.data.rows)} onResume={r=>startPlayer(rowIntent(r),r.title)} onOptions={r=>{setContinueMenu(r);setPending('continue-resume');}}/>}

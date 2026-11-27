@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import type {Title,PlaybackIntent} from './liveCatalogue.ts';
-import {Action,LibraryData,Row,emptyLibrary,libraryKey,keyFor,makeRow,mergeTitle,reduceLibrary,importRemote,applyWire,titleSnapshot,isComplete,seenIds} from './library.mjs';
+import {Action,LibraryData,Row,emptyLibrary,libraryKey,keyFor,makeRow,mergeTitle,reduceLibrary,importRemote,applyQueue,titleSnapshot,isComplete,seenIds,nextEpisode} from './library.mjs';
 import {inflateWatched,deflateWatched} from './watchedCodec.ts';
 import {readLibraryItems,writeLibraryItems,getUserId} from './stremio.ts';
 import {historyPrefix} from './profiles.mjs';
@@ -74,13 +74,9 @@ export function useLibrary(namespace:string,token:string,cloud:boolean){
     let raw=current.find(x=>x._id===q[0].title.id&&x.type===q[0].title.type);
     // A different type with the same Stremio ID cannot safely be overwritten.
     if(!raw&&current.some(x=>x._id===q[0].title.id))throw Error('Library ID collision');
-    for(const a of q){
-     // Retry after a lost acknowledgment: a matching write timestamp is already applied.
-     if(raw?._mtime===new Date(a.at).toISOString())continue;
-     raw=applyWire(raw,a,inflateWatched,deflateWatched);
-    }
+    const original=raw;raw=applyQueue(raw,q,inflateWatched,deflateWatched);
     if(c.signal.aborted)break;
-    if(raw)await writeLibraryItems(token,[raw],c.signal);
+    if(raw&&raw!==original)await writeLibraryItems(token,[raw],c.signal);
     if(c.signal.aborted)break;
     const latest=model.current,done=new Set(q.map(a=>a.id)),pending={...latest.pending};
     const remaining=(pending[key]||[]).filter(a=>!done.has(a.id));if(remaining.length)pending[key]=remaining;else delete pending[key];
@@ -102,7 +98,7 @@ export function useLibrary(namespace:string,token:string,cloud:boolean){
  };
  const enrich=(titles:Title[])=>{
   const current=model.current,next=oldHistory(current,namespace,titles);
-  for(const t of titles){const key=keyFor(t),r=next.rows[key];if(r)next.rows[key]={...r,title:mergeTitle(r.title,t)};}
+  for(const t of titles){const key=keyFor(t),r=next.rows[key];if(r){const title=mergeTitle(r.title,t);let row={...r,title};if(title.type==='series'&&!row.hidden&&!row.next&&row.position===0&&row.watched.includes(row.videoId)){const ep=nextEpisode(title,row.videoId,seenIds(row,inflateWatched));if(ep)row={...row,videoId:ep.id,duration:0,next:true};}next.rows[key]=row;}}
   if(JSON.stringify(next)!==JSON.stringify(current))save(next);
  };
  const row=(title:Title):Row|undefined=>data.rows[keyFor(title)];
