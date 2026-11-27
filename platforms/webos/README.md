@@ -1,3 +1,31 @@
+# Tarn webOS — 0.2.0-dev.1
+
+Milestone 2A/2B: single Stremio account, device-code and locally generated QR sign-in, installed add-on retrieval, read-only real movie/series catalogues and artwork, basic title metadata, refresh, local account persistence and sign-out. The application manifest uses numeric version 0.2.0; this is a private development build, not a public release.
+
+## Update from 0.1.0
+From the webOS worktree:
+```powershell
+git pull --ff-only origin feature/webos-client
+cd platforms/webos
+npm.cmd install
+npm.cmd run typecheck
+npm.cmd test
+npm.cmd run build
+```
+If already in platforms/webos omit the cd. A new dependency (qrcode) generates QR codes locally, without sending the code to a third party. Use npm install, not npm ci, until the local lockfile has been generated and committed. Reopen the simulator's dist folder after the build. Browser preview: npm.cmd run dev.
+
+## Acceptance tests
+1. Home displays Link Stremio account. Scan the QR or enter its code on Stremio's linking website. Never share the code or auth token in logs/screenshots.
+2. Once approved, Home should populate with real catalogues from the linked account. Check Movies and Series tabs, artwork, details, Back and focus.
+3. Refresh catalogues, close/reopen the app and verify account persistence. Sign out in Settings; reopen and check that the account is cleared. A remotely expired token should return to the link screen on refresh/relaunch.
+4. Verify an unavailable add-on does not prevent other catalogue results. Diagnostics remains accessible without an account.
+5. Full build and live sign-in must be verified on the simulator and subsequently a physical LG TV.
+
+## Current scope and limits
+Read-only account integration; no add-on changes or watch history writes. Initial catalogue requests are capped at 24 (four concurrent), 30 titles each, with six rows rendered at a time; refresh is manual and rows are cached in memory until reload. Discover currently browses the same loaded rows; genre/pagination and full add-on search are next. Search loaded titles is a local filter, not remote search. Basic metadata is requested where supported, no episode navigation or playback yet. The account token lives in app-origin IndexedDB (not hardware-backed encryption); never log it, send it to add-ons, or include personal configured add-on URLs in diagnostics. Sign-out removes the local token first, then attempts remote revocation. No Tarn Cloud or proxy. No Android changes.
+
+---
+
 # Tarn for LG webOS — Foundation 0.1.0
 
 Independent experimental client. Targets webOS 5.0 (Chromium 68) or newer; actual TV support is not yet certified. Android Gradle files and release processes are untouched. No production release or cloud backend.

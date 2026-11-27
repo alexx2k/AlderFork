@@ -1,6 +1,6 @@
 {
   "name": "tarn-webos",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -9,18 +9,20 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "dev": "node tools/build.mjs --serve",
-    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test tests/foundation.test.mjs",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test tests/foundation.test.mjs tests/content.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "qrcode": "1.5.4"
   },
   "devDependencies": {
     "@types/react": "18.3.18",
     "@types/react-dom": "18.3.5",
     "esbuild": "0.25.5",
     "pngjs": "7.0.0",
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "@types/qrcode": "1.5.5"
   }
 }

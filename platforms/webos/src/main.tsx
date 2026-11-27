@@ -3,12 +3,16 @@ import {createRoot} from 'react-dom/client';
 import {directionFor,isBack,nextFocus,routeFromHash,FocusRect,Route} from './navigation.ts';
 import {createStore,initialState,FoundationState,StateStore} from './storage.ts';
 import {capabilities,endpointForManifest,mediaSamples,probeJson,ProbeResult} from './diagnostics.ts';
-import {titles,Title} from './catalogue.ts';
+import {createSessionStore,SessionStore} from './session.ts';
+import {ApiError,installedAddons,revokeSession} from './stremio.ts';
+import {catalogues,loadShelves,loadDetails,titleKey,Title,Shelf} from './liveCatalogue.ts';
+import {SignIn} from './SignIn.tsx';
 import './style.css';
 
 function focus(id?:string){
  const el=id?document.getElementById(id):null;
- (el||document.querySelector<HTMLElement>('[data-focus]'))?.focus();
+ const fallback=document.querySelector<HTMLElement>('[data-focus]:not([disabled])');
+ (el&&!el.hasAttribute('disabled')?el:fallback)?.focus();
 }
 function buttons():HTMLElement[]{
  return Array.from(document.querySelectorAll<HTMLElement>('[data-focus]')).filter(e=>!e.hasAttribute('disabled')&&e.getClientRects().length>0);
@@ -17,27 +21,42 @@ function rect(e:HTMLElement):FocusRect{const r=e.getBoundingClientRect();return 
 function Btn({id,children,onClick,className='',disabled=false}:React.PropsWithChildren<{id:string;onClick:()=>void;className?:string;disabled?:boolean}>){
  return <button id={id} data-focus type="button" className={className} disabled={disabled} onClick={onClick}>{children}</button>;
 }
-function Artwork({title}: {title:Title}){
- return <div className={'art '+title.theme} aria-hidden="true"><span/><i/><b/></div>;
+function Artwork({title,wide=false}:{title:Title;wide?:boolean}){
+ const url=wide?(title.background||title.poster):title.poster;
+ const [failed,setFailed]=useState(false);
+ useEffect(()=>{setFailed(false);},[url]);
+ return <div className={'art '+title.theme} aria-hidden="true">{url&&!failed?<img src={url} alt="" referrerPolicy="no-referrer" loading="lazy" onError={()=>setFailed(true)}/>:<><span/><i/><b/></>}</div>;
 }
 function App(){
  const [route,setRoute]=useState<Route>(()=>routeFromHash(location.hash));
  const [state,setState]=useState<FoundationState>(()=>initialState());
  const [storage,setStorage]=useState('Opening local storage…');
  const store=useRef<StateStore|null>(null);
- const restored=useRef<Record<string,string>>({});
- const lastHash=useRef(location.hash);
- const [pending,setPending]=useState<string|null>(null);
+ const sessionStore=useRef<SessionStore|null>(null);
+ const [auth,setAuth]=useState<string|null>(null);
+ const authRef=useRef<string|null>(null);
+ const [accountReady,setAccountReady]=useState(false);
+ const [accountStatus,setAccountStatus]=useState('');
+ const [rows,setRows]=useState<Shelf[]>([]);
+ const [addons,setAddons]=useState<unknown[]>([]);
+ const [status,setStatus]=useState('');
+ const [loading,setLoading]=useState(false);
+ const [refresh,setRefresh]=useState(0);
  const [shelf,setShelf]=useState('Home');
  const [query,setQuery]=useState('');
  const [showSearch,setShowSearch]=useState(false);
- const go=(hash:string)=>{restored.current[location.hash]=(document.activeElement as HTMLElement)?.id||'featured';location.hash=hash;};
+ const [rowLimit,setRowLimit]=useState(6);
+ const [detail,setDetail]=useState<Title|null>(null);
+ const restored=useRef<Record<string,string>>({});
+ const lastHash=useRef(location.hash);
+ const [pending,setPending]=useState<string|null>(null);
+ const go=(hash:string)=>{restored.current[location.hash]=(document.activeElement as HTMLElement)?.id||'link-account';location.hash=hash;};
  const back=()=>{if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){setShowSearch(false);setPending('search');}};
  useEffect(()=>{
-  const onHash=()=>{const r=routeFromHash(location.hash);const old=lastHash.current;lastHash.current=location.hash;setRoute(r);setPending(old===location.hash?null:restored.current[location.hash]||(r.kind==='home'?'featured':'back'));};
-  // The TV's default Back handling uses browser history. Mark internal routes only.
-  const mark=()=>{if(location.hash&&routeFromHash(location.hash).kind!=='home')history.replaceState({tarnRoute:true},'');};
-  const handler=()=>{mark();onHash();};
+  const handler=()=>{const r=routeFromHash(location.hash);const old=lastHash.current;lastHash.current=location.hash;
+   if(location.hash&&r.kind!=='home')history.replaceState({tarnRoute:true},'');
+   setRoute(r);setPending(old===location.hash?null:restored.current[location.hash]||(r.kind==='home'?'link-account':'back'));
+  };
   window.addEventListener('hashchange',handler);return()=>window.removeEventListener('hashchange',handler);
  },[]);
  useEffect(()=>{
@@ -47,10 +66,64 @@ function App(){
    const previous=await s.load();const updated={...previous,visits:previous.visits+1,updatedAt:Date.now()};await s.save(updated);
    if(alive){setState(updated);setStorage('IndexedDB read/write passed');}
   }catch{if(alive)setStorage('Local storage unavailable; changes are temporary');}})();
+  (async()=>{try{
+   const s=createSessionStore(indexedDB);sessionStore.current=s;
+   const key=await s.load();if(alive){authRef.current=key;setAuth(key);}
+  }catch{if(alive)setAccountStatus('Account storage unavailable. Linking will last only for this session.');}
+  finally{if(alive)setAccountReady(true);}})();
   return()=>{alive=false;};
  },[]);
+ const linked=async(key:string)=>{
+  authRef.current=key;setAuth(key);setAccountStatus('');
+  try{if(!sessionStore.current)throw Error();await sessionStore.current.save(key);}
+  catch{setAccountStatus('Account linked for this session only; storage failed.');}
+  if(authRef.current===key){location.hash='';setPending('nav-Home');}
+ };
+ const signOut=async()=>{
+  const key=authRef.current;
+  try{if(sessionStore.current)await sessionStore.current.save(null);}
+  catch{setAccountStatus('Could not clear account storage. Retry sign-out.');return;}
+  authRef.current=null;setAuth(null);setRows([]);setAddons([]);setDetail(null);setQuery('');setShowSearch(false);setAccountStatus('Signed out on this device.');setPending('link-account');
+  if(key)revokeSession(key).catch(()=>{});
+ };
+ useEffect(()=>{
+  if(!auth){setRows([]);setAddons([]);setStatus('');setLoading(false);return;}
+  const controller=new AbortController(),signal=controller.signal,key=auth;
+  setLoading(true);setStatus('Loading installed add-ons…');
+  (async()=>{
+   try{
+    const descriptors=await installedAddons(key,signal);
+    if(signal.aborted||authRef.current!==key)return;
+    setAddons(descriptors);
+    const catalogs=catalogues(descriptors);
+    setStatus('Loading catalogues…');
+    const result=await loadShelves(catalogs,signal);
+    if(signal.aborted||authRef.current!==key)return;
+    setRows(result.shelves.filter(s=>s.titles.length));
+    const count=result.shelves.filter(s=>s.titles.length).length;
+    setStatus(count+' catalogue'+(count===1?'':'s')+' loaded from '+descriptors.length+' installed add-ons'+(result.failures?' · '+result.failures+' request(s) failed':'')+(result.truncated?' · first 24 catalogues':'')+'.');
+   }catch(error){
+    if(signal.aborted||authRef.current!==key)return;
+    if(error instanceof ApiError&&error.code===1){
+     try{if(sessionStore.current)await sessionStore.current.save(null);}
+     catch{setAccountStatus('Session expired; stored token could not be removed.');}
+     if(signal.aborted||authRef.current!==key)return;
+     authRef.current=null;setAuth(null);setRows([]);setAddons([]);setAccountStatus('Session expired. Link your account again.');
+    }else setStatus('Could not load your account or catalogues. Check the connection and select Refresh.');
+   }finally{if(!signal.aborted&&authRef.current===key)setLoading(false);}
+  })();
+  return()=>controller.abort();
+ },[auth,refresh]);
+ const selected=route.kind==='details'?rows.reduce<Title|undefined>((found,row)=>found||row.titles.find(t=>titleKey(t)===route.id),undefined):undefined;
+ useEffect(()=>{
+  setDetail(selected||null);
+  if(!selected)return;
+  const controller=new AbortController();
+  loadDetails(addons,selected,controller.signal).then(t=>{if(!controller.signal.aborted)setDetail(t);});
+  return()=>controller.abort();
+ },[selected,addons]);
  useLayoutEffect(()=>{if(pending){focus(pending);setPending(null);}},[pending,route,showSearch]);
- useLayoutEffect(()=>{focus(route.kind==='home'?'featured':'back');},[]);
+ useLayoutEffect(()=>{focus(route.kind==='home'?'link-account':'back');},[]);
  useEffect(()=>{
   const handler=(e:KeyboardEvent)=>{
    const target=e.target as HTMLElement;
@@ -60,40 +133,44 @@ function App(){
     if(e.key==='ArrowDown'||e.keyCode===40){e.preventDefault();focus(target.id==='query'?(document.querySelector<HTMLElement>('.poster')?.id||'close-search'):target.id==='name'?'save':'network');}
     return;
    }
-   if(isBack(e.key,e.keyCode)){
-    if(route.kind!=='home'||showSearch){e.preventDefault();back();}
-    return;
-   }
+   if(isBack(e.key,e.keyCode)){if(route.kind!=='home'||showSearch){e.preventDefault();back();}return;}
    const dir=directionFor(e.key,e.keyCode);if(!dir)return;
    e.preventDefault();
    const items=buttons(),active=document.activeElement as HTMLElement;
    const dest=active&&items.includes(active)?nextFocus(rect(active),items.map(rect),dir):items[0]?.id;
    if(dest)focus(dest);
   };
-  document.addEventListener('keydown',handler);
-  return()=>document.removeEventListener('keydown',handler);
+  document.addEventListener('keydown',handler);return()=>document.removeEventListener('keydown',handler);
  },[route,showSearch]);
  const save=async(name:string)=>{
   const next={...state,name:name.trim().slice(0,24)||'Viewer',updatedAt:Date.now()};setState(next);
   try{if(!store.current)throw Error();await store.current.save(next);setStorage('IndexedDB read/write passed');}
   catch{setStorage('Save failed; change is temporary');}
  };
- const shown=titles.filter(t=>!showSearch||t.name.toLowerCase().includes(query.toLowerCase()));
- const detail=route.kind==='details'?titles.find(t=>t.id===route.id):undefined;
+ const visible=rows.filter(r=>shelf==='Movies'?r.type==='movie':shelf==='Series'?r.type==='series':true).map(r=>({...r,titles:showSearch?r.titles.filter(t=>t.name.toLowerCase().includes(query.toLowerCase())):r.titles})).filter(r=>r.titles.length);
+ const featured=visible.length?visible[0].titles[0]:null;
+ const openTitle=(t:Title)=>go('#details/'+encodeURIComponent(titleKey(t)));
+ const activeDetail=detail&&selected&&titleKey(detail)===titleKey(selected)?detail:selected;
  return <div className="app" onPointerDown={e=>{const b=(e.target as HTMLElement).closest<HTMLElement>('button[data-focus]');if(b)b.focus();}}>
- <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.1.0 • Development</span></header>
+ <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.2.0-dev.1 • Development</span></header>
  {route.kind==='home'?<main>
-  <nav>{['Home','Discover','Movies','Series'].map(n=><Btn key={n} id={'nav-'+n} className={shelf===n?'selected':''} onClick={()=>{setShelf(n);setShowSearch(false);}}>{n}</Btn>)}
-  <Btn id="search" onClick={()=>{setShowSearch(!showSearch);if(!showSearch)setTimeout(()=>document.getElementById('query')?.focus(),0);}}>Search</Btn>
+  <nav>{['Home','Discover','Movies','Series'].map(n=><Btn key={n} id={'nav-'+n} className={shelf===n?'selected':''} onClick={()=>{setShelf(n);setShowSearch(false);setRowLimit(6);}}>{n}</Btn>)}
+  {auth&&<Btn id="search" onClick={()=>{setShowSearch(!showSearch);if(!showSearch)setTimeout(()=>document.getElementById('query')?.focus(),0);}}>Search loaded titles</Btn>}
   <Btn id="settings" onClick={()=>go('#settings')}>Settings</Btn><Btn id="diagnostics" onClick={()=>go('#diagnostics')}>Diagnostics</Btn>
   <span className="profile">{state.name}</span></nav>
-  {showSearch?<section className="search"><h1>Search sample titles</h1><input id="query" data-focus value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();focus(shown[0]?'card-'+shown[0].id:'search');}}} placeholder="Search…" aria-label="Search sample titles"/><Btn id="close-search" onClick={()=>{setShowSearch(false);setPending('search');}}>Close search</Btn></section>:
-  <section className="hero"><Artwork title={titles[0]}/><div className="hero-copy"><p className="eyebrow">TARN • SAMPLE CATALOGUE</p><h1>Still Water</h1><p>2026 · Drama</p><p>{titles[0].description}</p><Btn id="featured" className="primary" onClick={()=>go('#details/still-water')}>View details</Btn></div></section>}
-  <section className="shelf"><h2>{showSearch?'Search results':shelf==='Home'?'Featured titles':shelf+' · sample titles'}</h2>
-  {shown.length===0?<p>No sample titles match.</p>:<div className="cards">{shown.map(t=><Btn key={t.id} id={'card-'+t.id} className="poster" onClick={()=>go('#details/'+t.id)}><Artwork title={t}/><span>{t.name}</span><small>{t.genre}</small></Btn>)}</div>}</section>
-  <footer>Sample catalogue only · Remote arrows / OK / Back · No real content integration yet</footer>
+  {accountStatus&&<p className="warn" aria-live="polite">{accountStatus}</p>}
+  {!accountReady?<p>Opening account storage…</p>:!auth?<section className="welcome"><p className="eyebrow">TARN</p><h1>Your living room, your library.</h1><p>Link your Stremio account to browse the catalogues from your installed add-ons.</p><Btn id="link-account" className="primary" onClick={()=>go('#signin')}>Link Stremio account</Btn></section>:<>
+  <div className="catalog-status"><p aria-live="polite">{status}</p><Btn id="refresh-catalogues" disabled={loading} onClick={()=>setRefresh(x=>x+1)}>{loading?'Loading…':'Refresh catalogues'}</Btn></div>
+  {showSearch?<section className="search"><h1>Search loaded titles</h1><input id="query" data-focus value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();focus(document.querySelector<HTMLElement>('.poster')?.id||'search');}}} placeholder="Search loaded titles…" aria-label="Search loaded titles"/><Btn id="close-search" onClick={()=>{setShowSearch(false);setPending('search');}}>Close search</Btn><p className="muted">Full add-on search comes in the next development build.</p></section>:
+  featured&&<section className="hero"><Artwork key={titleKey(featured)} title={featured} wide/><div className="hero-copy"><p className="eyebrow">FEATURED</p><h1>{featured.name}</h1><p>{[featured.year,featured.genre].filter(Boolean).join(' · ')}</p><p className="synopsis">{featured.description}</p><Btn id="featured" className="primary" onClick={()=>openTitle(featured)}>View details</Btn></div></section>}
+  {visible.length===0&&!loading&&<p>{showSearch?'No loaded titles match.':'No catalogues available for this view. Try Refresh or check your installed add-ons.'}</p>}
+  {visible.slice(0,rowLimit).map(r=><section className="shelf" key={r.key}><h2>{r.name} <small>· {r.addon}</small></h2><div className="cards live-cards">{r.titles.map((t,i)=><Btn key={titleKey(t)} id={'card-'+r.key+'-'+i} className="poster" onClick={()=>openTitle(t)}><Artwork title={t}/><span>{t.name}</span><small>{t.year||t.genre}</small></Btn>)}</div></section>)}
+  {visible.length>rowLimit&&<Btn id="more-rows" onClick={()=>setRowLimit(x=>x+6)}>Show more catalogues</Btn>}
+  <footer>Live catalogue preview · Playback and episode navigation are not implemented yet.</footer>
+  </>}
  </main>:<main className="page"><Btn id="back" onClick={back}>‹ Back</Btn>
-  {route.kind==='diagnostics'?<Diagnostics/>:route.kind==='settings'?<section><h1>Settings</h1><p>{storage}</p><p>Launch count: {state.visits}</p><p>Profile: {state.name}</p><label htmlFor="name">Local test profile name</label><input id="name" data-focus key={state.name} defaultValue={state.name} maxLength={24} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();focus('save');}}}/><Btn id="save" onClick={()=>save((document.getElementById('name') as HTMLInputElement).value)}>Save name</Btn><p className="muted">Foundation storage test only. Full profile management comes in Milestone 4.</p></section>:detail?<section className="detail"><Artwork title={detail}/><div><p className="eyebrow">SAMPLE TITLE</p><h1>{detail.name}</h1><p>{detail.year} · {detail.genre}</p><p>{detail.description}</p><Btn id="detail-diagnostics" onClick={()=>go('#diagnostics')}>Test playback in diagnostics</Btn></div></section>:<p>Sample title not found.</p>}
+ {route.kind==='signin'?auth?<p>Account linked. Return to Home.</p>:<SignIn onLinked={linked} onCancel={back}/>:route.kind==='diagnostics'?<Diagnostics/>:route.kind==='settings'?<section><h1>Settings</h1><h2>Stremio account</h2><p>{auth?'Account linked':'Not linked'}</p>{accountStatus&&<p className="warn">{accountStatus}</p>}{auth?<Btn id="sign-out" onClick={signOut}>Sign out of Stremio</Btn>:<Btn id="link-settings" disabled={!accountReady} onClick={()=>go('#signin')}>Link account</Btn>}
+ <h2>Local storage</h2><p>{storage}</p><p>Launch count: {state.visits}</p><p>Profile: {state.name}</p><label htmlFor="name">Local test profile name</label><input id="name" data-focus key={state.name} defaultValue={state.name} maxLength={24} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();focus('save');}}}/><Btn id="save" onClick={()=>save((document.getElementById('name') as HTMLInputElement).value)}>Save name</Btn><p className="muted">Single account for now. Full profile management comes in Milestone 4.</p></section>:activeDetail?<section className="detail"><Artwork key={titleKey(activeDetail)} title={activeDetail}/><div><p className="eyebrow">{activeDetail.type==='movie'?'MOVIE':'SERIES'}</p><h1>{activeDetail.name}</h1><p>{[activeDetail.year,activeDetail.genre].filter(Boolean).join(' · ')}</p><p>{activeDetail.description||'No description available.'}</p><p className="muted">Playback and full episode details are coming in later builds.</p></div></section>:<p>{loading?'Loading catalogues…':'Title not available. Return to Home and refresh.'}</p>}
  </main>}
  </div>;
 }
