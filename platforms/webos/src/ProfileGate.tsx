@@ -1,5 +1,5 @@
 import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
-import {addProfile,checkPin,cleanName,COLORS,completeMigration,deleteHistory, Draft,effectiveAuth,editProfile,historyNamespace,makeProfile,MAX_PROFILES,migrateHistory,ownerFor,Profile,Profiles,removeProfile,setCredential} from './profiles.mjs';
+import {addProfile,checkPin,cleanName,COLORS,completeMigration,deleteHistory, Draft,effectiveAuth,editProfile,historyNamespace,lenderTokens,makeProfile,MAX_PROFILES,migrateHistory,ownerFor,Profile,Profiles,removeProfile,setCredential} from './profiles.mjs';
 import {createProfileStore,newProfileId,ProfileStore} from './profileStore.ts';
 import {createStore} from './storage.ts';
 import {getUserId,revokeSession} from './stremio.ts';
@@ -7,9 +7,9 @@ import {clearSessionProgress} from './progress.ts';
 import {directionFor,isBack,nextFocus} from './navigation.ts';
 import {avatars,services} from './avatarCatalog.ts';
 import {SignIn} from './SignIn.tsx';
-type Step={kind:'pick'}|{kind:'pin';id:string;action:'enter'|'edit'}|{kind:'edit';id:string|null}|{kind:'link';id:string|null;draft?:Draft}|{kind:'delete';id:string};
+type Step={kind:'pick'}|{kind:'diagnostics'}|{kind:'pin';id:string;action:'enter'|'edit'}|{kind:'edit';id:string|null}|{kind:'link';id:string|null;draft?:Draft}|{kind:'delete';id:string};
 type Active={profile:Profile;token:string};
-type Props={renderApp:(profile:Profile,token:string,namespace:string,onSwitch:()=>void,onSignOut:()=>void,onExpired:()=>void)=>React.ReactNode};
+type Props={renderApp:(profile:Profile,token:string,namespace:string,onSwitch:()=>void,onSignOut:()=>void,onExpired:()=>void,lenders:string[])=>React.ReactNode;renderDiagnostics:()=>React.ReactNode};
 function btn(id:string,label:React.ReactNode,action:()=>void,disabled=false,cls=''){
  return <button type="button" data-focus id={id} disabled={disabled} className={cls} onClick={action}>{label}</button>;
 }
@@ -39,6 +39,7 @@ function ProfileEditor({initial,existing,owners,onSave,onDelete,onCancel,busy}:{
  <h2>Profile colour</h2><div className="controls">{COLORS.map((c,i)=><button key={c} id={'profile-color-'+i} data-focus type="button" className={draft.color===c?'filter-active profile-swatch':'profile-swatch'} style={{background:c}} aria-label={'Colour '+(i+1)} onClick={()=>change({color:c})}>{draft.color===c?'✓':' '}</button>)}</div>
  <h2>Optional profile PIN</h2><p className="muted">A four-digit household lock, not an account password.</p><input id="profile-pin" data-focus type="password" inputMode="numeric" maxLength={4} value={draft.pin} onChange={e=>change({pin:e.target.value.replace(/\D/g,'').slice(0,4)})}/><div className="pin-keys">{'1234567890'.split('').map(n=><button key={n} id={'edit-pin-'+n} data-focus type="button" onClick={()=>setDraft(d=>({...d,pin:(d.pin+n).slice(0,4)}))}>{n}</button>)}{btn('edit-pin-clear','Clear PIN',()=>change({pin:''}))}</div>
  {!existing&&<><h2>Streaming account</h2><p className="muted">Local profiles share a linked owner's sources but have independent local playback history.</p><div className="filter-strip">{owners.map((p,i)=><button key={p.id} id={'profile-owner-'+i} data-focus type="button" className={owner===p.id?'filter-active':''} onClick={()=>setOwner(p.id)}>Share {p.name}'s account</button>)}{btn('profile-own-account','Link a separate Stremio account',()=>setOwner(null),false,owner===null?'filter-active':'')}</div></>}
+ {existing?.mode==='stremio'&&<><h2>Household streaming access</h2><p className="muted">Opt in to lend eligible stream add-ons to other profiles. Your login, catalogues and history are not copied to them.</p>{btn('profile-share-streams',draft.sharesStreams?'Share streaming sources: On':'Share streaming sources: Off',()=>change({sharesStreams:!draft.sharesStreams}),busy,draft.sharesStreams?'filter-active':'')}</>}
  <div className="controls">{btn('profile-save',existing?'Save changes':owner?'Create profile':'Continue to sign-in',()=>onSave(draft,owner),busy||!cleanName(draft.name)||!!draft.pin&&draft.pin.length!==4,'primary')}{btn('profile-cancel','Cancel',onCancel,busy)}{existing&&btn('profile-remove','Delete profile',onDelete,busy)}</div></section>;
 }
 function PinPrompt({profile,onCorrect,onCancel}:{profile:Profile;onCorrect:()=>void;onCancel:()=>void}){
@@ -47,7 +48,7 @@ function PinPrompt({profile,onCorrect,onCancel}:{profile:Profile;onCorrect:()=>v
  const digit=(n:string)=>{const next=(pin+n).slice(0,4);setPin(next);if(next.length===4)submit(next);};
  return <section className="profile-pin-panel"><Portrait profile={profile}/><h1>Enter {profile.name}'s PIN</h1><input id="unlock-pin" data-focus type="password" inputMode="numeric" maxLength={4} value={pin} onChange={e=>{const value=e.target.value.replace(/\D/g,'').slice(0,4);setPin(value);if(value.length===4)submit(value);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();submit();}}}/><div className="pin-keys">{'1234567890'.split('').map(n=><button key={n} id={'unlock-'+n} data-focus type="button" onClick={()=>digit(n)}>{n}</button>)}{btn('unlock-clear','Clear',()=>setPin(''))}{btn('unlock-cancel','Cancel',onCancel)}</div><p role="status" className="warn">{error}</p></section>;
 }
-export function ProfileGate({renderApp}:Props){
+export function ProfileGate({renderApp,renderDiagnostics}:Props){
  const [data,setData]=useState<Profiles|null>(null);
  const store=useRef<ProfileStore|null>(null);
  const model=useRef<Profiles|null>(null);
@@ -74,13 +75,13 @@ export function ProfileGate({renderApp}:Props){
   if(!owner.authKey){if(p.mode==='local'){setError('Ask '+owner.name+' to link their account again.');setStep({kind:'pick'});return;}setStep({kind:'link',id});return;}
   if(owner.legacyPending&&p.id===owner.id){
    try{const oldId=await getUserId(owner.authKey);migrateHistory(localStorage,oldId,p.id);d=completeMigration(d,p.id);await commit(d);}
-   catch{setError('Existing history could not be migrated yet. Select this profile again later to retry.');setStep({kind:'pick'});return;}
+   catch{setError('Existing history could not be migrated yet. The original records are retained; switch back to this profile later to retry.');d=model.current!;}
   }
   const selected=d.profiles.find(x=>x.id===id);const token=effectiveAuth(d,id);
   if(selected&&token){resetRoute();clearSessionProgress();setActive({profile:selected,token});setStep({kind:'pick'});setManage(false);}
  };
  const authorize=(p:Profile,action:'enter'|'edit')=>{setError('');if(p.pin){setStep({kind:'pin',id:p.id,action});return;}if(action==='edit')setStep({kind:'edit',id:p.id});else void run(()=>activate(p.id));};
- const switchProfile=()=>{resetRoute();setActive(null);setManage(false);setStep({kind:'pick'});};
+ const switchProfile=()=>{resetRoute();setError('');setActive(null);setManage(false);setStep({kind:'pick'});};
  const disconnect=(expired:boolean)=>{
   if(!active)return;const current=active;const d=model.current;if(!d)return;
   const owner=ownerFor(d,current.profile.id);if(!owner||(!expired&&current.profile.mode!=='stremio'))return;
@@ -100,7 +101,7 @@ export function ProfileGate({renderApp}:Props){
   });
  };
  const remove=(id:string)=>{void run(async()=>{const d=model.current!;const p=d.profiles.find(x=>x.id===id);await commit(removeProfile(d,id));try{deleteHistory(localStorage,id);}catch{setError('Profile removed, but local history cleanup failed.');}if(p?.mode==='stremio'&&p.authKey&&!model.current!.profiles.some(x=>x.authKey===p.authKey))revokeSession(p.authKey).catch(()=>{});setStep({kind:'pick'});});};
- useLayoutEffect(()=>{if(active)return;const id=step.kind==='pin'?'unlock-1':step.kind==='edit'?'profile-name':step.kind==='link'?'retry-link':step.kind==='delete'?'delete-cancel':data?.profiles.length?'pick-'+data.profiles[0].id:'add-profile';jump(id);},[active,step,data]);
+ useLayoutEffect(()=>{if(active)return;const id=step.kind==='diagnostics'?'diagnostics-back':step.kind==='pin'?'unlock-1':step.kind==='edit'?'profile-name':step.kind==='link'?'retry-link':step.kind==='delete'?'delete-cancel':data?.profiles.length?'pick-'+data.profiles[0].id:'add-profile';jump(id);},[active,step,data]);
  useEffect(()=>{if(active)return;const handler=(e:KeyboardEvent)=>{
   const target=e.target as HTMLElement,typing=target.tagName==='INPUT';
   if(isBack(e.key,e.keyCode)){if(step.kind!=='pick'){e.preventDefault();if(!lock.current)pick();}return;}
@@ -111,13 +112,14 @@ export function ProfileGate({renderApp}:Props){
   const current=document.activeElement as HTMLElement;const next=items.includes(current)?nextFocus(r(current),items.map(r),dir):items[0]?.id;
   if(next)document.getElementById(next)?.focus();
  };document.addEventListener('keydown',handler);return()=>document.removeEventListener('keydown',handler);},[active,step]);
- if(active)return renderApp(active.profile,active.token,historyNamespace(active.profile.id),switchProfile,()=>disconnect(false),()=>disconnect(true));
+ if(active)return <>{renderApp(active.profile,active.token,historyNamespace(active.profile.id),switchProfile,()=>disconnect(false),()=>disconnect(true),lenderTokens(model.current!,active.profile.id))}{error&&<div className="profile-alert" role="status">{error}<button type="button" id="profile-dismiss-alert" data-focus onClick={()=>setError('')}>Dismiss</button></div>}</>;
  const p=step.kind==='pin'||step.kind==='edit'||step.kind==='delete'?data?.profiles.find(p=>p.id===step.id):undefined;
  return <div className="app profile-app"><header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.4.0-dev.1 • Development</span></header>{error&&<p className="warn" role="status">{error}</p>}{busy&&<p role="status">Saving profile or migrating history…</p>}
  {!data?<section><p>{error?'Profile storage unavailable.':'Opening profiles…'}</p>{error&&btn('profile-retry','Retry',()=>setBoot(x=>x+1))}</section>:
- step.kind==='pick'?<section className="profile-picker"><h1>{manage?'Manage profiles':"Who's watching?"}</h1><div className="profile-grid">{data.profiles.map(p=><button key={p.id} id={'pick-'+p.id} data-focus type="button" className="profile-tile" disabled={busy} onClick={()=>authorize(p,manage?'edit':'enter')}><Portrait profile={p}/><strong>{p.name}{p.pin?' 🔒':''}</strong><small>{p.mode==='local'?'Local profile':'Stremio profile'}{!effectiveAuth(data,p.id)?' · Link required':''}</small></button>)}{data.profiles.length<MAX_PROFILES&&btn('add-profile',<><span className="profile-portrait profile-add">+</span><strong>Add profile</strong></>,()=>setStep({kind:'edit',id:null}),busy,'profile-tile')}</div><div className="controls">{data.profiles.length>0&&btn('manage-profiles',manage?'Done':'Manage profiles',()=>setManage(!manage),busy)}</div></section>:
+ step.kind==='pick'?<section className="profile-picker"><h1>{manage?'Manage profiles':"Who's watching?"}</h1><div className="profile-grid">{data.profiles.map(p=><button key={p.id} id={'pick-'+p.id} data-focus type="button" className="profile-tile" disabled={busy} onClick={()=>authorize(p,manage?'edit':'enter')}><Portrait profile={p}/><strong>{p.name}{p.pin?' 🔒':''}</strong><small>{p.mode==='local'?'Local profile':'Stremio profile'}{!effectiveAuth(data,p.id)?' · Link required':''}</small></button>)}{data.profiles.length<MAX_PROFILES&&btn('add-profile',<><span className="profile-portrait profile-add">+</span><strong>Add profile</strong></>,()=>setStep({kind:'edit',id:null}),busy,'profile-tile')}</div><div className="controls">{data.profiles.length>0&&btn('manage-profiles',manage?'Done':'Manage profiles',()=>setManage(!manage),busy)}{btn('profile-diagnostics','Diagnostics',()=>setStep({kind:'diagnostics'}),busy)}</div></section>:
+ step.kind==='diagnostics'?<section>{btn('diagnostics-back','‹ Back',pick)}{renderDiagnostics()}</section>:
  step.kind==='pin'&&p?<PinPrompt profile={p} onCancel={pick} onCorrect={()=>{if(lock.current)return;if(step.action==='edit')setStep({kind:'edit',id:p.id});else void run(()=>activate(p.id));}}/>:
- step.kind==='edit'?<ProfileEditor key={step.id||'new'} initial={p?{name:p.name,color:p.color,avatar:p.avatar,pin:p.pin}:freshDraft()} existing={p||null} owners={data.profiles.filter(x=>x.mode==='stremio'&&!!x.authKey)} onSave={saveDraft} onDelete={()=>{if(p)setStep({kind:'delete',id:p.id});}} onCancel={pick} busy={busy}/>:
+ step.kind==='edit'?<ProfileEditor key={step.id||'new'} initial={p?{name:p.name,color:p.color,avatar:p.avatar,pin:p.pin,sharesStreams:!!p.sharesStreams}:freshDraft()} existing={p||null} owners={data.profiles.filter(x=>x.mode==='stremio'&&!!x.authKey)} onSave={saveDraft} onDelete={()=>{if(p)setStep({kind:'delete',id:p.id});}} onCancel={pick} busy={busy}/>:
  step.kind==='delete'&&p?<section><h1>Delete {p.name}?</h1><p>This removes the profile and its local progress and source memory. It does not delete the Stremio account.</p><div className="controls">{btn('delete-cancel','Cancel',pick,busy)}{btn('delete-confirm','Delete profile',()=>remove(p.id),busy)}</div></section>:
  step.kind==='link'?<SignIn onLinked={linked} onCancel={pick}/>:null}
  </div>;

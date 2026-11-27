@@ -7,7 +7,7 @@ export function emptyProfiles(){return {version:1,profiles:[]};}
 export function makeProfile(id,draft,authKey=null,ownerId=null){
  const name=cleanName(draft.name);if(!name||!validPin(draft.pin))throw Error('Enter a name and an optional four-digit PIN.');
  if(typeof id!=='string'||!/^p-[a-z0-9-]{8,80}$/.test(id))throw Error('Invalid profile ID.');
- return {id,name,color:COLORS.includes(draft.color)?draft.color:COLORS[0],avatar:validAvatar(draft.avatar)?draft.avatar:'',pin:draft.pin||'',mode:ownerId?'local':'stremio',ownerId:ownerId||null,authKey:ownerId?null:authKey,legacyPending:false};
+ return {id,name,color:COLORS.includes(draft.color)?draft.color:COLORS[0],avatar:validAvatar(draft.avatar)?draft.avatar:'',pin:draft.pin||'',mode:ownerId?'local':'stremio',ownerId:ownerId||null,authKey:ownerId?null:authKey,legacyPending:false,sharesStreams:!ownerId&&draft.sharesStreams===true};
 }
 export function migrateProfiles(token,name,id){
  if(!token)return emptyProfiles();
@@ -29,7 +29,7 @@ export function addProfile(data,profile){
 export function editProfile(data,id,draft){
  const p=data.profiles.find(p=>p.id===id);if(!p)throw Error('Profile not found.');
  const checked=makeProfile(id,draft,p.authKey,p.ownerId);
- return {...data,profiles:data.profiles.map(x=>x.id===id?{...x,name:checked.name,color:checked.color,avatar:checked.avatar,pin:checked.pin}:x)};
+ return {...data,profiles:data.profiles.map(x=>x.id===id?{...x,name:checked.name,color:checked.color,avatar:checked.avatar,pin:checked.pin,sharesStreams:x.mode==='stremio'&&draft.sharesStreams===true}:x)};
 }
 export function removeProfile(data,id){
  if(data.profiles.some(p=>p.mode==='local'&&p.ownerId===id))throw Error('Remove dependent local profiles first.');
@@ -45,9 +45,9 @@ export function parseProfiles(raw){
  if(!raw||raw.version!==1||!Array.isArray(raw.profiles)||raw.profiles.length>MAX_PROFILES)throw Error('Invalid profile storage.');
  const ids=new Set();
  for(const p of raw.profiles){
-  if(!p||typeof p.id!=='string'||!/^p-[a-z0-9-]{8,80}$/.test(p.id)||ids.has(p.id)||!cleanName(p.name)||!validPin(p.pin)||!COLORS.includes(p.color)||typeof p.avatar!=='string'||p.avatar!==''&&!validAvatar(p.avatar)||typeof p.legacyPending!=='boolean'||!['local','stremio'].includes(p.mode))throw Error('Invalid stored profile.');
+  if(!p||typeof p.id!=='string'||!/^p-[a-z0-9-]{8,80}$/.test(p.id)||ids.has(p.id)||!cleanName(p.name)||!validPin(p.pin)||!COLORS.includes(p.color)||typeof p.avatar!=='string'||p.avatar!==''&&!validAvatar(p.avatar)||typeof p.legacyPending!=='boolean'||p.sharesStreams!==undefined&&typeof p.sharesStreams!=='boolean'||!['local','stremio'].includes(p.mode))throw Error('Invalid stored profile.');
   if(p.mode==='stremio'&&(p.ownerId!==null||p.authKey!==null&&typeof p.authKey!=='string'))throw Error('Invalid account owner.');
-  if(p.mode==='local'&&(p.authKey!==null||typeof p.ownerId!=='string'||p.legacyPending))throw Error('Invalid local profile.');
+  if(p.mode==='local'&&(p.authKey!==null||typeof p.ownerId!=='string'||p.legacyPending||p.sharesStreams===true))throw Error('Invalid local profile.');
   ids.add(p.id);
  }
  for(const p of raw.profiles)if(p.mode==='local'&&!ownerFor(raw,p.id))throw Error('Missing account owner.');
@@ -69,4 +69,25 @@ export function deleteHistory(storage,profileId){
  const prefixes=['progress','source'].map(kind=>historyPrefix(kind,historyNamespace(profileId)));
  const keys=[];for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key&&prefixes.some(p=>key.startsWith(p)))keys.push(key);}
  for(const key of keys)storage.removeItem(key);
+}
+
+export function lenderTokens(data,id){
+ const owner=ownerFor(data,id);
+ return Array.from(new Set(data.profiles.filter(p=>p.mode==='stremio'&&p.id!==owner?.id&&p.sharesStreams===true&&p.authKey&&p.authKey!==owner?.authKey).map(p=>p.authKey)));
+}
+const obj=v=>v&&typeof v==='object'&&!Array.isArray(v)?v:{};
+const string=v=>typeof v==='string'?v:'';
+export function mergeStreamAddons(own,lent){
+ // Android parity: exclude official and personal-history addons; lend only the stream resource.
+ const out=own.slice(),ids=new Set(),urls=new Set();
+ const addKey=d=>{const id=string(obj(d.manifest).id),url=string(d.transportUrl);if(id)ids.add(id);if(url)urls.add(url);};
+ own.forEach(raw=>addKey(obj(raw)));
+ for(const raw of lent){
+  const d=obj(raw),manifest=obj(d.manifest),id=string(manifest.id),url=string(d.transportUrl);
+  if(!url||ids.has(id)||urls.has(url)||obj(d.flags).official===true||/watchly|trakt|simkl|syncribullet|aiolists/i.test(string(manifest.name)))continue;
+  const resources=Array.isArray(manifest.resources)?manifest.resources.filter(r=>r==='stream'||obj(r).name==='stream'):[];
+  if(!resources.length)continue;
+  out.push({...d,manifest:{...manifest,resources}});addKey(d);
+ }
+ return out;
 }

@@ -30,7 +30,7 @@ function Artwork({title,wide=false}:{title:Title;wide?:boolean}){
  useEffect(()=>{setFailed(false);},[url]);
  return <div className={'art '+title.theme} aria-hidden="true">{url&&!failed?<img src={url} alt="" referrerPolicy="no-referrer" loading="lazy" onError={()=>setFailed(true)}/>:<><span/><i/><b/></>}</div>;
 }
-function App({profile,token,namespace,onSwitch,onSignOut,onExpired}:{profile:Profile;token:string;namespace:string;onSwitch:()=>void;onSignOut:()=>void;onExpired:()=>void}){
+function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{profile:Profile;token:string;namespace:string;onSwitch:()=>void;onSignOut:()=>void;onExpired:()=>void;lenders:string[]}){
  const [route,setRoute]=useState<Route>(()=>routeFromHash(location.hash));
  const [state,setState]=useState<FoundationState>(()=>initialState());
  const [storage,setStorage]=useState('Opening local storage…');
@@ -165,7 +165,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired}:{profile:Pro
  {confirmSignOut&&<section className="playback-preview"><h2>Sign out of this account?</h2><p>Your profile and local history will remain. Local profiles using this account will need it relinked.</p><Btn id="cancel-sign-out" onClick={()=>setConfirmSignOut(false)}>Cancel</Btn><Btn id="confirm-sign-out" onClick={onSignOut}>Sign out</Btn></section>}
  <h2>Local storage</h2><p>{storage}</p><p>Launch count: {state.visits}</p><p className="muted">Playback progress and source memory are separate for each profile. Stremio library sync arrives in the next milestone.</p></section>:activeDetail?<TitleDetails key={titleKey(activeDetail)} title={activeDetail} loading={detailLoading} onPlay={startPlayer}/>:<p>{loading?'Loading catalogues…':'Title not available. Return to Home and refresh.'}</p>}
  </main>}
- </div>{playing&&<Player intent={playing.intent} addons={addons} account={playing.account} onExit={closePlayer}/>}</>;
+ </div>{playing&&<Player intent={playing.intent} addons={addons} lenders={lenders} account={playing.account} onExit={closePlayer}/>}</>;
 }
 function Diagnostics(){
  const video=useRef<HTMLVideoElement>(null);
@@ -208,4 +208,4 @@ function Diagnostics(){
  <p aria-live="polite">{media}</p><p className="muted">Browser and simulator results do not guarantee TV decoder compatibility.</p>
  </div></div></section>;
 }
-createRoot(document.getElementById('root')!).render(<ProfileGate renderApp={(profile,token,namespace,onSwitch,onSignOut,onExpired)=><App key={profile.id} profile={profile} token={token} namespace={namespace} onSwitch={onSwitch} onSignOut={onSignOut} onExpired={onExpired}/>}/>);
+createRoot(document.getElementById('root')!).render(<ProfileGate renderDiagnostics={()=><Diagnostics/>} renderApp={(profile,token,namespace,onSwitch,onSignOut,onExpired,lenders)=><App key={profile.id} profile={profile} token={token} namespace={namespace} onSwitch={onSwitch} onSignOut={onSignOut} onExpired={onExpired} lenders={lenders}/>}/>);

@@ -1,4 +1,4 @@
-export type Draft={name:string;color:string;avatar:string;pin:string};
+export type Draft={name:string;color:string;avatar:string;pin:string;sharesStreams?:boolean};
 export type Profile=Draft&{id:string;mode:'stremio'|'local';ownerId:string|null;authKey:string|null;legacyPending:boolean};
 export type Profiles={version:1;profiles:Profile[]};
 export const MAX_PROFILES:number;
@@ -22,3 +22,5 @@ export function historyNamespace(id:string):string;
 export function historyPrefix(kind:string,namespace:string):string;
 export function migrateHistory(storage:Storage,oldAccount:string,profileId:string):number;
 export function deleteHistory(storage:Storage,profileId:string):void;
+export function lenderTokens(data:Profiles,id:string):string[];
+export function mergeStreamAddons(own:unknown[],lent:unknown[]):unknown[];

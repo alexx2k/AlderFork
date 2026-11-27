@@ -1,8 +1,9 @@
 import React,{useEffect,useRef,useState} from 'react';
 import type {PlaybackIntent} from './liveCatalogue.ts';
-import {jsonRequest} from './stremio.ts';
+import {jsonRequest,installedAddons} from './stremio.ts';
 import {rankSources,resolveStreams,resolveSubtitles,uniqueSubtitles,parseCues,activeSubtitle,decodeSubtitle,preferResumeSource,seekPosition,Source,Subtitle,Resolution,SubtitleCue} from './playback.mjs';
 import {resumeFor,saveProgress,readSource,rememberSource} from './progress.ts';
+import {mergeStreamAddons} from './profiles.mjs';
 
 type AudioTrack={enabled:boolean;label?:string;language?:string};
 type AudioList={length:number;[index:number]:AudioTrack;addEventListener?:(type:string,fn:()=>void)=>void;removeEventListener?:(type:string,fn:()=>void)=>void};
@@ -19,7 +20,7 @@ function time(seconds:number){
 function button(id:string,label:string,action:()=>void,disabled=false){
  return <button type="button" data-focus id={id} onClick={action} disabled={disabled}>{label}</button>;
 }
-export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;addons:unknown[];account:string;onExit:()=>void}){
+export function Player({intent,addons,lenders,account,onExit}:{intent:PlaybackIntent;addons:unknown[];lenders:string[];account:string;onExit:()=>void}){
  const [resolution,setResolution]=useState<Resolution|null>(null);
  const [sources,setSources]=useState<Source[]>([]);
  const [addonSubs,setAddonSubs]=useState<Subtitle[]>([]);
@@ -81,7 +82,11 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
   const c=new AbortController(),signal=c.signal;
   setResolution(null);setSources([]);activeSources.current=[];setStatus('Finding compatible sources…');setPanel(null);setAttempt(null);current.current=null;
   tries.current=0;attempted.current.clear();
-  resolveStreams(addons,intent,signal,jsonRequest).then(result=>{
+  const resolve=async()=>{
+   const shared=await Promise.all(lenders.map(token=>installedAddons(token,signal).catch(()=>[])));
+   return resolveStreams(mergeStreamAddons(addons,shared.reduce<unknown[]>((all,x)=>all.concat(x),[])),intent,signal,jsonRequest);
+  };
+  resolve().then(result=>{
    if(signal.aborted)return;
    const ranked=preferResumeSource(rankSources(result.sources,capabilities()),readSource(account,intent));activeSources.current=ranked;setSources(ranked);setResolution(result);
    if(ranked.length)begin(0,true);else setStatus(result.providers?'No directly playable sources found.':'No installed add-on advertises streams for this title.');

@@ -78,3 +78,5 @@ body{font-size:1.35vw}@media(max-width:1185px){body{font-size:16px}}button,input
 .pin-keys{display:flex;flex-wrap:wrap;max-width:25em}.pin-keys button{min-width:2.3em;text-align:center;margin:4px}.profile-pin-panel{max-width:30em;margin:5vh auto;text-align:center}.profile-pin-panel input{margin:.5em auto;text-align:center;letter-spacing:.5em}.profile-pin-panel .pin-keys{margin:auto;justify-content:center}
 .profile-switch{display:flex;align-items:center;max-width:18vw;white-space:nowrap;overflow:hidden;margin-left:auto!important;padding:.3em .5em!important}.profile-switch .profile-portrait{width:2.2em;height:2.2em;min-width:0;min-height:0;font-size:1em;margin-right:.5em}.profile-switch>span:last-child{overflow:hidden;text-overflow:ellipsis}
 @media(max-width:800px){.profile-tile{width:25vw}.profile-switch{max-width:40vw}.avatar-grid button{width:18vw}.avatar-grid img{height:16vw}}
+
+.profile-alert{position:fixed;z-index:20;left:4vw;right:4vw;bottom:3vh;background:var(--midnight);border:2px solid var(--lake);border-radius:6px;padding:1em}.profile-alert button{margin-left:1em}
