@@ -1,12 +1,14 @@
-import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
+import React,{useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {directionFor,isBack,nextFocus,routeFromHash,FocusRect,Route} from './navigation.ts';
 import {createStore,initialState,FoundationState,StateStore} from './storage.ts';
 import {capabilities,endpointForManifest,mediaSamples,probeJson,ProbeResult} from './diagnostics.ts';
 import {createSessionStore,SessionStore} from './session.ts';
 import {ApiError,installedAddons,revokeSession} from './stremio.ts';
-import {catalogues,loadShelves,loadDetails,titleKey,Title,Shelf} from './liveCatalogue.ts';
+import {catalogues,loadShelves,loadDetails,titleKey,Title,Shelf,ContentCache} from './liveCatalogue.ts';
 import {SignIn} from './SignIn.tsx';
+import {useDiscovery,DiscoverFilters,useRemoteSearch} from './Discovery.tsx';
+import {TitleDetails} from './TitleDetails.tsx';
 import './style.css';
 
 function focus(id?:string){
@@ -45,13 +47,21 @@ function App(){
  const [shelf,setShelf]=useState('Home');
  const [query,setQuery]=useState('');
  const [showSearch,setShowSearch]=useState(false);
+ const [searchTerm,setSearchTerm]=useState('');
+ const [searchLimit,setSearchLimit]=useState(30);
+ const cache=useMemo(()=>new ContentCache(),[auth,refresh]);
+ const discovery=useDiscovery(addons,!!auth&&shelf==='Discover'&&!showSearch,cache);
+ const search=useRemoteSearch(addons,!!auth&&showSearch,searchTerm,cache);
+ const submitSearch=()=>{const term=query.trim();setSearchLimit(30);if(term===searchTerm)search.retry();else setSearchTerm(term);};
  const [rowLimit,setRowLimit]=useState(6);
  const [detail,setDetail]=useState<Title|null>(null);
+ const [selectedTitle,setSelectedTitle]=useState<Title|null>(null);
+ const [detailLoading,setDetailLoading]=useState(false);
  const restored=useRef<Record<string,string>>({});
  const lastHash=useRef(location.hash);
  const [pending,setPending]=useState<string|null>(null);
  const go=(hash:string)=>{restored.current[location.hash]=(document.activeElement as HTMLElement)?.id||'link-account';location.hash=hash;};
- const back=()=>{if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){setShowSearch(false);setPending('search');}};
+ const back=()=>{if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){setShowSearch(false);setPending('search');}else if(shelf==='Discover'){setShelf('Home');setPending('nav-Home');}};
  useEffect(()=>{
   const handler=()=>{const r=routeFromHash(location.hash);const old=lastHash.current;lastHash.current=location.hash;
    if(location.hash&&r.kind!=='home')history.replaceState({tarnRoute:true},'');
@@ -83,11 +93,11 @@ function App(){
   const key=authRef.current;
   try{if(sessionStore.current)await sessionStore.current.save(null);}
   catch{setAccountStatus('Could not clear account storage. Retry sign-out.');return;}
-  authRef.current=null;setAuth(null);setRows([]);setAddons([]);setDetail(null);setQuery('');setShowSearch(false);setAccountStatus('Signed out on this device.');setPending('link-account');
+  authRef.current=null;setAuth(null);setRows([]);setAddons([]);setDetail(null);setSelectedTitle(null);setQuery('');setSearchTerm('');setShowSearch(false);setAccountStatus('Signed out on this device.');setPending('link-account');
   if(key)revokeSession(key).catch(()=>{});
  };
  useEffect(()=>{
-  if(!auth){setRows([]);setAddons([]);setStatus('');setLoading(false);return;}
+  if(!auth){setRows([]);setAddons([]);setStatus('');setLoading(false);setSelectedTitle(null);setDetail(null);setQuery('');setSearchTerm('');setShowSearch(false);return;}
   const controller=new AbortController(),signal=controller.signal,key=auth;
   setLoading(true);setStatus('Loading installed add-ons…');
   (async()=>{
@@ -98,7 +108,7 @@ function App(){
     const catalogs=catalogues(descriptors);
     setStatus('Loading catalogues…');
     const received=new Map<string,Shelf>();
-    const result=await loadShelves(catalogs,signal,undefined,undefined,row=>{
+    const result=await loadShelves(catalogs,signal,undefined,(url,init,s)=>cache.request(url,init,s),row=>{
      if(signal.aborted||authRef.current!==key)return;
      received.set(row.key,row);
      setRows(catalogs.map(c=>received.get(c.key)).filter((s):s is Shelf=>!!s&&s.titles.length>0));
@@ -118,15 +128,15 @@ function App(){
    }finally{if(!signal.aborted&&authRef.current===key)setLoading(false);}
   })();
   return()=>controller.abort();
- },[auth,refresh]);
- const selected=route.kind==='details'?rows.reduce<Title|undefined>((found,row)=>found||row.titles.find(t=>titleKey(t)===route.id),undefined):undefined;
+ },[auth,refresh,cache]);
+ const selected=route.kind==='details'&&auth?(selectedTitle&&titleKey(selectedTitle)===route.id?selectedTitle:rows.reduce<Title|undefined>((found,row)=>found||row.titles.find(t=>titleKey(t)===route.id),undefined)):undefined;
  useEffect(()=>{
-  setDetail(selected||null);
+  setDetail(selected||null);setDetailLoading(!!selected);
   if(!selected)return;
   const controller=new AbortController();
-  loadDetails(addons,selected,controller.signal).then(t=>{if(!controller.signal.aborted)setDetail(t);});
+  loadDetails(addons,selected,controller.signal,(url,init,s)=>cache.request(url,init,s)).then(t=>{if(!controller.signal.aborted){setDetail(t);setDetailLoading(false);}}).catch(()=>{if(!controller.signal.aborted)setDetailLoading(false);});
   return()=>controller.abort();
- },[selected,addons]);
+ },[selected,addons,cache]);
  useLayoutEffect(()=>{if(pending){focus(pending);setPending(null);}},[pending,route,showSearch]);
  useLayoutEffect(()=>{focus(route.kind==='home'?'link-account':'back');},[]);
  useEffect(()=>{
@@ -135,10 +145,10 @@ function App(){
    const typing=target.tagName==='INPUT'||target.tagName==='TEXTAREA';
    if(typing){
     if(isBack(e.key,e.keyCode)){e.preventDefault();const id=target.id;focus(id==='query'?'search':id==='name'?'save':'network');return;}
-    if(e.key==='ArrowDown'||e.keyCode===40){e.preventDefault();focus(target.id==='query'?(document.querySelector<HTMLElement>('.poster-hit')?.id||'close-search'):target.id==='name'?'save':'network');}
+    if(e.key==='ArrowDown'||e.keyCode===40){e.preventDefault();focus(target.id==='query'?'search-submit':target.id==='name'?'save':'network');}
     return;
    }
-   if(isBack(e.key,e.keyCode)){if(route.kind!=='home'||showSearch){e.preventDefault();back();}return;}
+   if(isBack(e.key,e.keyCode)){if(route.kind!=='home'||showSearch||shelf==='Discover'){e.preventDefault();back();}return;}
    const dir=directionFor(e.key,e.keyCode);if(!dir)return;
    e.preventDefault();
    const items=buttons(),active=document.activeElement as HTMLElement;
@@ -146,36 +156,38 @@ function App(){
    if(dest)focus(dest);
   };
   document.addEventListener('keydown',handler);return()=>document.removeEventListener('keydown',handler);
- },[route,showSearch]);
+ },[route,showSearch,shelf]);
  const save=async(name:string)=>{
   const next={...state,name:name.trim().slice(0,24)||'Viewer',updatedAt:Date.now()};setState(next);
   try{if(!store.current)throw Error();await store.current.save(next);setStorage('IndexedDB read/write passed');}
   catch{setStorage('Save failed; change is temporary');}
  };
- const visible=rows.filter(r=>shelf==='Movies'?r.type==='movie':shelf==='Series'?r.type==='series':true).map(r=>({...r,titles:showSearch?r.titles.filter(t=>t.name.toLowerCase().includes(query.toLowerCase())):r.titles})).filter(r=>r.titles.length);
+ const visible:Shelf[]=showSearch?(search.items.length?[{key:'search-results',name:'Search results',addon:'Installed add-ons',type:'movie',titles:search.items.slice(0,searchLimit)}]:[]):shelf==='Discover'?(discovery.current&&discovery.items.length?[{key:'discover-results',name:discovery.current.name,addon:discovery.current.addon,type:discovery.current.type,titles:discovery.items}]:[]):rows.filter(r=>shelf==='Movies'?r.type==='movie':shelf==='Series'?r.type==='series':true).filter(r=>r.titles.length);
  const featured=visible.length?visible[0].titles[0]:null;
- const openTitle=(t:Title)=>go('#details/'+encodeURIComponent(titleKey(t)));
+ const openTitle=(t:Title)=>{setSelectedTitle(t);go('#details/'+encodeURIComponent(titleKey(t)));};
  const activeDetail=detail&&selected&&titleKey(detail)===titleKey(selected)?detail:selected;
  return <div className="app" onPointerDown={e=>{const b=(e.target as HTMLElement).closest<HTMLElement>('button[data-focus]');if(b)b.focus();}}>
- <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.2.0-dev.1 • Development</span></header>
+ <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.2.0-dev.2 • Development</span></header>
  {route.kind==='home'?<main>
   <nav>{['Home','Discover','Movies','Series'].map(n=><Btn key={n} id={'nav-'+n} className={shelf===n?'selected':''} onClick={()=>{setShelf(n);setShowSearch(false);setRowLimit(6);}}>{n}</Btn>)}
-  {auth&&<Btn id="search" onClick={()=>{setShowSearch(!showSearch);if(!showSearch)setTimeout(()=>document.getElementById('query')?.focus(),0);}}>Search loaded titles</Btn>}
+  {auth&&<Btn id="search" onClick={()=>{setShowSearch(!showSearch);if(!showSearch)setTimeout(()=>document.getElementById('query')?.focus(),0);}}>Search</Btn>}
   <Btn id="settings" onClick={()=>go('#settings')}>Settings</Btn><Btn id="diagnostics" onClick={()=>go('#diagnostics')}>Diagnostics</Btn>
   <span className="profile">{state.name}</span></nav>
   {accountStatus&&<p className="warn" aria-live="polite">{accountStatus}</p>}
   {!accountReady?<p>Opening account storage…</p>:!auth?<section className="welcome"><p className="eyebrow">TARN</p><h1>Your living room, your library.</h1><p>Link your Stremio account to browse the catalogues from your installed add-ons.</p><Btn id="link-account" className="primary" onClick={()=>go('#signin')}>Link Stremio account</Btn></section>:<>
   <div className="catalog-status"><p aria-live="polite">{status}</p><Btn id="refresh-catalogues" disabled={loading} onClick={()=>setRefresh(x=>x+1)}>{loading?'Loading…':'Refresh catalogues'}</Btn></div>
-  {showSearch?<section className="search"><h1>Search loaded titles</h1><input id="query" data-focus value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();focus(document.querySelector<HTMLElement>('.poster-hit')?.id||'search');}}} placeholder="Search loaded titles…" aria-label="Search loaded titles"/><Btn id="close-search" onClick={()=>{setShowSearch(false);setPending('search');}}>Close search</Btn><p className="muted">Full add-on search comes in the next development build.</p></section>:
-  featured&&<section className="hero"><Artwork key={titleKey(featured)} title={featured} wide/><div className="hero-copy"><p className="eyebrow">FEATURED</p><h1>{featured.name}</h1><p>{[featured.year,featured.genre].filter(Boolean).join(' · ')}</p><p className="synopsis">{featured.description}</p><Btn id="featured" className="primary" onClick={()=>openTitle(featured)}>View details</Btn></div></section>}
-  {visible.length===0&&!loading&&<p>{showSearch?'No loaded titles match.':'No catalogues available for this view. Try Refresh or check your installed add-ons.'}</p>}
+  {showSearch?<section className="search"><h1>Search</h1><input id="query" data-focus value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'||e.keyCode===13){e.preventDefault();submitSearch();focus('search-submit');}}} placeholder="Search movies and series…" aria-label="Search installed add-ons"/><div className="controls"><Btn id="search-submit" className="primary" onClick={submitSearch}>{search.loading?'Search again':'Search'}</Btn><Btn id="close-search" onClick={()=>{setShowSearch(false);setPending('search');}}>Close search</Btn></div><p aria-live="polite">{search.status}</p></section>:
+  shelf==='Discover'?<DiscoverFilters model={discovery}/>:featured&&<section className="hero"><Artwork key={titleKey(featured)} title={featured} wide/><div className="hero-copy"><p className="eyebrow">FEATURED</p><h1>{featured.name}</h1><p>{[featured.year,featured.genre].filter(Boolean).join(' · ')}</p><p className="synopsis">{featured.description}</p><Btn id="featured" className="primary" onClick={()=>openTitle(featured)}>View details</Btn></div></section>}
+  {!showSearch&&shelf!=='Discover'&&visible.length===0&&!loading&&<p>No catalogues available for this view. Try Refresh or check your installed add-ons.</p>}
   {visible.slice(0,rowLimit).map(r=><section className="shelf" key={r.key}><h2>{r.name} <small>· {r.addon}</small></h2><div className="cards live-cards">{r.titles.map((t,i)=><div className="poster-card" key={titleKey(t)}><Artwork title={t}/><span className="poster-title" aria-hidden="true">{t.name}</span><small aria-hidden="true">{t.year||t.genre||'\u00a0'}</small><button type="button" className="poster-hit" data-focus id={'card-'+r.key+'-'+i} aria-label={[t.name,t.year].filter(Boolean).join(', ')} onClick={()=>openTitle(t)}/></div>)}</div></section>)}
-  {visible.length>rowLimit&&<Btn id="more-rows" onClick={()=>setRowLimit(x=>x+6)}>Show more catalogues</Btn>}
-  <footer>Live catalogue preview · Playback and episode navigation are not implemented yet.</footer>
+  {showSearch&&search.items.length>searchLimit&&<Btn id="more-search" onClick={()=>{setPending('card-search-results-'+searchLimit);setSearchLimit(x=>x+30);}}>Show more search results</Btn>}
+  {!showSearch&&shelf==='Discover'&&discovery.next!==null&&<Btn id="more-discover" disabled={discovery.loading} onClick={discovery.more}>{discovery.loading?'Loading…':'Load more titles'}</Btn>}
+  {!showSearch&&shelf!=='Discover'&&visible.length>rowLimit&&<Btn id="more-rows" onClick={()=>setRowLimit(x=>x+6)}>Show more catalogues</Btn>}
+  <footer>Live catalogue preview · Playback arrives in Milestone 3.</footer>
   </>}
  </main>:<main className="page"><Btn id="back" onClick={back}>‹ Back</Btn>
  {route.kind==='signin'?auth?<p>Account linked. Return to Home.</p>:<SignIn onLinked={linked} onCancel={back}/>:route.kind==='diagnostics'?<Diagnostics/>:route.kind==='settings'?<section><h1>Settings</h1><h2>Stremio account</h2><p>{auth?'Account linked':'Not linked'}</p>{accountStatus&&<p className="warn">{accountStatus}</p>}{auth?<Btn id="sign-out" onClick={signOut}>Sign out of Stremio</Btn>:<Btn id="link-settings" disabled={!accountReady} onClick={()=>go('#signin')}>Link account</Btn>}
- <h2>Local storage</h2><p>{storage}</p><p>Launch count: {state.visits}</p><p>Profile: {state.name}</p><label htmlFor="name">Local test profile name</label><input id="name" data-focus key={state.name} defaultValue={state.name} maxLength={24} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();focus('save');}}}/><Btn id="save" onClick={()=>save((document.getElementById('name') as HTMLInputElement).value)}>Save name</Btn><p className="muted">Single account for now. Full profile management comes in Milestone 4.</p></section>:activeDetail?<section className="detail"><Artwork key={titleKey(activeDetail)} title={activeDetail}/><div><p className="eyebrow">{activeDetail.type==='movie'?'MOVIE':'SERIES'}</p><h1>{activeDetail.name}</h1><p>{[activeDetail.year,activeDetail.genre].filter(Boolean).join(' · ')}</p><p>{activeDetail.description||'No description available.'}</p><p className="muted">Playback and full episode details are coming in later builds.</p></div></section>:<p>{loading?'Loading catalogues…':'Title not available. Return to Home and refresh.'}</p>}
+ <h2>Local storage</h2><p>{storage}</p><p>Launch count: {state.visits}</p><p>Profile: {state.name}</p><label htmlFor="name">Local test profile name</label><input id="name" data-focus key={state.name} defaultValue={state.name} maxLength={24} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();focus('save');}}}/><Btn id="save" onClick={()=>save((document.getElementById('name') as HTMLInputElement).value)}>Save name</Btn><p className="muted">Single account for now. Full profile management comes in Milestone 4.</p></section>:activeDetail?<TitleDetails key={titleKey(activeDetail)} title={activeDetail} loading={detailLoading}/>:<p>{loading?'Loading catalogues…':'Title not available. Return to Home and refresh.'}</p>}
  </main>}
  </div>;
 }
