@@ -135,7 +135,7 @@ function App(){
    const typing=target.tagName==='INPUT'||target.tagName==='TEXTAREA';
    if(typing){
     if(isBack(e.key,e.keyCode)){e.preventDefault();const id=target.id;focus(id==='query'?'search':id==='name'?'save':'network');return;}
-    if(e.key==='ArrowDown'||e.keyCode===40){e.preventDefault();focus(target.id==='query'?(document.querySelector<HTMLElement>('.poster')?.id||'close-search'):target.id==='name'?'save':'network');}
+    if(e.key==='ArrowDown'||e.keyCode===40){e.preventDefault();focus(target.id==='query'?(document.querySelector<HTMLElement>('.poster-hit')?.id||'close-search'):target.id==='name'?'save':'network');}
     return;
    }
    if(isBack(e.key,e.keyCode)){if(route.kind!=='home'||showSearch){e.preventDefault();back();}return;}
@@ -166,10 +166,10 @@ function App(){
   {accountStatus&&<p className="warn" aria-live="polite">{accountStatus}</p>}
   {!accountReady?<p>Opening account storage…</p>:!auth?<section className="welcome"><p className="eyebrow">TARN</p><h1>Your living room, your library.</h1><p>Link your Stremio account to browse the catalogues from your installed add-ons.</p><Btn id="link-account" className="primary" onClick={()=>go('#signin')}>Link Stremio account</Btn></section>:<>
   <div className="catalog-status"><p aria-live="polite">{status}</p><Btn id="refresh-catalogues" disabled={loading} onClick={()=>setRefresh(x=>x+1)}>{loading?'Loading…':'Refresh catalogues'}</Btn></div>
-  {showSearch?<section className="search"><h1>Search loaded titles</h1><input id="query" data-focus value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();focus(document.querySelector<HTMLElement>('.poster')?.id||'search');}}} placeholder="Search loaded titles…" aria-label="Search loaded titles"/><Btn id="close-search" onClick={()=>{setShowSearch(false);setPending('search');}}>Close search</Btn><p className="muted">Full add-on search comes in the next development build.</p></section>:
+  {showSearch?<section className="search"><h1>Search loaded titles</h1><input id="query" data-focus value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();focus(document.querySelector<HTMLElement>('.poster-hit')?.id||'search');}}} placeholder="Search loaded titles…" aria-label="Search loaded titles"/><Btn id="close-search" onClick={()=>{setShowSearch(false);setPending('search');}}>Close search</Btn><p className="muted">Full add-on search comes in the next development build.</p></section>:
   featured&&<section className="hero"><Artwork key={titleKey(featured)} title={featured} wide/><div className="hero-copy"><p className="eyebrow">FEATURED</p><h1>{featured.name}</h1><p>{[featured.year,featured.genre].filter(Boolean).join(' · ')}</p><p className="synopsis">{featured.description}</p><Btn id="featured" className="primary" onClick={()=>openTitle(featured)}>View details</Btn></div></section>}
   {visible.length===0&&!loading&&<p>{showSearch?'No loaded titles match.':'No catalogues available for this view. Try Refresh or check your installed add-ons.'}</p>}
-  {visible.slice(0,rowLimit).map(r=><section className="shelf" key={r.key}><h2>{r.name} <small>· {r.addon}</small></h2><div className="cards live-cards">{r.titles.map((t,i)=><Btn key={titleKey(t)} id={'card-'+r.key+'-'+i} className="poster" onClick={()=>openTitle(t)}><Artwork title={t}/><span>{t.name}</span><small>{t.year||t.genre}</small></Btn>)}</div></section>)}
+  {visible.slice(0,rowLimit).map(r=><section className="shelf" key={r.key}><h2>{r.name} <small>· {r.addon}</small></h2><div className="cards live-cards">{r.titles.map((t,i)=><div className="poster-card" key={titleKey(t)}><Artwork title={t}/><span className="poster-title" aria-hidden="true">{t.name}</span><small aria-hidden="true">{t.year||t.genre||'\u00a0'}</small><button type="button" className="poster-hit" data-focus id={'card-'+r.key+'-'+i} aria-label={[t.name,t.year].filter(Boolean).join(', ')} onClick={()=>openTitle(t)}/></div>)}</div></section>)}
   {visible.length>rowLimit&&<Btn id="more-rows" onClick={()=>setRowLimit(x=>x+6)}>Show more catalogues</Btn>}
   <footer>Live catalogue preview · Playback and episode navigation are not implemented yet.</footer>
   </>}
