@@ -146,10 +146,13 @@
     <string name="player_try_another">Essayez une autre source</string>
     <string name="player_next_episode">Épisode suivant</string>
     <string name="player_up_next">À suivre</string>
-    <string name="player_play_episode">Lire S%1$d E%2$d</string>
     <string name="player_exit_home">Revenir à l’accueil</string>
     <string name="player_still_watching">Vous regardez toujours ?</string>
-    <string name="player_quiet_episodes">%1$d épisodes ont été lus sans aucune pression sur la télécommande.</string>
+    <string name="player_still_prompt_description">Le prochain épisode est prêt quand vous le souhaitez.</string>
+    <string name="player_still_episode">S%1$d E%2$d</string>
+    <string name="player_still_keep_watching">Continuer à regarder</string>
+    <string name="player_still_dont_ask">Ne plus demander</string>
+    <string name="player_still_stop">Arrêter de regarder</string>
     <string name="player_sleep_paused">La minuterie de veille a mis la lecture en pause.</string>
     <string name="skip_intro">Passer l’intro</string>
     <string name="skip_recap">Passer le récap</string>

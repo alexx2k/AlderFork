@@ -1,0 +1,37 @@
+name: Are You Still Watching development checks
+
+on:
+  push:
+    branches:
+      - feature/are-you-still-watching
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      # Install current command-line tools explicitly. The setup-android action currently
+      # fails on GitHub runners while requesting the retired Android SDK "tools" package.
+      - name: Install Android SDK command-line tools and API 36
+        env:
+          ANDROID_HOME: ${{ github.workspace }}/.android-sdk
+          ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
+        run: |
+          mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
+          curl -fsSL "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" -o /tmp/commandlinetools.zip
+          unzip -q /tmp/commandlinetools.zip -d /tmp/android-cli
+          mv /tmp/android-cli/cmdline-tools/* "$ANDROID_HOME/cmdline-tools/latest/"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+      - name: Run unit tests and build development APK
+        run: bash ./gradlew -PdebugKey --no-configuration-cache testDebugUnitTest assembleDebug

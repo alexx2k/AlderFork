@@ -159,10 +159,13 @@
     <string name="player_try_another">جرّب مصدرًا آخر</string>
     <string name="player_next_episode">الحلقة التالية</string>
     <string name="player_up_next">التالي</string>
-    <string name="player_play_episode">تشغيل الموسم %1$d، الحلقة %2$d</string>
     <string name="player_exit_home">الخروج إلى الرئيسية</string>
     <string name="player_still_watching">هل ما زلت تشاهد؟</string>
-    <string name="player_quiet_episodes">تم تشغيل %1$d من الحلقات دون أي ضغط على جهاز التحكم.</string>
+    <string name="player_still_prompt_description">الحلقة التالية جاهزة عندما تكون مستعدًا.</string>
+    <string name="player_still_episode">الموسم %1$d، الحلقة %2$d</string>
+    <string name="player_still_keep_watching">متابعة المشاهدة</string>
+    <string name="player_still_dont_ask">لا تسأل مرة أخرى</string>
+    <string name="player_still_stop">إيقاف المشاهدة</string>
     <string name="player_sleep_paused">أوقف مؤقت النوم التشغيل مؤقتًا.</string>
     <string name="skip_intro">تخطّي المقدّمة</string>
     <string name="skip_recap">تخطّي الملخّص</string>

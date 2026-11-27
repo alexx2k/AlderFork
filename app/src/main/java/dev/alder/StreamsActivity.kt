@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.view.KeyEvent
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
@@ -29,6 +30,26 @@ class StreamsActivity : Screen() {
     private lateinit var addonText: android.widget.TextView
     private val asAddonWrites by lazy { Settings.addonText(this) }
     override val backdrop get() = art
+
+    /** Source-picker remote activity is intentional; automatic source discovery is not. */
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (intent.hasExtra(STILL_SESSION_PROFILE_ID) && event.action == KeyEvent.ACTION_DOWN &&
+            event.repeatCount == 0) {
+            when (event.keyCode) {
+                KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN,
+                KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT,
+                KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER,
+                KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_MENU,
+                KeyEvent.KEYCODE_MEDIA_PLAY, KeyEvent.KEYCODE_MEDIA_PAUSE,
+                KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                    intent.putExtra(STILL_SESSION_AUTO_COUNT, 0)
+                    intent.putExtra(STILL_SESSION_PENDING_FRAME, false)
+                }
+            }
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
     // Audio language chips above the list: All, then each language the sources name. A pick lasts while the page is open.
     private lateinit var languageStrip: HorizontalScrollView
     private var audio: String? = null
@@ -387,6 +408,11 @@ class StreamsActivity : Screen() {
             }
             alpha = if (s.height in 1..719) 0.48f else 1f
             setOnClickListener {
+                // Explicit stream choice is always human interaction, even via accessibility.
+                if (intent.hasExtra(STILL_SESSION_PROFILE_ID)) {
+                    intent.putExtra(STILL_SESSION_AUTO_COUNT, 0)
+                    intent.putExtra(STILL_SESSION_PENDING_FRAME, false)
+                }
                 val metaId = intent.getStringExtra("id")
                 val videoId = intent.getStringExtra("videoId")
                 if (metaId != null && videoId != null && metaId != videoId && s.providerId != null) {
