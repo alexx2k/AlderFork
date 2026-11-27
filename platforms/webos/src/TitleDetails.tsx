@@ -6,15 +6,14 @@ function SafeImage({url,className}:{url?:string;className:string}){
  useEffect(()=>setFailed(false),[url]);
  return url&&!failed?<img className={className} src={url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={()=>setFailed(true)}/>:<div className={className+' artwork-placeholder'} aria-hidden="true"/>;
 }
-export function TitleDetails({title,loading}:{title:Title;loading:boolean}){
+export function TitleDetails({title,loading,onPlay}:{title:Title;loading:boolean;onPlay:(intent:PlaybackIntent)=>void}){
  const episodes=title.episodes||[];
  const seasons=seasonsFor(episodes);
  const [chosenSeason,setChosenSeason]=useState<number|null|undefined>(undefined);
  const season=chosenSeason!==undefined&&seasons.includes(chosenSeason)?chosenSeason:(seasons.includes(1)?1:seasons[0]);
- const [intent,setIntent]=useState<PlaybackIntent|null>(null);
  const [episodeLimit,setEpisodeLimit]=useState(30);
  const seasonEpisodes=episodes.filter(e=>e.season===season);
- const prepare=(episode?:Episode)=>setIntent(playbackIntent(title,episode));
+ const prepare=(episode?:Episode)=>{const intent=playbackIntent(title,episode);if(intent)onPlay(intent);};
  const facts=[title.year,title.genre,title.rating?'Rating '+title.rating:null,title.runtime].filter(Boolean).join(' · ');
  return <section className="title-page">
   <div className="title-hero">
@@ -28,9 +27,8 @@ export function TitleDetails({title,loading}:{title:Title;loading:boolean}){
     {loading&&<p aria-live="polite" className="muted">Loading title details…</p>}
    </div>
   </div>
-  {intent&&<div className="playback-preview" aria-live="polite"><strong>{intent.name}</strong><p>Playback is not available in this development build. This selection is ready for the upcoming player.</p><button type="button" data-focus id="dismiss-playback" onClick={()=>setIntent(null)}>Dismiss</button></div>}
   {title.type==='series'&&<section className="episode-section"><h2>Episodes</h2>
-   {seasons.length>0?<><div className="filter-strip" aria-label="Seasons">{seasons.map((s,i)=><button type="button" data-focus id={'season-'+i} key={s===null?'other':s} className={season===s?'filter-active':''} aria-pressed={season===s} onClick={()=>{setChosenSeason(s);setEpisodeLimit(30);setIntent(null);}}>{s===null?'Other episodes':s===0?'Specials':'Season '+s}</button>)}</div>
+   {seasons.length>0?<><div className="filter-strip" aria-label="Seasons">{seasons.map((s,i)=><button type="button" data-focus id={'season-'+i} key={s===null?'other':s} className={season===s?'filter-active':''} aria-pressed={season===s} onClick={()=>{setChosenSeason(s);setEpisodeLimit(30);}}>{s===null?'Other episodes':s===0?'Specials':'Season '+s}</button>)}</div>
    <div className="episode-list">{seasonEpisodes.slice(0,episodeLimit).map((e,i)=><div className="episode-card" key={e.id}>
     <SafeImage className="episode-thumb" url={e.thumbnail}/><div className="episode-copy"><h3>{e.number!==null?e.number+'. ':''}{e.name}</h3>{e.released&&<p className="muted">{e.released.slice(0,10)}</p>}<p>{e.description||'No episode description available.'}</p></div>
     <button type="button" data-focus id={'episode-'+i} className="episode-hit" aria-label={'Play '+e.name} onClick={()=>prepare(e)}/>

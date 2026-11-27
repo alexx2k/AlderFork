@@ -1,3 +1,25 @@
+# Tarn webOS — 0.3.0-dev.1
+
+Milestone 3 initial direct playback. Native HTML video, installed add-on stream resolution, conservative compatibility ranking, automatic fallback (up to three attempts), manual source selection, play/pause and seeking, external SRT/WebVTT subtitles, native audio-track selection where exposed, local movie/episode resume scoped to Stremio user ID. No playback history is written to Stremio yet. Numeric manifest version 0.3.0; development build, no release.
+
+## Update and test
+```powershell
+git pull --ff-only origin feature/webos-client
+npm.cmd run typecheck
+npm.cmd test
+npm.cmd run build
+```
+No new npm packages; npm install may be needed to refresh the local lockfile version. Reopen dist in LG Simulator.
+- Open a movie/episode you have rights to watch, select Play; check source resolution and playback.
+- Try manual Sources, pause/resume, ±10 sec, Back, and reopen to check resume. Verify no accidental progress overwrite when a source fails.
+- Test source failure, retry, no sources, torrent-only and header-dependent sources, and a title with multiple providers.
+- Try external subtitles, Off, and audio tracks if exposed. Test diagnostics MP4/HLS independently.
+- Verify the approved poster layout and all search/discover/detail navigation.
+- Simulator media support differs from TV; native HLS, HEVC, HDR, audio decoding, embedded tracks, subtitle blob handling and seek/resume require real-TV testing.
+
+## Boundaries
+Direct HTTP(S) video only; sources marked notWebReady or requiring proxy headers, torrent-only, external links and known small action files are excluded. Ranking uses labels and reported codec support, not verified media inspection. No proxy, torrent engine, FFmpeg, DRM workaround, MSE HLS library, external backend, or cloud history. Native HLS support depends on the platform. Subtitle requests use normal browser CORS and a local VTT blob; unsupported subtitle formats are not converted. Local progress uses browser storage scoped by Stremio user ID, with session-memory fallback. Full cross-profile history, Preferred Server Memory, autoplay and inactivity prompts remain later milestones.
+
 # Tarn webOS — 0.2.0-dev.2
 
 Milestone 2C/2D: remote search across installed movie/series catalogues that advertise search, Discover with catalogue/type/genre selection and skip pagination, title detail metadata and season/episode navigation. Play prepares a selected title/episode and displays an explicit development notice; it does not resolve or stream media yet. Approved poster card structure and styles retained. Application manifest and npm version remain numeric 0.2.0 for LG packaging; UI identifies dev.2.

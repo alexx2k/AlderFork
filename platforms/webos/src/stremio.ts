@@ -55,3 +55,8 @@ export async function installedAddons(authKey:string,signal?:AbortSignal):Promis
 export async function revokeSession(authKey:string):Promise<void>{
  unwrap(await post('logout',{type:'Logout',authKey}));
 }
+
+export async function getUserId(authKey:string,signal?:AbortSignal):Promise<string>{
+ const data=unwrap(await post('getUser',{type:'GetUser',authKey},signal));
+ const id=string(data._id);if(!id)throw Error('Missing account identifier');return id;
+}
