@@ -16,6 +16,38 @@ Write each entry the way you would advertise it to a viewer on the sofa:
 Put changes that are not released under `## Unreleased`. Before each release, read all of `## Unreleased` again and rewrite
 each entry that does not follow these rules. Then rename that heading to the version number.
 
+## 1.5.0
+
+### New
+<!-- Spotlight: whats-new/discover.webp -->
+- **Explore more with Discover.** Browse films, shows and anime by genre, decade or streaming service in your country.
+<!-- Spotlight -->
+- **Seamless next episode.** A five-second countdown automatically starts the next episode at the credits. Select **Watch Credits** to cancel.
+<!-- Spotlight -->
+- **Are You Still Watching?** After three automatically started episodes without remote interaction, confirm before the next one. Choose **Keep Watching**, **Don't Ask Again** or **Stop Watching**.
+<!-- Spotlight: whats-new/speed.webp -->
+- **Watch at your speed.** Choose 0.75× to 2× in **Playback speed**. Your choice carries over to the next episode.
+<!-- Spotlight: whats-new/anime.webp -->
+- **Anime has its own tab.** Browse seasons and episodes when your add-ons offer an anime catalog.
+- **More playback options.** Use a compatible external player, zoom or stretch the picture, or play supported P2P sources without a debrid account.
+- **Make the app yours.** Reorder tabs, change text and poster size, and choose how new episode badges appear.
+- **More languages and ratings.** Browse localized title information and Arabic menus, and optionally show Letterboxd ratings using an MDBList key.
+
+### Easier to use
+- **Faster, cleaner browsing.** Enjoy improved Home loading, consistent poster cards, search ranking and remote navigation.
+- **A better My Alder.** Browse your saved titles in a filterable grid with more title information.
+- **Compare and switch sources.** See more source details and change streams without losing your playback position.
+- **Keep your favourite provider.** Remembered providers and automatic fallback work with the updated source resolver. Your selected audio language takes priority.
+- **Your profiles stay yours.** Local profiles, independent viewing history, custom avatars and phone photo uploads remain available.
+- **Clearer sound and subtitles.** Improved audio passthrough and fallback, subtitle matching and playback settings.
+
+### Fixes
+- **More reliable playback.** Improved recovery after brief network dropouts, 4K buffering on supported devices and stream failure messages.
+- **More reliable subtitles.** Improved handling of subtitle files, ZIP archives and text encodings.
+- **Keep your place.** Improved watch-progress saving and resume behaviour, including offline progress for signed-in accounts.
+- **Better profile security and navigation.** Improved PIN checks, focus restoration and compatibility with older TV devices.
+
+This release integrates 145 commits from upstream Alder 1.4 while retaining Alder Fork's custom features. Thanks to the original Alder project and its contributors.
 
 ## 1.2.0
 
@@ -60,8 +92,6 @@ each entry that does not follow these rules. Then rename that heading to the ver
 ### Fixes
 - **Avatar gallery display.** Pictures no longer show a second image behind them. The gallery has a black background.
 - **Profile picture after restart.** Alder keeps the profile picture you select when you close and open the app.
-
-## Unreleased
 
 ## 1.4
 
