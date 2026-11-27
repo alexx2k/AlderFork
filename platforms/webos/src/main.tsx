@@ -25,15 +25,16 @@ function App(){
  const [state,setState]=useState<FoundationState>(()=>initialState());
  const [storage,setStorage]=useState('Opening local storage…');
  const store=useRef<StateStore|null>(null);
- const restored=useRef<string>('featured');
+ const restored=useRef<Record<string,string>>({});
+ const lastHash=useRef(location.hash);
  const [pending,setPending]=useState<string|null>(null);
  const [shelf,setShelf]=useState('Home');
  const [query,setQuery]=useState('');
  const [showSearch,setShowSearch]=useState(false);
- const go=(hash:string)=>{restored.current=(document.activeElement as HTMLElement)?.id||'featured';location.hash=hash;};
+ const go=(hash:string)=>{restored.current[location.hash]=(document.activeElement as HTMLElement)?.id||'featured';location.hash=hash;};
  const back=()=>{if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){setShowSearch(false);setPending('search');}};
  useEffect(()=>{
-  const onHash=()=>{const r=routeFromHash(location.hash);setRoute(r);setPending(r.kind==='home'?restored.current:'back');};
+  const onHash=()=>{const r=routeFromHash(location.hash);const old=lastHash.current;lastHash.current=location.hash;setRoute(r);setPending(old===location.hash?null:restored.current[location.hash]||(r.kind==='home'?'featured':'back'));};
   // The TV's default Back handling uses browser history. Mark internal routes only.
   const mark=()=>{if(location.hash&&routeFromHash(location.hash).kind!=='home')history.replaceState({tarnRoute:true},'');};
   const handler=()=>{mark();onHash();};
@@ -54,7 +55,11 @@ function App(){
   const handler=(e:KeyboardEvent)=>{
    const target=e.target as HTMLElement;
    const typing=target.tagName==='INPUT'||target.tagName==='TEXTAREA';
-   if(typing&&e.key!=='Escape'&&e.keyCode!==461)return;
+   if(typing){
+    if(isBack(e.key,e.keyCode)){e.preventDefault();const id=target.id;focus(id==='query'?'search':id==='name'?'save':'network');return;}
+    if(e.key==='ArrowDown'||e.keyCode===40){e.preventDefault();focus(target.id==='query'?(document.querySelector<HTMLElement>('.poster')?.id||'close-search'):target.id==='name'?'save':'network');}
+    return;
+   }
    if(isBack(e.key,e.keyCode)){
     if(route.kind!=='home'||showSearch){e.preventDefault();back();}
     return;
@@ -88,7 +93,7 @@ function App(){
   {shown.length===0?<p>No sample titles match.</p>:<div className="cards">{shown.map(t=><Btn key={t.id} id={'card-'+t.id} className="poster" onClick={()=>go('#details/'+t.id)}><Artwork title={t}/><span>{t.name}</span><small>{t.genre}</small></Btn>)}</div>}</section>
   <footer>Sample catalogue only · Remote arrows / OK / Back · No real content integration yet</footer>
  </main>:<main className="page"><Btn id="back" onClick={back}>‹ Back</Btn>
-  {route.kind==='diagnostics'?<Diagnostics/>:route.kind==='settings'?<section><h1>Settings</h1><p>{storage}</p><p>Launch count: {state.visits}</p><p>Profile: {state.name}</p><label htmlFor="name">Local test profile name</label><input id="name" data-focus defaultValue={state.name} maxLength={24} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();focus('save');}}}/><Btn id="save" onClick={()=>save((document.getElementById('name') as HTMLInputElement).value)}>Save name</Btn><p className="muted">Foundation storage test only. Full profile management comes in Milestone 4.</p></section>:detail?<section className="detail"><Artwork title={detail}/><div><p className="eyebrow">SAMPLE TITLE</p><h1>{detail.name}</h1><p>{detail.year} · {detail.genre}</p><p>{detail.description}</p><Btn id="detail-diagnostics" onClick={()=>{location.hash='#diagnostics';}}>Test playback in diagnostics</Btn></div></section>:<p>Sample title not found.</p>}
+  {route.kind==='diagnostics'?<Diagnostics/>:route.kind==='settings'?<section><h1>Settings</h1><p>{storage}</p><p>Launch count: {state.visits}</p><p>Profile: {state.name}</p><label htmlFor="name">Local test profile name</label><input id="name" data-focus key={state.name} defaultValue={state.name} maxLength={24} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();focus('save');}}}/><Btn id="save" onClick={()=>save((document.getElementById('name') as HTMLInputElement).value)}>Save name</Btn><p className="muted">Foundation storage test only. Full profile management comes in Milestone 4.</p></section>:detail?<section className="detail"><Artwork title={detail}/><div><p className="eyebrow">SAMPLE TITLE</p><h1>{detail.name}</h1><p>{detail.year} · {detail.genre}</p><p>{detail.description}</p><Btn id="detail-diagnostics" onClick={()=>go('#diagnostics')}>Test playback in diagnostics</Btn></div></section>:<p>Sample title not found.</p>}
  </main>}
  </div>;
 }
@@ -99,7 +104,7 @@ function Diagnostics(){
  const [report,setReport]=useState<string[]>([]);
  const [media,setMedia]=useState('Select a public sample.');
  const [url,setUrl]=useState('https://v3-cinemeta.strem.io/manifest.json');
- const [selected,setSelected]=useState('');
+ const selected=useRef('');
  const alive=useRef(true);
  useEffect(()=>{alive.current=true;if(video.current)setReport(capabilities(video.current));return()=>{alive.current=false;};},[]);
  const run=async()=>{
@@ -116,7 +121,7 @@ function Diagnostics(){
  };
  const play=(name:string,url:string)=>{
   const v=video.current;if(!v)return;
-  setSelected(name);setMedia('Loading '+name+'…');v.src=url;v.load();
+  selected.current=name;setMedia('Loading '+name+'…');v.src=url;v.load();
   const promise=v.play();if(promise)promise.catch(()=>setMedia('Playback could not start; inspect media error.'));
  };
  return <section className="diagnostics"><h1>Device diagnostics</h1><p>Public endpoints and media only. No credentials are sent. A JSON response proves connectivity, not sign-in.</p>
@@ -125,7 +130,7 @@ function Diagnostics(){
  <Btn id="network" disabled={running} onClick={run}>{running?'Testing…':'Run networking checks'}</Btn>
  <div aria-live="polite">{results.map(r=><p key={r.label} className={r.ok?'ok':'warn'}>{r.label}: {r.detail}</p>)}</div>
  <h2>Device capabilities</h2>{report.map(s=><p key={s} className="small">{s}</p>)}
- </div><div><h2>Native video test</h2><video ref={video} playsInline preload="none" onPlaying={()=>setMedia('Playing: '+selected)} onWaiting={()=>setMedia('Buffering…')} onPause={()=>setMedia('Paused')} onEnded={()=>setMedia('Ended')} onError={()=>setMedia('Media error '+(video.current?.error?.code||'unknown'))}/>
+ </div><div><h2>Native video test</h2><video ref={video} playsInline preload="none" onPlaying={()=>setMedia('Playing: '+selected.current)} onWaiting={()=>setMedia('Buffering…')} onPause={()=>setMedia('Paused')} onEnded={()=>setMedia('Ended')} onError={()=>setMedia('Media error '+(video.current?.error?.code||'unknown'))}/>
  <div className="controls">{mediaSamples.map((s,i)=><Btn key={s.name} id={'sample-'+i} onClick={()=>play(s.name,s.url)}>{s.name}</Btn>)}
  <Btn id="pause" onClick={()=>{const v=video.current;if(v){if(v.paused)v.play()?.catch(()=>setMedia('Resume failed'));else v.pause();}}}>Play / pause</Btn>
  <Btn id="seek" onClick={()=>{const v=video.current;if(v&&Number.isFinite(v.duration))v.currentTime=Math.min(v.duration,v.currentTime+10);}}>+10 sec</Btn>

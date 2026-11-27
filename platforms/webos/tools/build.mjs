@@ -26,7 +26,7 @@ for (const [size,name] of [[80,'icon.png'],[130,'largeIcon.png']]) {
 const manifest=JSON.parse(await readFile('public/appinfo.json','utf8'));
 const pkg=JSON.parse(await readFile('package.json','utf8'));
 if(manifest.version!==pkg.version) throw Error('Manifest and package versions differ');
-const options={entryPoints:['src/main.tsx'],bundle:true,format:'iife',target:'chrome68',platform:'browser',outfile:'dist/app.js',define:{'process.env.NODE_ENV':'"production"'},minify:true,sourcemap:false,loader:{'.css':'css'},logLevel:'info'};
+const options={entryPoints:['src/main.tsx'],bundle:true,format:'iife',target:'chrome68',platform:'browser',outfile:'dist/app.js',define:{'process.env.NODE_ENV':'"production"'},minify:false,sourcemap:false,external:['*.ttf'],loader:{'.css':'css'},logLevel:'info'};
 if(process.argv.includes('--serve')){
  const ctx=await context(options);
  await ctx.watch();

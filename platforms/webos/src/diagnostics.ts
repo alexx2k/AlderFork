@@ -11,8 +11,8 @@ export async function probeJson(label:string,url:string,init?:RequestInit):Promi
  const timer=setTimeout(()=>controller.abort(),12000);
  try{
   const response=await fetch(url,{...init,signal:controller.signal,credentials:'omit',cache:'no-store'});
-  if(!response.ok)return {label,ok:false,detail:'HTTP '+response.status};
   const payload=await response.json();
+  if(!response.ok)return {label,ok:true,detail:'HTTP '+response.status+' · JSON reachable (request rejected)'};
   return {label,ok:true,detail:'HTTP '+response.status+' · JSON '+(Array.isArray(payload)?'array':typeof payload)};
  }catch(e){return {label,ok:false,detail:controller.signal.aborted?'Timed out':'Network, TLS, CORS or JSON failure'};}
  finally{clearTimeout(timer);}

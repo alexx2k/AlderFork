@@ -12,7 +12,7 @@ npm test
 npm run dev
 ```
 
-Preview at http://127.0.0.1:4173. The classic IIFE bundle targets Chrome 68; npm build copies Android's existing Inter font and launcher art into the isolated dist directory, converting icon sizes to 80/130 PNG. It does not write to app/. Commit the npm-generated lockfile after validating dependencies; initial pinned direct versions are included but a lockfile has not been generated in the offline implementation environment.
+Preview at http://127.0.0.1:4173. The classic IIFE bundle targets Chrome 68; npm run build copies Android's existing Inter font and launcher art into the isolated dist directory, converting icon sizes to 80/130 PNG. It does not write to app/. Commit the npm-generated lockfile after validating dependencies; initial pinned direct versions are included but a lockfile has not been generated in the offline implementation environment.
 
 ```powershell
 npm run build
