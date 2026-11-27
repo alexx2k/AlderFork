@@ -1,6 +1,6 @@
 import type {PlaybackIntent} from './liveCatalogue.ts';
 import {progressKey,Progress,resumePosition,SourceIdentity,Source,sourceIdentity} from './playback.mjs';
-// Separate local progress by Stremio user ID; never include auth keys or media URLs.
+// Separate local progress by profile namespace (legacy records used Stremio user ID); never include auth keys or media URLs.
 // No cloud writes. If the account ID or browser storage is unavailable, use session memory.
 const memory=new Map<string,Progress>();
 const sources=new Map<string,SourceIdentity>();

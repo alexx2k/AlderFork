@@ -3,14 +3,13 @@ import {createRoot} from 'react-dom/client';
 import {directionFor,isBack,nextFocus,routeFromHash,FocusRect,Route} from './navigation.ts';
 import {createStore,initialState,FoundationState,StateStore} from './storage.ts';
 import {capabilities,endpointForManifest,mediaSamples,probeJson,ProbeResult} from './diagnostics.ts';
-import {createSessionStore,SessionStore} from './session.ts';
-import {ApiError,installedAddons,revokeSession,getUserId} from './stremio.ts';
+import {ApiError,installedAddons} from './stremio.ts';
 import {catalogues,loadShelves,loadDetails,titleKey,Title,Shelf,ContentCache,PlaybackIntent} from './liveCatalogue.ts';
-import {SignIn} from './SignIn.tsx';
 import {useDiscovery,DiscoverFilters,useRemoteSearch} from './Discovery.tsx';
 import {TitleDetails} from './TitleDetails.tsx';
 import {Player} from './Player.tsx';
-import {clearSessionProgress} from './progress.ts';
+import {ProfileGate,Portrait} from './ProfileGate.tsx';
+import type {Profile} from './profiles.mjs';
 import './style.css';
 
 function focus(id?:string){
@@ -31,19 +30,17 @@ function Artwork({title,wide=false}:{title:Title;wide?:boolean}){
  useEffect(()=>{setFailed(false);},[url]);
  return <div className={'art '+title.theme} aria-hidden="true">{url&&!failed?<img src={url} alt="" referrerPolicy="no-referrer" loading="lazy" onError={()=>setFailed(true)}/>:<><span/><i/><b/></>}</div>;
 }
-function App(){
+function App({profile,token,namespace,onSwitch,onSignOut,onExpired}:{profile:Profile;token:string;namespace:string;onSwitch:()=>void;onSignOut:()=>void;onExpired:()=>void}){
  const [route,setRoute]=useState<Route>(()=>routeFromHash(location.hash));
  const [state,setState]=useState<FoundationState>(()=>initialState());
  const [storage,setStorage]=useState('Opening local storage…');
  const store=useRef<StateStore|null>(null);
- const sessionStore=useRef<SessionStore|null>(null);
- const [auth,setAuth]=useState<string|null>(null);
- const [accountId,setAccountId]=useState('');
+ const auth=token;
+ const [confirmSignOut,setConfirmSignOut]=useState(false);
  const [playing,setPlaying]=useState<{intent:PlaybackIntent;account:string}|null>(null);
  const playbackFocus=useRef('title-play');
- const authRef=useRef<string|null>(null);
- const [accountReady,setAccountReady]=useState(false);
- const [accountStatus,setAccountStatus]=useState('');
+ const authRef=useRef<string|null>(token);
+ 
  const [rows,setRows]=useState<Shelf[]>([]);
  const [addons,setAddons]=useState<unknown[]>([]);
  const [status,setStatus]=useState('');
@@ -68,12 +65,12 @@ function App(){
  const [pending,setPending]=useState<string|null>(null);
  const go=(hash:string)=>{restored.current[location.hash]=(document.activeElement as HTMLElement)?.id||'link-account';location.hash=hash;};
  const closePlayer=()=>{setPlaying(null);setPending(playbackFocus.current);};
- const startPlayer=(intent:PlaybackIntent)=>{playbackFocus.current=(document.activeElement as HTMLElement)?.id||'back';setPlaying({intent,account:accountId});setPending('player-back');};
- const back=()=>{if(playing){closePlayer();return;}if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){if(keyboard){setKeyboard(false);setPending('search-keyboard');}else{setShowSearch(false);setPending('search');}}else if(shelf==='Discover'){setShelf('Home');setPending('nav-Home');}};
+ const startPlayer=(intent:PlaybackIntent)=>{playbackFocus.current=(document.activeElement as HTMLElement)?.id||'back';setPlaying({intent,account:namespace});setPending('player-back');};
+ const back=()=>{if(confirmSignOut){setConfirmSignOut(false);return;}if(playing){closePlayer();return;}if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){if(keyboard){setKeyboard(false);setPending('search-keyboard');}else{setShowSearch(false);setPending('search');}}else if(shelf==='Discover'){setShelf('Home');setPending('nav-Home');}};
  useEffect(()=>{
   const handler=()=>{const r=routeFromHash(location.hash);const old=lastHash.current;lastHash.current=location.hash;
    if(location.hash&&r.kind!=='home')history.replaceState({tarnRoute:true},'');
-   setRoute(r);setPending(old===location.hash?null:restored.current[location.hash]||(r.kind==='home'?'link-account':'back'));
+   setRoute(r);setPending(old===location.hash?null:restored.current[location.hash]||(r.kind==='home'?'nav-Home':'back'));
   };
   window.addEventListener('hashchange',handler);return()=>window.removeEventListener('hashchange',handler);
  },[]);
@@ -84,34 +81,9 @@ function App(){
    const previous=await s.load();const updated={...previous,visits:previous.visits+1,updatedAt:Date.now()};await s.save(updated);
    if(alive){setState(updated);setStorage('IndexedDB read/write passed');}
   }catch{if(alive)setStorage('Local storage unavailable; changes are temporary');}})();
-  (async()=>{try{
-   const s=createSessionStore(indexedDB);sessionStore.current=s;
-   const key=await s.load();if(alive){authRef.current=key;setAuth(key);}
-  }catch{if(alive)setAccountStatus('Account storage unavailable. Linking will last only for this session.');}
-  finally{if(alive)setAccountReady(true);}})();
-  return()=>{alive=false;};
+  return()=>{alive=false;authRef.current=null;};
  },[]);
- const linked=async(key:string)=>{
-  authRef.current=key;setAuth(key);setAccountStatus('');
-  try{if(!sessionStore.current)throw Error();await sessionStore.current.save(key);}
-  catch{setAccountStatus('Account linked for this session only; storage failed.');}
-  if(authRef.current===key){history.replaceState(null,'',location.pathname+location.search);lastHash.current='';setRoute({kind:'home'});setPending('nav-Home');}
- };
- const signOut=async()=>{
-  const key=authRef.current;
-  try{if(sessionStore.current)await sessionStore.current.save(null);}
-  catch{setAccountStatus('Could not clear account storage. Retry sign-out.');return;}
-  authRef.current=null;setAuth(null);setRows([]);setAddons([]);setDetail(null);setSelectedTitle(null);setQuery('');setSearchTerm('');setKeyboard(false);setShowSearch(false);setAccountStatus('Signed out on this device.');setPending('link-account');
-  if(key)revokeSession(key).catch(()=>{});
- };
  useEffect(()=>{
-  clearSessionProgress();setAccountId('');setPlaying(null);
-  if(!auth)return;
-  const c=new AbortController();getUserId(auth,c.signal).then(id=>{if(!c.signal.aborted)setAccountId(id);}).catch(()=>{});
-  return()=>c.abort();
- },[auth]);
- useEffect(()=>{
-  if(!auth){setRows([]);setAddons([]);setStatus('');setLoading(false);setSelectedTitle(null);setDetail(null);setQuery('');setSearchTerm('');setShowSearch(false);return;}
   const controller=new AbortController(),signal=controller.signal,key=auth;
   setLoading(true);setStatus('Loading installed add-ons…');
   (async()=>{
@@ -134,10 +106,7 @@ function App(){
    }catch(error){
     if(signal.aborted||authRef.current!==key)return;
     if(error instanceof ApiError&&error.code===1){
-     try{if(sessionStore.current)await sessionStore.current.save(null);}
-     catch{setAccountStatus('Session expired; stored token could not be removed.');}
-     if(signal.aborted||authRef.current!==key)return;
-     authRef.current=null;setAuth(null);setRows([]);setAddons([]);setAccountStatus('Session expired. Link your account again.');
+     authRef.current=null;setRows([]);setAddons([]);onExpired();
     }else setStatus('Could not load your account or catalogues. Check the connection and select Refresh.');
    }finally{if(!signal.aborted&&authRef.current===key)setLoading(false);}
   })();
@@ -152,7 +121,7 @@ function App(){
   return()=>controller.abort();
  },[selected,addons,cache]);
  useLayoutEffect(()=>{if(pending){focus(pending);setPending(null);}},[pending,route,showSearch]);
- useLayoutEffect(()=>{focus(route.kind==='home'?'link-account':'back');},[]);
+ useLayoutEffect(()=>{focus(route.kind==='home'?'nav-Home':'back');},[]);
  useEffect(()=>{
   const handler=(e:KeyboardEvent)=>{
    const target=e.target as HTMLElement;
@@ -162,7 +131,7 @@ function App(){
     if(e.key==='ArrowDown'||e.keyCode===40){e.preventDefault();focus(target.id==='query'?'search-submit':target.id==='name'?'save':'network');}
     return;
    }
-   if(isBack(e.key,e.keyCode)){if(playing||route.kind!=='home'||showSearch||shelf==='Discover'){e.preventDefault();back();}return;}
+   if(isBack(e.key,e.keyCode)){if(confirmSignOut||playing||route.kind!=='home'||showSearch||shelf==='Discover'){e.preventDefault();back();}return;}
    const dir=directionFor(e.key,e.keyCode);if(!dir)return;
    e.preventDefault();
    const items=buttons(),active=document.activeElement as HTMLElement;
@@ -170,25 +139,18 @@ function App(){
    if(dest)focus(dest);
   };
   document.addEventListener('keydown',handler);return()=>document.removeEventListener('keydown',handler);
- },[route,showSearch,shelf,keyboard,playing]);
- const save=async(name:string)=>{
-  const next={...state,name:name.trim().slice(0,24)||'Viewer',updatedAt:Date.now()};setState(next);
-  try{if(!store.current)throw Error();await store.current.save(next);setStorage('IndexedDB read/write passed');}
-  catch{setStorage('Save failed; change is temporary');}
- };
+ },[route,showSearch,shelf,keyboard,playing,confirmSignOut]);
  const visible:Shelf[]=showSearch?(search.items.length?[{key:'search-results',name:'Search results',addon:'Installed add-ons',type:'movie',titles:search.items.slice(0,searchLimit)}]:[]):shelf==='Discover'?(discovery.current&&discovery.items.length?[{key:'discover-results',name:discovery.current.name,addon:discovery.current.addon,type:discovery.current.type,titles:discovery.items}]:[]):rows.filter(r=>shelf==='Movies'?r.type==='movie':shelf==='Series'?r.type==='series':true).filter(r=>r.titles.length);
  const featured=visible.length?visible[0].titles[0]:null;
  const openTitle=(t:Title)=>{setSelectedTitle(t);go('#details/'+encodeURIComponent(titleKey(t)));};
  const activeDetail=detail&&selected&&titleKey(detail)===titleKey(selected)?detail:selected;
  return <><div className="app" style={playing?{display:"none"}:undefined} onPointerDown={e=>{const b=(e.target as HTMLElement).closest<HTMLElement>('button[data-focus]');if(b)b.focus();}}>
- <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.3.0-dev.2 • Development</span></header>
+ <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.4.0-dev.1 • Development</span></header>
  {route.kind==='home'?<main>
   <nav>{['Home','Discover','Movies','Series'].map(n=><Btn key={n} id={'nav-'+n} className={shelf===n?'selected':''} onClick={()=>{setShelf(n);setShowSearch(false);setKeyboard(false);setRowLimit(6);}}>{n}</Btn>)}
   {auth&&<Btn id="search" onClick={()=>{setShowSearch(!showSearch);setKeyboard(false);if(!showSearch)setTimeout(()=>document.getElementById('query')?.focus(),0);}}>Search</Btn>}
   <Btn id="settings" onClick={()=>go('#settings')}>Settings</Btn><Btn id="diagnostics" onClick={()=>go('#diagnostics')}>Diagnostics</Btn>
-  <span className="profile">{state.name}</span></nav>
-  {accountStatus&&<p className="warn" aria-live="polite">{accountStatus}</p>}
-  {!accountReady?<p>Opening account storage…</p>:!auth?<section className="welcome"><p className="eyebrow">TARN</p><h1>Your living room, your library.</h1><p>Link your Stremio account to browse the catalogues from your installed add-ons.</p><Btn id="link-account" className="primary" onClick={()=>go('#signin')}>Link Stremio account</Btn></section>:<>
+  <button id="switch-profile" type="button" data-focus className="profile profile-switch" onClick={onSwitch}><Portrait profile={profile}/><span>{profile.name}</span></button></nav>
   <div className="catalog-status"><p aria-live="polite">{status}</p><Btn id="refresh-catalogues" disabled={loading} onClick={()=>setRefresh(x=>x+1)}>{loading?'Loading…':'Refresh catalogues'}</Btn></div>
   {showSearch?<section className="search"><h1>Search</h1><input id="query" data-focus maxLength={120} value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'||e.keyCode===13){e.preventDefault();submitSearch();focus('search-submit');}}} placeholder="Search movies and series…" aria-label="Search installed add-ons"/><div className="controls"><Btn id="search-submit" className="primary" onClick={submitSearch}>{search.loading?'Search again':'Search'}</Btn><Btn id="search-keyboard" onClick={()=>{setKeyboard(!keyboard);if(!keyboard)setPending('key-A');}}>{keyboard?'Hide keyboard':'On-screen keyboard'}</Btn><Btn id="close-search" onClick={()=>{setShowSearch(false);setKeyboard(false);setPending('search');}}>Close search</Btn></div>{keyboard&&<div className="search-keys" aria-label="On-screen search keyboard">{'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('').map(k=><Btn key={k} id={'key-'+k} onClick={()=>setQuery(q=>(q+k).slice(0,120))}>{k}</Btn>)}<Btn id="key-space" onClick={()=>setQuery(q=>(q+' ').slice(0,120))}>Space</Btn><Btn id="key-delete" onClick={()=>setQuery(q=>q.slice(0,-1))}>Delete</Btn><Btn id="key-clear" onClick={()=>setQuery('')}>Clear</Btn><Btn id="key-search" onClick={submitSearch}>Search</Btn></div>}<p aria-live="polite">{search.status}</p></section>:
   shelf==='Discover'?<DiscoverFilters model={discovery}/>:featured&&<section className="hero"><Artwork key={titleKey(featured)} title={featured} wide/><div className="hero-copy"><p className="eyebrow">FEATURED</p><h1>{featured.name}</h1><p>{[featured.year,featured.genre].filter(Boolean).join(' · ')}</p><p className="synopsis">{featured.description}</p><Btn id="featured" className="primary" onClick={()=>openTitle(featured)}>View details</Btn></div></section>}
@@ -198,10 +160,10 @@ function App(){
   {!showSearch&&shelf==='Discover'&&discovery.next!==null&&<Btn id="more-discover" onClick={discovery.more}>{discovery.loading?'Loading…':'Load more titles'}</Btn>}
   {!showSearch&&shelf!=='Discover'&&visible.length>rowLimit&&<Btn id="more-rows" onClick={()=>setRowLimit(x=>x+6)}>Show more catalogues</Btn>}
   <footer>Tarn webOS · Direct playback development build.</footer>
-  </>}
  </main>:<main className="page"><Btn id="back" onClick={back}>‹ Back</Btn>
- {route.kind==='signin'?auth?<p>Account linked. Return to Home.</p>:<SignIn onLinked={linked} onCancel={back}/>:route.kind==='diagnostics'?<Diagnostics/>:route.kind==='settings'?<section><h1>Settings</h1><h2>Stremio account</h2><p>{auth?'Account linked':'Not linked'}</p>{accountStatus&&<p className="warn">{accountStatus}</p>}{auth?<Btn id="sign-out" onClick={signOut}>Sign out of Stremio</Btn>:<Btn id="link-settings" disabled={!accountReady} onClick={()=>go('#signin')}>Link account</Btn>}
- <h2>Local storage</h2><p>{storage}</p><p>Launch count: {state.visits}</p><p>Profile: {state.name}</p><label htmlFor="name">Local test profile name</label><input id="name" data-focus key={state.name} defaultValue={state.name} maxLength={24} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();focus('save');}}}/><Btn id="save" onClick={()=>save((document.getElementById('name') as HTMLInputElement).value)}>Save name</Btn><p className="muted">Single account for now. Full profile management comes in Milestone 4.</p></section>:activeDetail?<TitleDetails key={titleKey(activeDetail)} title={activeDetail} loading={detailLoading} onPlay={startPlayer}/>:<p>{loading?'Loading catalogues…':'Title not available. Return to Home and refresh.'}</p>}
+ {route.kind==='diagnostics'?<Diagnostics/>:route.kind==='settings'?<section><h1>Settings</h1><div className="profile-edit-preview"><Portrait profile={profile}/><div><h2>{profile.name}</h2><p>{profile.mode==='local'?'Local profile · shared streaming account':'Stremio profile · linked account'}</p></div></div><div className="controls"><Btn id="settings-profiles" onClick={onSwitch}>Switch or manage profiles</Btn>{profile.mode==='stremio'&&<Btn id="sign-out" onClick={()=>setConfirmSignOut(true)}>Sign out of Stremio</Btn>}</div>
+ {confirmSignOut&&<section className="playback-preview"><h2>Sign out of this account?</h2><p>Your profile and local history will remain. Local profiles using this account will need it relinked.</p><Btn id="cancel-sign-out" onClick={()=>setConfirmSignOut(false)}>Cancel</Btn><Btn id="confirm-sign-out" onClick={onSignOut}>Sign out</Btn></section>}
+ <h2>Local storage</h2><p>{storage}</p><p>Launch count: {state.visits}</p><p className="muted">Playback progress and source memory are separate for each profile. Stremio library sync arrives in the next milestone.</p></section>:activeDetail?<TitleDetails key={titleKey(activeDetail)} title={activeDetail} loading={detailLoading} onPlay={startPlayer}/>:<p>{loading?'Loading catalogues…':'Title not available. Return to Home and refresh.'}</p>}
  </main>}
  </div>{playing&&<Player intent={playing.intent} addons={addons} account={playing.account} onExit={closePlayer}/>}</>;
 }
@@ -246,4 +208,4 @@ function Diagnostics(){
  <p aria-live="polite">{media}</p><p className="muted">Browser and simulator results do not guarantee TV decoder compatibility.</p>
  </div></div></section>;
 }
-createRoot(document.getElementById('root')!).render(<App/>);
+createRoot(document.getElementById('root')!).render(<ProfileGate renderApp={(profile,token,namespace,onSwitch,onSignOut,onExpired)=><App key={profile.id} profile={profile} token={token} namespace={namespace} onSwitch={onSwitch} onSignOut={onSignOut} onExpired={onExpired}/>}/>);

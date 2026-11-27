@@ -1,3 +1,11 @@
+# Tarn webOS — 0.4.0-dev.1
+
+Profile management: maximum five profiles, independent Stremio accounts or local profiles sharing an owner's login, profile names/colours/initials, gallery from existing Android avatar metadata, optional four-digit PIN, profile picker on launch and switching, rename/edit/delete, owner relinking and sign-out. Local progress and source memory now use unique profile IDs. The old single login is moved transactionally into a default profile; on first selection existing account-scoped progress and source memory are copied without overwriting newer profile records. If identity or storage fails, migration can be retried. Legacy history remains as a backup. No new npm dependencies.
+
+Update with git pull --ff-only origin feature/webos-client, npm.cmd run typecheck, npm.cmd test, npm.cmd run build. Reopen dist using LG Simulator. Verify the migrated account and resume point before creating new profiles. Test local and separately linked profiles, PIN entry/edit/delete, owner dependency protection, sign-out/relink, avatar gallery, five-profile limit, restart persistence, playback and subtitle regression. The four-digit PIN is a local household UI lock, not secure credential encryption.
+
+Deferred: QR phone upload (requires different webOS transfer mechanism), opt-in stream add-on lending between independently linked accounts, cloud library sync/Continue Watching and full settings parity. Android avatar images are remote references and can fail to load; initials remain available. No Android modifications.
+
 # Tarn webOS — 0.3.0-dev.2
 
 Playback fixes: remembers the last successfully played source for the exact movie/episode/account; exact URL fingerprint, then unique release filename/label, then provider, then ordinary ranking. Resolves fresh links, never stores raw source URLs. External SRT/WebVTT subtitles use a text overlay synced to video time instead of blob-based native tracks; source-specific subtitle requests include available filename/size and fall back to generic requests. Embedded tracks are listed when the device exposes them. No new dependencies. Existing resume timestamps migrate naturally; previous build did not record source identity, so play a source successfully once to establish memory. Browser CORS or unsupported subtitle formats can still prevent downloads.
