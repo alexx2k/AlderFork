@@ -1,3 +1,7 @@
+# Tarn webOS — 0.3.0-dev.2
+
+Playback fixes: remembers the last successfully played source for the exact movie/episode/account; exact URL fingerprint, then unique release filename/label, then provider, then ordinary ranking. Resolves fresh links, never stores raw source URLs. External SRT/WebVTT subtitles use a text overlay synced to video time instead of blob-based native tracks; source-specific subtitle requests include available filename/size and fall back to generic requests. Embedded tracks are listed when the device exposes them. No new dependencies. Existing resume timestamps migrate naturally; previous build did not record source identity, so play a source successfully once to establish memory. Browser CORS or unsupported subtitle formats can still prevent downloads.
+
 # Tarn webOS — 0.3.0-dev.1
 
 Milestone 3 initial direct playback. Native HTML video, installed add-on stream resolution, conservative compatibility ranking, automatic fallback (up to three attempts), manual source selection, play/pause and seeking, external SRT/WebVTT subtitles, native audio-track selection where exposed, local movie/episode resume scoped to Stremio user ID. No playback history is written to Stremio yet. Numeric manifest version 0.3.0; development build, no release.

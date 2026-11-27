@@ -1,8 +1,8 @@
 import React,{useEffect,useRef,useState} from 'react';
 import type {PlaybackIntent} from './liveCatalogue.ts';
 import {jsonRequest} from './stremio.ts';
-import {rankSources,resolveStreams,resolveSubtitles,uniqueSubtitles,toVtt,seekPosition,Source,Subtitle,Resolution} from './playback.mjs';
-import {resumeFor,saveProgress} from './progress.ts';
+import {rankSources,resolveStreams,resolveSubtitles,uniqueSubtitles,parseCues,activeSubtitle,decodeSubtitle,preferResumeSource,seekPosition,Source,Subtitle,Resolution,SubtitleCue} from './playback.mjs';
+import {resumeFor,saveProgress,readSource,rememberSource} from './progress.ts';
 
 type AudioTrack={enabled:boolean;label?:string;language?:string};
 type AudioList={length:number;[index:number]:AudioTrack;addEventListener?:(type:string,fn:()=>void)=>void;removeEventListener?:(type:string,fn:()=>void)=>void};
@@ -33,7 +33,11 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
  const [subtitle,setSubtitle]=useState<Subtitle|null>(null);
  const [subtitleStatus,setSubtitleStatus]=useState('');
  const [audio,setAudio]=useState<{index:number;name:string;enabled:boolean}[]>([]);
- const [subtitleUrl,setSubtitleUrl]=useState('');
+ const [cues,setCues]=useState<SubtitleCue[]>([]);
+ const [caption,setCaption]=useState('');
+ const [embedded,setEmbedded]=useState<{index:number;label:string}[]>([]);
+ const [embeddedChoice,setEmbeddedChoice]=useState<number|null>(null);
+ const [subtitleLoading,setSubtitleLoading]=useState(false);
  const video=useRef<NativeVideo|null>(null);
  const last=useRef({position:resumeFor(account,intent),duration:0});
  const lastSaved=useRef(0);
@@ -61,14 +65,14 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
   attempted.current.add(index);tries.current++;failed.current=false;started.current=false;pendingSeek.current=null;
   const next={index,serial:++serial.current};current.current=next;
   setAttempt(next);setPanel(null);setPaused(true);setStatus('Opening '+activeSources.current[index].name+'…');
-  setSubtitle(null);setSubtitleStatus('');setAudio([]);
+  setSubtitle(null);setCues([]);setCaption('');setEmbedded([]);setEmbeddedChoice(null);setAddonSubs([]);setSubtitleStatus('');setAudio([]);
   requestAnimationFrame(()=>{if(current.current?.serial===next.serial&&document.activeElement===document.body)document.getElementById('player-toggle')?.focus();});
  };
  const fallback=(id:number,reason:string)=>{
   if(current.current?.serial!==id||failed.current)return;
   failed.current=true;cancelTimers();
   const v=video.current;
-  if(v&&started.current&&Number.isFinite(v.duration)&&v.duration>0){last.current={position:v.currentTime,duration:v.duration};persist();}
+  if(v&&started.current&&pendingSeek.current===null&&Number.isFinite(v.duration)&&v.duration>0){last.current={position:v.currentTime,duration:v.duration};persist();}
   const next=activeSources.current.findIndex((_,i)=>!attempted.current.has(i));
   if(tries.current<3&&next>=0){begin(next);return;}
   current.current=null;setAttempt(null);setPaused(true);setStatus(reason+' Choose another source or retry.');setPanel('sources');
@@ -79,10 +83,9 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
   tries.current=0;attempted.current.clear();
   resolveStreams(addons,intent,signal,jsonRequest).then(result=>{
    if(signal.aborted)return;
-   const ranked=rankSources(result.sources,capabilities());activeSources.current=ranked;setSources(ranked);setResolution(result);
+   const ranked=preferResumeSource(rankSources(result.sources,capabilities()),readSource(account,intent));activeSources.current=ranked;setSources(ranked);setResolution(result);
    if(ranked.length)begin(0,true);else setStatus(result.providers?'No directly playable sources found.':'No installed add-on advertises streams for this title.');
   }).catch(()=>{if(!signal.aborted)setStatus('Could not resolve sources. Retry or return to details.');});
-  resolveSubtitles(addons,intent,signal,jsonRequest).then(t=>{if(!signal.aborted)setAddonSubs(t);}).catch(()=>{});
   return()=>c.abort();
  },[revision]);
  useEffect(()=>{
@@ -103,14 +106,18 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
     if(target>0)try{pendingSeek.current=target;v.currentTime=target;}catch{pendingSeek.current=null;}
     setDuration(v.duration);setPosition(target);
    }
-   refreshAudio();
+   refreshAudio();refreshEmbedded();
   };
   const refreshAudio=()=>{
    if(!valid())return;
    const list=v.audioTracks;
    setAudio(list?Array.from({length:list.length},(_,index)=>({index,name:list[index].label||list[index].language||'Audio '+(index+1),enabled:list[index].enabled})):[]);
   };
-  const playing=()=>{if(!valid())return;started.current=true;cancelTimers();setPaused(false);setStatus('Playing');refreshAudio();};
+  const refreshEmbedded=()=>{
+   if(!valid())return;
+   setEmbedded(Array.from({length:v.textTracks.length},(_,index)=>({track:v.textTracks[index],index})).filter(x=>x.track.kind==='subtitles'||x.track.kind==='captions').map(x=>({index:x.index,label:x.track.label||x.track.language||'Embedded '+(x.index+1)})));
+  };
+  const playing=()=>{if(!valid())return;started.current=true;const successful=activeSources.current[attempt.index];if(successful)rememberSource(account,intent,successful);cancelTimers();setPaused(false);setStatus('Playing');refreshAudio();refreshEmbedded();};
   const pausedEvent=()=>{if(valid()){setPaused(true);if(started.current){cancelTimers();persist();}}};
   const tick=()=>{
    if(!valid()||!started.current||!Number.isFinite(v.duration)||v.duration<=0)return;
@@ -129,31 +136,51 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
   const listeners:[string,()=>void][]=[['seeked',seeked],['loadedmetadata',metadata],['playing',playing],['pause',pausedEvent],['timeupdate',tick],['waiting',waiting],['stalled',waiting],['ended',ended],['error',error]];
   listeners.forEach(([event,fn])=>v.addEventListener(event,fn));
   v.audioTracks?.addEventListener?.('change',refreshAudio);v.audioTracks?.addEventListener?.('addtrack',refreshAudio);
+  v.textTracks.addEventListener?.('addtrack',refreshEmbedded);v.textTracks.addEventListener?.('removetrack',refreshEmbedded);
   startClock();v.src=activeSources.current[attempt.index].url;v.load();play();
-  return()=>{alive=false;cancelTimers();listeners.forEach(([event,fn])=>v.removeEventListener(event,fn));v.audioTracks?.removeEventListener?.('change',refreshAudio);v.audioTracks?.removeEventListener?.('addtrack',refreshAudio);v.pause();v.removeAttribute('src');v.load();};
+  return()=>{alive=false;cancelTimers();listeners.forEach(([event,fn])=>v.removeEventListener(event,fn));v.audioTracks?.removeEventListener?.('change',refreshAudio);v.audioTracks?.removeEventListener?.('addtrack',refreshAudio);v.textTracks.removeEventListener?.('addtrack',refreshEmbedded);v.textTracks.removeEventListener?.('removetrack',refreshEmbedded);v.pause();v.removeAttribute('src');v.load();};
  },[attempt?.serial]);
  useEffect(()=>{const flush=()=>persist();window.addEventListener('pagehide',flush);document.addEventListener('visibilitychange',flush);return()=>{window.removeEventListener('pagehide',flush);document.removeEventListener('visibilitychange',flush);persist();};},[]);
  useEffect(()=>{
-  setSubtitleUrl('');
+  if(!attempt||!source){setAddonSubs([]);setSubtitleLoading(false);return;}
+  const c=new AbortController();setAddonSubs([]);setSubtitleLoading(true);
+  resolveSubtitles(addons,intent,c.signal,jsonRequest,source).then(t=>{if(!c.signal.aborted)setAddonSubs(t);}).catch(()=>{}).finally(()=>{if(!c.signal.aborted)setSubtitleLoading(false);});
+  return()=>c.abort();
+ },[attempt?.serial]);
+ useEffect(()=>{
+  setCues([]);setCaption('');
   if(!subtitle)return;
-  const c=new AbortController();let objectUrl='',active=true;const timeout=window.setTimeout(()=>{c.abort();if(active)setSubtitleStatus('Subtitle request timed out.');},15000);
-  setSubtitleStatus('Loading subtitles…');
+  const c=new AbortController();let active=true;const timeout=window.setTimeout(()=>{c.abort();if(active)setSubtitleStatus('Subtitle download timed out.');},15000);
+  setSubtitleStatus('Downloading subtitles…');
   (async()=>{
    try{
     const r=await fetch(subtitle.url,{signal:c.signal,credentials:'omit',referrerPolicy:'no-referrer'});
-    if(!r.ok)throw Error();
+    if(!r.ok){if(active)setSubtitleStatus('Subtitle server returned HTTP '+r.status+'. Try another track.');return;}
     const declared=Number(r.headers.get('content-length')||0);
-    if(declared>2*1024*1024)throw Error();
-    const text=await r.text();
-    if(text.length>2*1024*1024||c.signal.aborted)throw Error();
-    objectUrl=URL.createObjectURL(new Blob([toVtt(text)],{type:'text/vtt'}));
-    setSubtitleUrl(objectUrl);setSubtitleStatus('Subtitles enabled (if supported by this device).');
-   }catch{if(!c.signal.aborted)setSubtitleStatus('Subtitle unavailable or unsupported. Try another track.');}
+    if(declared>2*1024*1024){if(active)setSubtitleStatus('Subtitle file is too large.');return;}
+    const bytes=new Uint8Array(await r.arrayBuffer());
+    if(c.signal.aborted)return;
+    if(bytes.length>2*1024*1024){if(active)setSubtitleStatus('Subtitle file is too large.');return;}
+    try{
+     const parsed=parseCues(decodeSubtitle(bytes));
+     if(active&&!c.signal.aborted){setCues(parsed);setSubtitleStatus(parsed.length+' subtitle cues loaded.');}
+    }catch{if(active)setSubtitleStatus('Unsupported or empty subtitle file. Try another SRT/WebVTT track.');}
+   }catch{if(active&&!c.signal.aborted)setSubtitleStatus('Subtitle download failed (network or CORS). Try another track.');}
    finally{window.clearTimeout(timeout);}
   })();
-  return()=>{active=false;c.abort();window.clearTimeout(timeout);if(objectUrl)URL.revokeObjectURL(objectUrl);};
- },[subtitle]);
- useEffect(()=>{const v=video.current;if(!v)return;for(let i=0;i<v.textTracks.length;i++)v.textTracks[i].mode=subtitleUrl?'showing':'disabled';},[subtitleUrl,attempt?.serial]);
+  return()=>{active=false;c.abort();window.clearTimeout(timeout);};
+ },[subtitle,attempt?.serial]);
+ useEffect(()=>{
+  const v=video.current;if(!v||!cues.length){setCaption('');return;}
+  const update=()=>setCaption(activeSubtitle(cues,v.currentTime));
+  update();const timer=window.setInterval(update,150);
+  v.addEventListener('timeupdate',update);v.addEventListener('seeked',update);
+  return()=>{window.clearInterval(timer);v.removeEventListener('timeupdate',update);v.removeEventListener('seeked',update);};
+ },[cues,attempt?.serial]);
+ useEffect(()=>{
+  const v=video.current;if(!v)return;
+  for(let i=0;i<v.textTracks.length;i++){const t=v.textTracks[i];if(t.kind==='subtitles'||t.kind==='captions')t.mode=embeddedChoice===i?'showing':'disabled';}
+ },[embeddedChoice,embedded,attempt?.serial]);
  const toggle=()=>{
   const v=video.current;if(!v||!attempt)return;
   if(!v.paused){v.pause();return;}
@@ -171,14 +198,15 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
  const closePanel=()=>{const target=panel==='sources'?'player-sources':panel==='subtitles'?'player-subs':'player-audio';setPanel(null);requestAnimationFrame(()=>document.getElementById(target)?.focus());};
  const exit=()=>{persist();onExit();};
  return <main className="player-page">
-  <div className="player-video">{attempt&&source?<video key={attempt.serial} ref={video} playsInline preload="auto">{subtitleUrl&&<track key={subtitleUrl} kind="subtitles" src={subtitleUrl} srcLang={subtitle?.lang||'und'} label={subtitle?.label||'Subtitles'} default onError={()=>setSubtitleStatus('Device could not render this subtitle track.')}/>}</video>:<div className="player-empty"><h1>{intent.name}</h1><p>{status}</p></div>}</div>
+  <div className="player-video">{attempt&&source?<video key={attempt.serial} ref={video} playsInline preload="auto"/>:<div className="player-empty"><h1>{intent.name}</h1><p>{status}</p></div>}</div>
+  {caption&&!panel&&<div className="player-caption" aria-hidden="true"><span>{caption}</span></div>}
   <section className="player-controls"><div className="player-top"><h2>{intent.name}</h2><p aria-live="polite">{status}{source?' · '+source.provider:''}</p></div>
    <div className="player-progress"><span>{time(position)}</span><div className="progress-rail"><div style={{width:(duration>0?Math.max(0,Math.min(100,100*position/duration)):0)+'%'}}/></div><span>{time(duration)}</span></div>
    <div className="controls">{button('player-back','‹ Back',exit)}{button('player-rewind','−10 sec',()=>seek(-10),!attempt)}{button('player-toggle',paused?'▶ Play':'Ⅱ Pause',toggle,!attempt)}{button('player-forward','+10 sec',()=>seek(10),!attempt)}{button('player-sources','Sources ('+sources.length+')',()=>setPanel(panel==='sources'?null:'sources'))}{button('player-subs','Subtitles',()=>setPanel(panel==='subtitles'?null:'subtitles'),!attempt)}{button('player-audio','Audio',()=>setPanel(panel==='audio'?null:'audio'),!attempt)}{button('player-retry','Retry sources',retry)}</div>
   </section>
   {panel&&<section className="player-panel"><div className="player-panel-header"><h2>{panel==='sources'?'Sources':panel==='audio'?'Audio tracks':'Subtitles'}</h2>{button('player-close-panel','Close',closePanel)}</div>
    {panel==='sources'?<><p className="muted">Direct HTTP(S) sources only. Automatic playback tries up to three candidates.</p>{resolution&&<p className="muted">{resolution.providers} providers · {resolution.failures} failed · {resolution.excluded.torrent} torrent · {resolution.excluded.headers} header-dependent · {resolution.excluded.external} external · {resolution.excluded.other} other excluded</p>}
-    <div className="player-list">{sources.map((s,i)=><button key={i} id={'source-'+i} data-focus type="button" className={attempt?.index===i?'filter-active':''} onClick={()=>begin(i,true)}><strong>{s.name}</strong><small>{s.provider}{s.height?' · '+s.height+'p':''}{s.hevc?' · HEVC':''}{s.hdr?' · HDR/DV':''}{s.riskyAudio?' · audio compatibility uncertain':''}</small><small>{s.description}</small></button>)}</div>{!sources.length&&<p>No compatible direct sources to display.</p>}</>:panel==='audio'?<>{audio.length?audio.map(a=><button key={a.index} id={'audio-'+a.index} data-focus type="button" className={a.enabled?'filter-active':''} onClick={()=>selectAudio(a.index)}>{a.name}</button>):<p>This device does not expose selectable native audio tracks.</p>}</>:<><div className="player-list">{button('subtitle-off','Off',()=>{setSubtitle(null);setSubtitleStatus('Subtitles off.');})}{tracks.map((t,i)=><button key={i} id={'subtitle-'+i} data-focus type="button" className={subtitle?.url===t.url?'filter-active':''} onClick={()=>setSubtitle(t)}>{t.label} · {t.provider}</button>)}</div><p aria-live="polite">{subtitleStatus||(!tracks.length?'No external subtitles available.':'External SRT/WebVTT. Embedded tracks depend on the device.')}</p></>}
+    <div className="player-list">{sources.map((s,i)=><button key={i} id={'source-'+i} data-focus type="button" className={attempt?.index===i?'filter-active':''} onClick={()=>begin(i,true)}><strong>{s.name}</strong><small>{s.provider}{s.height?' · '+s.height+'p':''}{s.hevc?' · HEVC':''}{s.hdr?' · HDR/DV':''}{s.riskyAudio?' · audio compatibility uncertain':''}</small><small>{s.description}</small></button>)}</div>{!sources.length&&<p>No compatible direct sources to display.</p>}</>:panel==='audio'?<>{audio.length?audio.map(a=><button key={a.index} id={'audio-'+a.index} data-focus type="button" className={a.enabled?'filter-active':''} onClick={()=>selectAudio(a.index)}>{a.name}</button>):<p>This device does not expose selectable native audio tracks.</p>}</>:<><div className="player-list">{button('subtitle-off','Off',()=>{setSubtitle(null);setCues([]);setCaption('');setEmbeddedChoice(null);setSubtitleStatus('Subtitles off.');})}{embedded.map(t=><button key={'embedded-'+t.index} id={'embedded-'+t.index} data-focus type="button" className={embeddedChoice===t.index?'filter-active':''} onClick={()=>{setSubtitle(null);setCues([]);setCaption('');setEmbeddedChoice(t.index);setSubtitleStatus('Native embedded subtitle selected.');}}>{t.label} · Embedded</button>)}{tracks.map((t,i)=><button key={i} id={'subtitle-'+i} data-focus type="button" className={subtitle?.url===t.url?'filter-active':''} onClick={()=>{setEmbeddedChoice(null);setCues([]);setCaption('');setSubtitle(previous=>previous?.url===t.url?{...t}:t);}}>{t.label} · {t.provider}</button>)}</div><p aria-live="polite">{subtitleStatus||(subtitleLoading?'Finding subtitles for this source…':!tracks.length&&!embedded.length?'No subtitle tracks available.':'External SRT/WebVTT rendered by Tarn. Embedded tracks depend on the device.')}</p></>}
   </section>}
  </main>;
 }

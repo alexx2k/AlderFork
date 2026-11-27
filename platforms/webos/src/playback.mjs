@@ -17,7 +17,7 @@ export function resourceAddons(descriptors,resource,intent){
   if(!declaration)continue;
   const r=obj(declaration),types=strings(r.types||m.types),prefixes=strings(typeof declaration==='string'?m.idPrefixes:r.idPrefixes);
   if(!types.includes(intent.type)||prefixes.length&&!prefixes.some(p=>intent.videoId.startsWith(p)))continue;
-  out.push({base:url.slice(0,-14),name:str(m.name)||str(m.id)||'Add-on'});
+  out.push({base:url.slice(0,-14),name:str(m.name)||str(m.id)||'Add-on',id:str(m.id)||str(m.name)||'Add-on'});
  }
  return out;
 }
@@ -31,7 +31,7 @@ export function parseSubtitles(raw,provider){
   return url?{url,lang:str(s.lang)||'und',label:str(s.lang)||'Unknown',provider}:null;
  }).filter(Boolean);
 }
-export function parseStreams(raw,provider){
+export function parseStreams(raw,provider,providerId=provider){
  if(!Array.isArray(obj(raw).streams))throw Error('Invalid stream response');
  const sources=[],excluded={torrent:0,headers:0,external:0,other:0};
  for(const value of raw.streams){
@@ -52,7 +52,7 @@ export function parseStreams(raw,provider){
   const riskyAudio=/truehd|\bdts(?:[ .-]?hd)?\b/.test(words);
   const cam=/\b(camrip|hdcam|hdts|telesync|telecine|screener|dvdscr)\b/.test(words);
   if(cam){excluded.other++;continue;}
-  sources.push({url,provider,name,description,height,hevc,av1,hdr,riskyAudio,subtitles:parseSubtitles(s.subtitles,provider)});
+  sources.push({url,provider,providerId,name,description,height,hevc,av1,hdr,riskyAudio,filename:str(h.filename),size,subtitles:parseSubtitles(s.subtitles,provider)});
  }
  return {sources,excluded};
 }
@@ -70,7 +70,7 @@ export async function resolveStreams(descriptors,intent,signal,request){
  async function worker(){
   while(!signal.aborted&&cursor<addons.length){
    const i=cursor++,addon=addons[i];
-   try{results[i]=parseStreams(await request(resourceUrl(addon,'stream',intent),{},signal),addon.name);}
+   try{results[i]=parseStreams(await request(resourceUrl(addon,'stream',intent),{},signal),addon.name,addon.id);}
    catch{if(!signal.aborted)failures++;}
   }
  }
@@ -79,13 +79,19 @@ export async function resolveStreams(descriptors,intent,signal,request){
  for(const result of results){if(!result)continue;sources.push(...result.sources);for(const k of Object.keys(excluded))excluded[k]+=result.excluded[k];}
  return {sources,excluded,failures,providers:addons.length};
 }
-export async function resolveSubtitles(descriptors,intent,signal,request){
+export async function resolveSubtitles(descriptors,intent,signal,request,source){
  const addons=resourceAddons(descriptors,'subtitles',intent).slice(0,12);
  const out=[];let cursor=0;
  async function worker(){
   while(!signal.aborted&&cursor<addons.length){
    const addon=addons[cursor++];
-   try{const r=obj(await request(resourceUrl(addon,'subtitles',intent),{},signal));out.push(...parseSubtitles(r.subtitles,addon.name));}catch{}
+   try{
+    const base=resourceUrl(addon,'subtitles',intent),specific=subtitleResourceUrl(base,source);
+    let tracks=[];
+    try{const r=obj(await request(specific,{},signal));tracks=parseSubtitles(r.subtitles,addon.name);}catch{}
+    if(!tracks.length&&specific!==base&&!signal.aborted){const r=obj(await request(base,{},signal));tracks=parseSubtitles(r.subtitles,addon.name);}
+    if(!signal.aborted)out.push(...tracks);
+   }catch{}
   }
  }
  await Promise.all(Array.from({length:Math.min(4,addons.length)},worker));return out;
@@ -110,4 +116,67 @@ export function seekPosition(position,duration,delta){
 }
 export function progressKey(account,intent){
  return 'tarn.progress.v1:'+encodeURIComponent(account)+':'+encodeURIComponent(intent.type+'|'+intent.videoId);
+}
+
+// Store opaque matching keys, not expiring URLs, filenames, or provider credentials.
+function fingerprint(value){
+ let a=2166136261,b=5381;
+ for(let i=0;i<value.length;i++){const c=value.charCodeAt(i);a=Math.imul(a^c,16777619);b=Math.imul(b,33)^c;}
+ return (a>>>0).toString(16)+':'+(b>>>0).toString(16);
+}
+export function sourceIdentity(s){
+ const provider=fingerprint(s.providerId||s.provider);
+ const filename=s.filename?fingerprint(provider+'|'+s.filename.trim().toLowerCase()+'|'+(s.size||0)):'';
+ const label=fingerprint(provider+'|'+s.name+'|'+s.description+'|'+(s.size||0));
+ return {provider,exact:fingerprint(s.url),filename,label};
+}
+export function preferResumeSource(sources,saved){
+ if(!saved)return sources;
+ const entries=sources.map((s,i)=>({i,key:sourceIdentity(s)}));
+ let found=entries.find(e=>e.key.exact===saved.exact&&e.key.provider===saved.provider);
+ if(!found&&saved.filename){const matches=entries.filter(e=>e.key.filename===saved.filename&&e.key.provider===saved.provider);if(matches.length===1)found=matches[0];}
+ if(!found){const matches=entries.filter(e=>e.key.label===saved.label&&e.key.provider===saved.provider);if(matches.length===1)found=matches[0];}
+ if(!found)found=entries.find(e=>e.key.provider===saved.provider);
+ return found?[sources[found.i],...sources.filter((_,i)=>i!==found.i)]:sources;
+}
+export function subtitleResourceUrl(base,source){
+ const extras=[];
+ if(source&&Number.isFinite(source.size)&&source.size>0)extras.push('videoSize='+Math.floor(source.size));
+ if(source&&source.filename)extras.push('filename='+encodeURIComponent(source.filename));
+ return extras.length?base.slice(0,-5)+'/'+extras.join('&')+'.json':base;
+}
+function cueTime(value){
+ const parts=value.replace(',','.').split(':').map(Number);
+ if(parts.some(n=>!Number.isFinite(n)))return NaN;
+ return parts.length===3?parts[0]*3600+parts[1]*60+parts[2]:parts.length===2?parts[0]*60+parts[1]:NaN;
+}
+function cueText(value){
+ return value.replace(/<[^>]*>/g,'').replace(/&(?:amp|lt|gt|quot|apos|nbsp|lrm|rlm);/g,s=>({'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&apos;':"'",'&nbsp;':' ','&lrm;':'\u200e','&rlm;':'\u200f'})[s]).trim();
+}
+export function parseCues(text){
+ const input=String(text).replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n').trim(),out=[];
+ const stamp='(?:\\d{1,3}:)?\\d{2}:\\d{2}[,.]\\d{3}';
+ const timing=new RegExp('^\\s*('+stamp+')\\s+-->\\s+('+stamp+')(?:\\s.*)?$');
+ for(const block of input.split(/\n[ \t]*\n/)){
+  const lines=block.split('\n');
+  if(/^(NOTE|STYLE|REGION)(?:\s|$)/.test(lines[0]))continue;
+  const i=lines.findIndex(line=>timing.test(line));
+  if(i<0)continue;
+  const match=lines[i].match(timing),start=cueTime(match[1]),end=cueTime(match[2]),value=cueText(lines.slice(i+1).join('\n'));
+  if(Number.isFinite(start)&&Number.isFinite(end)&&end>start&&value)out.push({start,end,text:value});
+ }
+ if(!out.length)throw Error('No supported subtitle cues');
+ return out.sort((a,b)=>a.start-b.start||a.end-b.end);
+}
+export function activeSubtitle(cues,seconds){
+ if(!Number.isFinite(seconds))return '';
+ // Typical subtitle lists are small. Stop once the next cue starts in the future.
+ const lines=[];
+ for(const cue of cues){if(cue.start>seconds)break;if(seconds<cue.end)lines.push(cue.text);}
+ return lines.join('\n');
+}
+export function decodeSubtitle(bytes){
+ if(bytes[0]===255&&bytes[1]===254)return new TextDecoder('utf-16le').decode(bytes);
+ if(bytes[0]===254&&bytes[1]===255)return new TextDecoder('utf-16be').decode(bytes);
+ try{return new TextDecoder('utf-8',{fatal:true}).decode(bytes);}catch{return new TextDecoder('windows-1252').decode(bytes);}
 }
