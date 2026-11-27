@@ -142,7 +142,7 @@ export async function loadDetails(descriptors:unknown[],title:Title,signal:Abort
    if(!Object.keys(m).length)continue;
    const t=normaliseTitle({...m,id:title.id,type:title.type,name:string(m.name)||title.name},title.type);
    if(t){
-    best={...best,...t,name:best===title?t.name:best.name,year:best.year||t.year,genre:best.genre||t.genre,description:best.description||t.description,poster:t.poster||best.poster,background:t.background||best.background,rating:best.rating||t.rating,runtime:best.runtime||t.runtime,cast:best.cast?.length?best.cast:t.cast,episodes:best.episodes?.length?best.episodes:t.episodes};
+    best={...best,...t,name:best===title?t.name:best.name,year:best===title?t.year||best.year:best.year||t.year,genre:best===title?t.genre||best.genre:best.genre||t.genre,description:best===title?t.description||best.description:best.description||t.description,poster:t.poster||best.poster,background:t.background||best.background,rating:best.rating||t.rating,runtime:best.runtime||t.runtime,cast:best.cast?.length?best.cast:t.cast,episodes:best.episodes?.length?best.episodes:t.episodes};
     if(best.type==='movie'||best.episodes?.length)return best;
    }
   }catch{}
