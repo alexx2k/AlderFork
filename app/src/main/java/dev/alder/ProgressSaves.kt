@@ -14,6 +14,10 @@ internal object ProgressSaves {
         prefs = context.getSharedPreferences("pending_progress", Context.MODE_PRIVATE)
     }
 
+    internal fun init(store: SharedPreferences?) {
+        prefs = store
+    }
+
     private fun prefix(authKey: String) = MessageDigest.getInstance("SHA-256").digest(authKey.toByteArray())
         .joinToString("") { "%02x".format(it) } + "/"
 
@@ -23,8 +27,16 @@ internal object ProgressSaves {
         val key = prefix(authKey) + item.getString("_id")
         val old = store.getString(key, null)?.let(::JSONObject)
         if (old == null || item.optString("_mtime") >= old.optString("_mtime")) {
-            if (provisional) item.put("alderProvisional", true)
-            store.edit().putString(key, item.toString()).apply()
+            val saved = JSONObject(item.toString())
+            if (provisional) saved.put("alderProvisional", true)
+            if (provisional || saved.optBoolean("alderProvisional")) {
+                val (mergedWatched, _) = Library.mergeWatchedBitfields(
+                    old?.optJSONObject("state")?.text("watched"),
+                    saved.optJSONObject("state")?.text("watched"),
+                )
+                if (mergedWatched != null) saved.state.put("watched", mergedWatched)
+            }
+            store.edit().putString(key, saved.toString()).apply()
         }
     }
 
@@ -59,18 +71,30 @@ internal fun newerProgress(local: JSONObject, remote: JSONObject?) =
 /** If playback started without a library item, apply its progress to the real item when it becomes available. */
 internal fun applyProgress(checkpoint: JSONObject, remote: JSONObject?): JSONObject {
     val local = JSONObject(checkpoint.toString())
-    if (local.remove("alderProvisional") != true || remote == null) return local
+    if (local.optBoolean("alderProvisional") != true) return local
+    if (remote == null) return local
+    local.remove("alderProvisional")
+    if (local.optString("_mtime") <= remote.optString("_mtime")) return JSONObject(remote.toString())
     val merged = JSONObject(remote.toString())
+    merged.put("_mtime", local.optString("_mtime"))
+    val progress = local.optJSONObject("state") ?: return merged
+    val sameVideo = Library.savedVideoId(local) == Library.savedVideoId(merged)
     val state = merged.state
-    val progress = local.state
-    val sameVideo = Library.savedVideoId(local) == Library.savedVideoId(remote)
+    val alreadyWatched = sameVideo && state.optInt("flaggedWatched") != 0
+    val flaggedWatched = progress.optInt("flaggedWatched")
+    val (mergedWatched, addedWatched) = Library.mergeWatchedBitfields(state.text("watched"), progress.text("watched"))
+    val completedOffline = flaggedWatched != 0 || progress.optInt("timesWatched") > 0 || addedWatched > 0
     val played = progress.optLong("overallTimeWatched")
     for (field in listOf("video_id", "timeOffset", "duration", "lastWatched")) state.put(field, progress.opt(field))
     state.put("timeWatched", (if (sameVideo) state.optLong("timeWatched") else 0L) + progress.optLong("timeWatched"))
     state.put("overallTimeWatched", state.optLong("overallTimeWatched") + played)
-    val watched = progress.optInt("flaggedWatched")
-    val alreadyWatched = sameVideo && state.optInt("flaggedWatched") != 0
-    if (!alreadyWatched) state.put("flaggedWatched", watched)
-    if (!alreadyWatched && watched != 0) state.put("timesWatched", state.optInt("timesWatched") + 1)
-    return merged.put("_mtime", local.getString("_mtime"))
+    if (mergedWatched != null) state.put("watched", mergedWatched)
+    if (!alreadyWatched) state.put("flaggedWatched", flaggedWatched)
+    val addedWatches = when {
+        !alreadyWatched && completedOffline -> maxOf(1, progress.optInt("timesWatched"), addedWatched)
+        alreadyWatched && addedWatched > 0 -> addedWatched
+        else -> 0
+    }
+    if (addedWatches > 0) state.put("timesWatched", state.optInt("timesWatched") + addedWatches)
+    return merged
 }

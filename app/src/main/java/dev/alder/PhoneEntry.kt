@@ -8,6 +8,10 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.net.URLDecoder
 import java.security.SecureRandom
+import java.util.concurrent.SynchronousQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * A one-box web page a phone opens from a QR code, for text too long to type with a remote (an API key). It answers
@@ -17,6 +21,10 @@ import java.security.SecureRandom
 internal class PhoneEntry(private val page: (saved: Boolean) -> String, private val got: (String) -> Unit) : AutoCloseable {
     val path = "/" + (1..8).map { ALPHABET[random.nextInt(ALPHABET.length)] }.joinToString("")
     private val server = ServerSocket(0)
+    private val delivered = AtomicBoolean(false)
+    private val workers = ThreadPoolExecutor(
+        0, MAX_WORKERS, 30L, TimeUnit.SECONDS, SynchronousQueue()
+    ) { r -> Thread(r, "phone-entry-worker").apply { isDaemon = true } }
     val port get() = server.localPort
 
     /** The address for the QR, or null when the TV has no home-network address (then type it on the TV). */
@@ -26,12 +34,17 @@ internal class PhoneEntry(private val page: (saved: Boolean) -> String, private 
         Thread({
             while (!server.isClosed) {
                 val socket = runCatching { server.accept() }.getOrNull() ?: break
-                runCatching { socket.use(::answer) }
+                runCatching {
+                    workers.execute { runCatching { socket.use(::answer) } }
+                }.onFailure { runCatching { socket.close() } }
             }
         }, "phone-entry").apply { isDaemon = true }.start()
     }
 
-    override fun close() = runCatching { server.close() }.let {}
+    override fun close() {
+        runCatching { server.close() }
+        workers.shutdown()
+    }
 
     private fun answer(socket: Socket) {
         socket.soTimeout = 10_000
@@ -41,9 +54,11 @@ internal class PhoneEntry(private val page: (saved: Boolean) -> String, private 
         val length = Regex("(?im)^content-length:\\s*(\\d+)").find(head)?.groupValues?.get(1)?.toIntOrNull() ?: 0
         val body = if (length in 1..MAX_BODY) String(ByteArray(length).also { DataInputStream(input).readFully(it) }, Charsets.UTF_8) else ""
         val typed = if (method == "POST") formValue(body, "text")?.trim()?.takeIf { it.isNotEmpty() } else null
+        val accepted = target == path && typed != null && delivered.compareAndSet(false, true)
         val (status, html) = when {
             target != path -> "404 Not Found" to ""
-            typed != null -> "200 OK" to page(true)
+            accepted -> "200 OK" to page(true)
+            typed != null -> "404 Not Found" to ""
             else -> "200 OK" to page(false)
         }
         val bytes = html.toByteArray(Charsets.UTF_8)
@@ -53,7 +68,7 @@ internal class PhoneEntry(private val page: (saved: Boolean) -> String, private 
             write(bytes)
             flush()
         }
-        if (typed != null && target == path) { got(typed); close() }
+        if (accepted) { close(); got(typed!!) }
     }
 
     // ponytail: byte-at-a-time header read, fine for one request from one phone.
@@ -72,6 +87,7 @@ internal class PhoneEntry(private val page: (saved: Boolean) -> String, private 
         const val ALPHABET = "abcdefghjkmnpqrstuvwyz23456789"
         const val MAX_HEAD = 8_192
         const val MAX_BODY = 4_096
+        const val MAX_WORKERS = 8
         val random = SecureRandom()
     }
 }

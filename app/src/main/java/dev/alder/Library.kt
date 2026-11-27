@@ -1,12 +1,18 @@
 package dev.alder
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.SharedPreferences
 import android.util.Base64
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
-import java.util.zip.InflaterInputStream
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import java.util.zip.Deflater
+import java.util.zip.DeflaterOutputStream
+import java.util.zip.InflaterInputStream
 
 /**
  * Stremio library items (each title's watch history), following stremio-core's player rules so progress made
@@ -44,6 +50,15 @@ object Library {
     /** Adds the title to the library or takes it out; its watch history stays either way. */
     fun setInList(item: JSONObject, on: Boolean) {
         item.put("removed", !on).put("temp", false).put("_mtime", now())
+    }
+
+    internal fun listDates(context: Context, profileId: String): SharedPreferences =
+        context.getSharedPreferences("list_dates:$profileId", Context.MODE_PRIVATE)
+
+    // shortcut: dates live on this device, sync them if Stremio provides a list-add timestamp.
+    internal fun recordListDate(dates: SharedPreferences, item: JSONObject) {
+        val id = item.getString("_id")
+        dates.edit().putString(id, item.text("_mtime").takeIf { inList(item) }).apply()
     }
 
     /** Marks the current title complete without discarding its watch history. */
@@ -90,28 +105,115 @@ object Library {
 
     private fun pastCredits(offset: Long, duration: Long) = duration > 0 && offset >= duration * CREDITS
 
+    private class WatchedBits(val anchor: String, val anchorLength: Int, val bits: ByteArray)
+
+    @SuppressLint("NewApi")
+    private fun decodeBase64(raw: String): ByteArray =
+        runCatching { Base64.decode(raw, Base64.DEFAULT) }.getOrNull()
+            ?: java.util.Base64.getMimeDecoder().decode(raw)
+
+    @SuppressLint("NewApi")
+    private fun encodeBase64(bytes: ByteArray): String =
+        runCatching { Base64.encodeToString(bytes, Base64.NO_WRAP) }.getOrNull()
+            ?: java.util.Base64.getEncoder().encodeToString(bytes)
+
+    private fun parseWatched(field: String?): WatchedBits? {
+        if (field.isNullOrBlank()) return null
+        val parts = field.split(":")
+        if (parts.size < 3) return null
+        return runCatching {
+            val anchor = parts.dropLast(2).joinToString(":") // ids may hold ':' themselves
+            val anchorLength = parts[parts.size - 2].toInt()
+            if (anchor.isEmpty() || anchorLength <= 0) return null
+            val bits = InflaterInputStream(decodeBase64(parts.last()).inputStream()).use { it.readBytes() }
+            WatchedBits(anchor, anchorLength, bits)
+        }.getOrNull()
+    }
+
+    private fun encodeBits(bits: ByteArray): String {
+        val zipped = ByteArrayOutputStream().also { out ->
+            DeflaterOutputStream(out, Deflater(6)).use { it.write(bits) }
+        }.toByteArray()
+        return encodeBase64(zipped)
+    }
+
+    private fun isBitSet(bits: ByteArray, index: Int): Boolean =
+        index >= 0 && index / 8 < bits.size && ((bits[index / 8].toInt() and 0xff) ushr (index % 8)) and 1 == 1
+
+    private fun setBit(bits: ByteArray, index: Int) {
+        if (index >= 0 && index / 8 < bits.size) {
+            bits[index / 8] = (bits[index / 8].toInt() or (1 shl (index % 8))).toByte()
+        }
+    }
+
+    private fun highestSetBit(bits: ByteArray): Int {
+        for (i in bits.size * 8 - 1 downTo 0) if (isBitSet(bits, i)) return i
+        return -1
+    }
+
+    /**
+     * Merges two stremio-core watched bitfields (`{anchor}:{anchorLength}:{base64Zlib}`) without needing the full
+     * episode list, returning `(mergedBitfield, newlyMarkedCount)`.
+     */
+    internal fun mergeWatchedBitfields(remoteWatched: String?, localWatched: String?): Pair<String?, Int> {
+        if (localWatched.isNullOrBlank()) return remoteWatched to 0
+        if (remoteWatched.isNullOrBlank()) {
+            val count = parseWatched(localWatched)?.bits?.sumOf { Integer.bitCount(it.toInt() and 0xff) } ?: 1
+            return localWatched to maxOf(1, count)
+        }
+        if (remoteWatched == localWatched) return remoteWatched to 0
+        val remote = parseWatched(remoteWatched) ?: return localWatched to 1
+        val local = parseWatched(localWatched) ?: return localWatched to 1
+
+        val shift = when {
+            remote.anchor == local.anchor -> local.anchorLength - remote.anchorLength
+            else -> {
+                val rEp = episodeNumbers(remote.anchor)
+                val lEp = episodeNumbers(local.anchor)
+                if (rEp != null && lEp != null && rEp.first == lEp.first) {
+                    (local.anchorLength - (lEp.second - rEp.second)) - remote.anchorLength
+                } else 0
+            }
+        }
+        val remoteShift = maxOf(0, shift)
+        val localShift = maxOf(0, -shift)
+        val rLen = remote.anchorLength + remoteShift
+        val lLen = local.anchorLength + localShift
+        val maxBit = maxOf(
+            highestSetBit(remote.bits) + remoteShift,
+            highestSetBit(local.bits) + localShift,
+            rLen - 1,
+            lLen - 1,
+        )
+        val out = ByteArray((maxBit + 8) / 8)
+        for (i in 0 until remote.bits.size * 8) {
+            if (isBitSet(remote.bits, i)) setBit(out, i + remoteShift)
+        }
+        var addedBits = 0
+        for (i in 0 until local.bits.size * 8) {
+            if (isBitSet(local.bits, i)) {
+                val target = i + localShift
+                if (!isBitSet(remote.bits, target - remoteShift)) addedBits++
+                setBit(out, target)
+            }
+        }
+        if (addedBits == 0) return remoteWatched to 0
+        val (anchor, len) = if (lLen >= rLen) local.anchor to lLen else remote.anchor to rLen
+        return "$anchor:$len:${encodeBits(out)}" to addedBits
+    }
+
     /**
      * The episodes Stremio has ticked as watched, read from stremio-core's watched bitfield (`state.watched`):
      * `{anchor video id}:{anchor length}:{base64 zlib bits}`, one bit per episode in season-then-episode order, shifted
      * so the anchor (the last one watched) lines up even after new episodes come out.
      */
     fun watched(item: JSONObject?, videos: List<Video>): Set<String> {
-        val field = item?.optJSONObject("state")?.text("watched") ?: return emptySet()
-        val parts = field.split(":")
-        if (parts.size < 3) return emptySet()
-        return runCatching {
-            val bits = InflaterInputStream(Base64.decode(parts.last(), Base64.DEFAULT).inputStream()).readBytes()
-            val anchorLength = parts[parts.size - 2].toInt()
-            val anchor = parts.dropLast(2).joinToString(":") // ids may hold ':' themselves
-            val ids = videos.sortedWith(compareBy({ it.season }, { it.episode })).map { it.id }
-            val anchorAt = ids.indexOf(anchor)
-            if (anchorAt < 0) return emptySet() // stremio-core: anchor gone, nothing counts as watched
-            val offset = anchorLength - anchorAt - 1
-            ids.filterIndexed { i, _ ->
-                val bit = i + offset
-                bit >= 0 && bit < ids.size && bit / 8 < bits.size && (bits[bit / 8].toInt() shr (bit % 8)) and 1 == 1
-            }.toSet()
-        }.getOrDefault(emptySet())
+        val parsed = parseWatched(item?.optJSONObject("state")?.text("watched")) ?: return emptySet()
+        val ids = videos.sortedWith(compareBy({ it.season }, { it.episode })).map { it.id }
+        val anchorAt = ids.indexOf(parsed.anchor)
+        if (anchorAt < 0) return emptySet() // stremio-core: anchor gone, nothing counts as watched
+        val offset = parsed.anchorLength - anchorAt - 1
+        return ids.filterIndexed { i, _ -> isBitSet(parsed.bits, i + offset) }.toSet()
     }
 
     /** Sets the watched episodes in stremio-core's bitfield, removing it if [seen] is empty. */
@@ -124,16 +226,13 @@ object Library {
             return
         }
         val bits = ByteArray((ids.size + 7) / 8)
-        ids.forEachIndexed { i, id -> if (id in active) bits[i / 8] = (bits[i / 8].toInt() or (1 shl (i % 8))).toByte() }
+        ids.forEachIndexed { i, id -> if (id in active) setBit(bits, i) }
         val last = ids.indexOfLast { it in active }.takeIf { it >= 0 } ?: run {
             item.state.remove("watched")
             item.put("_mtime", now())
             return
         }
-        val zipped = java.io.ByteArrayOutputStream().also { out ->
-            java.util.zip.DeflaterOutputStream(out, java.util.zip.Deflater(6)).use { it.write(bits) }
-        }.toByteArray()
-        item.state.put("watched", "${ids[last]}:${last + 1}:${Base64.encodeToString(zipped, Base64.NO_WRAP)}")
+        item.state.put("watched", "${ids[last]}:${last + 1}:${encodeBits(bits)}")
         item.put("_mtime", now())
     }
 
@@ -173,6 +272,38 @@ object Library {
     fun nextEpisodeAfterSeason(videos: List<Video>, season: Int): Video? {
         val sorted = videos.sortedWith(compareBy({ it.season }, { it.episode }))
         return sorted.firstOrNull { it.season > season }
+    }
+
+    /**
+     * The count on a series poster's badge, or 0 when the title is a movie, has notifications muted (`noNotif`),
+     * or has no watched episodes yet. [mode] is [Settings.episodeBadges]:
+     * - `aired`: unwatched episodes released after the title was last watched, as Stremio's notifications count.
+     * - `season`: aired episodes left in the season of the next unwatched episode, so a long show never shows +200.
+     * - `off`: always 0.
+     */
+    fun newEpisodeCount(item: JSONObject, videos: List<Video>, mode: String, isAired: (String?) -> Boolean): Int =
+        newEpisodeCount(item.optString("type"), item.state.optBoolean("noNotif"), watched(item, videos), videos, mode,
+            item.state.text("lastWatched").orEmpty(), isAired)
+
+    internal fun newEpisodeCount(
+        type: String,
+        noNotif: Boolean,
+        seen: Set<String>,
+        videos: List<Video>,
+        mode: String,
+        lastWatched: String,
+        isAired: (String?) -> Boolean,
+    ): Int {
+        if (mode == "off" || type == "movie" || noNotif || seen.isEmpty()) return 0
+        val aired = videos.filter { it.season > 0 && isAired(it.released) }
+            .sortedWith(compareBy({ it.season }, { it.episode }))
+        val lastSeen = aired.indexOfLast { it.id in seen }
+        if (lastSeen < 0) return 0
+        val after = aired.drop(lastSeen + 1)
+        if (mode == "season") return after.count { it.season == after.first().season }.takeIf { after.isNotEmpty() } ?: 0
+        // Both are ISO 8601 in UTC, so text order is time order.
+        if (lastWatched.isEmpty()) return 0
+        return after.count { !it.released.isNullOrBlank() && it.released > lastWatched }
     }
 
     /** Playback progress, called every few seconds. [playedMs] is time actually watched since the last call. */

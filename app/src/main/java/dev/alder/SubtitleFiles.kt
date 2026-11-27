@@ -19,12 +19,20 @@ import java.util.zip.ZipInputStream
 internal object SubtitleFiles {
     class Ready(val file: File, val mimeType: String)
 
+    private const val MAX_SUBTITLE = 16 * 1024 * 1024 // a film's subtitle is under 1 MB; a packed file can't open to more
+
     /** Blocks on the network: off the main thread. */
     fun prepare(dir: File, sub: Subtitle): Ready {
-        val name = "sub-" + Integer.toHexString(sub.url.hashCode())
-        File(dir, "$name.txt").takeIf { it.exists() }?.let { return Ready(it, mimeOf(it.readText())) }
+        val name = "sub-" + java.security.MessageDigest.getInstance("SHA-256").digest(sub.url.toByteArray())
+            .joinToString("") { "%02x".format(it) }.take(32)
+        File(dir, "$name.txt").takeIf { it.exists() }?.let { it.setLastModified(System.currentTimeMillis()); return Ready(it, mimeOf(it.readText())) }
         val text = decode(unpack(Http.bytes(sub.url, strict = true)), sub.lang)
-        val file = File(dir, "$name.txt").apply { parentFile?.mkdirs(); writeText(text) }
+        dir.mkdirs()
+        // Files not used for a week go; a new one is written whole, then named, so a cut write is never served.
+        val weekAgo = System.currentTimeMillis() - 7 * 24 * 3600_000L
+        dir.listFiles()?.filter { it.name.startsWith("sub-") && it.lastModified() < weekAgo }?.forEach { it.delete() }
+        val file = File(dir, "$name.txt")
+        File.createTempFile(name, ".tmp", dir).apply { writeText(text); if (!renameTo(file)) { delete(); error("subtitle not saved") } }
         return Ready(file, mimeOf(text))
     }
 
@@ -34,10 +42,10 @@ internal object SubtitleFiles {
             ZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
                 generateSequence { zip.nextEntry }.firstOrNull { e ->
                     !e.isDirectory && e.name.substringAfterLast('.').lowercase() in setOf("srt", "vtt", "ass", "ssa")
-                }?.let { zip.readBytes() } ?: error("no subtitle in the archive")
+                }?.let { zip.readLimited(MAX_SUBTITLE) } ?: error("no subtitle in the archive")
             }
         bytes.size > 2 && bytes[0] == 0x1f.toByte() && bytes[1] == 0x8b.toByte() ->
-            GZIPInputStream(ByteArrayInputStream(bytes)).use { it.readBytes() }
+            GZIPInputStream(ByteArrayInputStream(bytes)).use { it.readLimited(MAX_SUBTITLE) }
         else -> bytes
     }
 
@@ -49,7 +57,7 @@ internal object SubtitleFiles {
             Charsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
                 .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString()
         } catch (e: CharacterCodingException) { null }
-        return (utf8 ?: String(bytes, legacy(lang))).removePrefix("﻿")
+        return (utf8 ?: String(bytes, legacy(lang))).removePrefix("\uFEFF")
     }
 
     // ponytail: by language, not by reading the bytes (no detector library); right for the files add-ons serve.

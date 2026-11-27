@@ -100,7 +100,10 @@ object Updates {
             try {
                 // Timeouts: a stalled download used to wait forever with no word. A short file (a dropped connection)
                 // is refused here, before Android's installer calls it a package it can't parse.
+                // Only Alder's own GitHub releases, over https; Android's same-key check is the second guard.
+                if (!release.apk.startsWith("https://github.com/")) throw java.io.IOException("not a GitHub download")
                 val c = URL(release.apk).openConnection() as java.net.HttpURLConnection
+                c.useCaches = false // 30 MB that would push pictures out of the response cache
                 c.connectTimeout = 15_000
                 c.readTimeout = 30_000
                 if (c.responseCode !in 200..299) throw java.io.IOException("HTTP ${c.responseCode}")

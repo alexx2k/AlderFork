@@ -19,20 +19,22 @@ object Images {
     // the budget to the device, so switching pages shows them from memory. Full-screen art (8 MB a picture at 1080p) has a store of its own: sharing one, a few arts pushed out every poster,
     // so a page seen a moment ago drew blank tiles again. Posters: a quarter (48 MB here, about three pages); art: a
     // sixth (32 MB, the art on screen, the one fading out and the neighbours fetched ahead).
-    private fun store(budget: Long) = object : LruCache<String, Bitmap>(budget.toInt()) {
+    private fun store(budget: Long) = object : LruCache<String, Bitmap>(budget.coerceIn(1L, Int.MAX_VALUE.toLong()).toInt()) {
         override fun sizeOf(key: String, value: Bitmap) = value.byteCount
     }
-    private val cards = store(Runtime.getRuntime().maxMemory() / 4)
-    private val screens = store(Runtime.getRuntime().maxMemory() / 6)
+    // On API 23-25 bitmaps live in the Java heap instead of GPU memory, so halve the cache share there.
+    private val softwareBitmaps = android.os.Build.VERSION.SDK_INT < 26
+    private val cards = store(Runtime.getRuntime().maxMemory() / if (softwareBitmaps) 8 else 4)
+    private val screens = store(Runtime.getRuntime().maxMemory() / if (softwareBitmaps) 12 else 6)
     private fun cache(widthPx: Int) = if (widthPx > 1000) screens else cards
     // Home asks only for posters near the screen and lets far ones go, so this pool and cache stay small.
-    private val pool = newestFirst(8)
+    /** Threads in the card pool: the first this many requests start at once, ahead of the newest-first queue. */
+    const val THREADS = 8
+    private val pool = newestFirst(THREADS)
     // The picture on screen right now (the full-screen art, a logo) skips the queue of cards loading behind it.
     private val urgentPool = newestFirst(2)
     // Art fetched ahead for where the remote may go next never holds up the cards on screen.
     private val aheadPool = newestFirst(2)
-    private val tmdb = Regex("""(image\.tmdb\.org/t/p/)(original|w1280)/""")
-    private val metahub = Regex("""(images\.metahub\.space/(?:poster|background)/)(small|medium)/""")
 
     /**
      * The latest request first: after racing along a row, the cards the remote stopped on load before the ones it
@@ -158,16 +160,12 @@ object Images {
      * at the small poster (about 150 px) and medium background (about 1000 px): soft on a TV once stretched. The large
      * copy is asked for instead, and the decode below scales it to the size shown.
      */
-    fun sharp(url: String) = url.replace(metahub, "$1large/")
+    fun sharp(url: String) = sharpImageUrl(url)
 
     /** The 16:9 art MetaHub keeps for an IMDb title, for places that have no art of their own (Watch Next). */
     fun backgroundFor(id: String) = id.takeIf { it.startsWith("tt") }?.let { "https://images.metahub.space/background/large/${it.substringBefore(':')}/img" }
 
-    // TMDB serves every picture in a few widths: a card needs the 780 px copy, not the 4K original (a tenth of the bytes).
-    fun sized(url: String, widthPx: Int): String {
-        val size = if (widthPx <= 780) "w780" else if (widthPx <= 1280) "w1280" else return sharp(url)
-        return sharp(url).replace(tmdb, "$1$size/")
-    }
+    fun sized(url: String, widthPx: Int) = sizedImageUrl(url, widthPx)
 
     // One copy per size: a card's small copy must never stand in for the full-screen art (it would be blurry).
     private fun key(url: String, widthPx: Int, look: Look? = null) = "$url#$widthPx" + (look?.name?.let { "#$it" } ?: "")
@@ -190,3 +188,16 @@ object Images {
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
     }
 }
+
+private val tmdb = Regex("""(image\.tmdb\.org/t/p/)(original|w1280)/""")
+private val metahub = Regex("""(images\.metahub\.space/(?:poster|background)/)(small|medium)/""")
+
+internal fun sharpImageUrl(url: String) = url.replace(metahub, "$1large/")
+
+/**
+ * TMDB serves every picture in a few widths: a card needs the 780 px copy, full-screen art the 1280 px one (as NuvioTV
+ * asks). Never the original: at 2-3 MB and 3840 px it took long to decode on the TV and filled the disk cache, pushing
+ * posters out so they downloaded again.
+ */
+internal fun sizedImageUrl(url: String, widthPx: Int) =
+    sharpImageUrl(url).replace(tmdb, "$1${if (widthPx <= 780) "w780" else "w1280"}/")

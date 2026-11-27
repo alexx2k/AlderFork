@@ -23,7 +23,9 @@ export default {
         "User-Agent": "alder-crash-worker", "Content-Type": "application/json" },
     });
     const q = encodeURIComponent(`repo:${REPO} is:issue is:open label:crash in:title "${title.replaceAll('"', "")}"`);
-    const same = (await (await gh(`/search/issues?q=${q}&per_page=1`)).json()).items?.[0];
+    const searchRes = await gh(`/search/issues?q=${q}&per_page=1`);
+    if (!searchRes.ok) return new Response(`github ${searchRes.status}`, { status: 502 });
+    const same = (await searchRes.json()).items?.[0];
     const res = same
       ? await gh(`/repos/${REPO}/issues/${same.number}/comments`, { method: "POST", body: JSON.stringify({ body: `Again on ${version}:\n\n${body}` }) })
       : await gh(`/repos/${REPO}/issues`, { method: "POST", body: JSON.stringify({ title, body, labels: ["crash"] }) });

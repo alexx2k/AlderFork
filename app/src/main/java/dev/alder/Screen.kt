@@ -44,7 +44,7 @@ class FadedArt(context: Context, private val bottomFrom: Float = 0.45f, private 
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         // Under the text (the left 60%) only a hint of the picture stays, so bright art can't fight the words.
-        left = LinearGradient(0f, 0f, w * 0.8f, 0f, intArrayOf(0x1F000000, 0x40000000, Color.BLACK), floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP)
+        left = LinearGradient(0f, 0f, w * 0.85f, 0f, intArrayOf(0x18000000, 0x38000000, 0xB3000000.toInt(), Color.BLACK), floatArrayOf(0f, 0.45f, 0.8f, 1f), Shader.TileMode.CLAMP)
         bottom = LinearGradient(0f, h * bottomFrom, 0f, h * bottomTo, intArrayOf(Color.BLACK, 0x59000000, 0), floatArrayOf(0f, 0.6f, 1f), Shader.TileMode.CLAMP)
     }
 
@@ -78,7 +78,7 @@ internal val GPU_BITMAP: Bitmap.Config = if (android.os.Build.VERSION.SDK_INT >=
 internal fun Bitmap.onGpu() = android.os.Build.VERSION.SDK_INT >= 26 && config == Bitmap.Config.HARDWARE
 /** This picture moved to GPU memory (Android 8+), the original recycled; older Android keeps it as it is. */
 internal fun Bitmap.toGpu(): Bitmap =
-    if (android.os.Build.VERSION.SDK_INT >= 26) copy(Bitmap.Config.HARDWARE, false).also { recycle() } else this
+    if (android.os.Build.VERSION.SDK_INT >= 26) copy(Bitmap.Config.HARDWARE, false)?.also { recycle() } ?: this else this
 
 /**
  * A [w] x [h] copy of [src]'s pixels, or null. Decoded art is often a hardware bitmap, which can't be read: scaling
@@ -141,6 +141,9 @@ abstract class Screen : Activity() {
     }
 
     override fun onDestroy() {
+        phoneEntry?.close()
+        phoneEntry = null
+        frostHosts.clear()
         main.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
@@ -191,7 +194,7 @@ abstract class Screen : Activity() {
     private val fonts get() = loadedFonts ?: Fonts(applicationContext.assets).also { loadedFonts = it }
 
     /** Shared House Lights typography. */
-    protected fun text(value: String, sp: Float, bold: Boolean = false, color: Int = TEXT, serif: Boolean = false) =
+    internal fun text(value: String, sp: Float, bold: Boolean = false, color: Int = TEXT, serif: Boolean = false) =
         TextView(this).apply {
             text = value
             textSize = sp
@@ -203,7 +206,7 @@ abstract class Screen : Activity() {
             }
         }
 
-    protected fun text(words: Int, sp: Float, bold: Boolean = false, color: Int = TEXT, serif: Boolean = false) =
+    internal fun text(words: Int, sp: Float, bold: Boolean = false, color: Int = TEXT, serif: Boolean = false) =
         text(getString(words), sp, bold, color, serif)
 
     protected fun caps(value: String, color: Int = TEXT_2) = text(value.uppercase(), CAPS, bold = true, color = color).apply {
@@ -228,7 +231,7 @@ abstract class Screen : Activity() {
 
     protected fun wrap() = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
 
-    protected fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+    internal fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
     private var windowShade: View? = null
     private var windowArt: ImageView? = null
@@ -307,10 +310,10 @@ abstract class Screen : Activity() {
         return bmp
     }
 
-    protected fun rounded(color: Int, radiusDp: Int) = GradientDrawable().apply { setColor(color); cornerRadius = dp(radiusDp).toFloat() }
+    internal fun rounded(color: Int, radiusDp: Int) = GradientDrawable().apply { setColor(color); cornerRadius = dp(radiusDp).toFloat() }
 
     /** House Lights' single glass recipe; focus brightens the face (no rim: dots are the only indicator). */
-    protected fun glass(radiusDp: Int, focused: Boolean = false): Drawable {
+    internal fun glass(radiusDp: Int, focused: Boolean = false): Drawable {
         val face = GradientDrawable().apply {
             setColor(if (focused) GLASS_FOCUSED else GLASS)
             cornerRadius = dp(radiusDp).toFloat()
@@ -342,6 +345,109 @@ abstract class Screen : Activity() {
 
     protected fun pill(words: Int, icon: Int = 0): TextView = pill(getString(words), icon)
 
+    /**
+     * Compact 38 dp glass circle button for secondary title actions (+, ✓, ↺, ⓘ, trailer).
+     * Focus brightens the glass face and icon without outlines or rings; [onFocus] lets the caller show a label below.
+     */
+    protected fun iconButton(
+        symbol: String,
+        description: String,
+        iconRes: Int = 0,
+        onFocus: (Boolean) -> Unit = {},
+        action: () -> Unit,
+    ): TextView = object : TextView(this) {
+        private val d = resources.displayMetrics.density
+        private val iconDrawable = if (iconRes != 0) getDrawable(iconRes)?.mutate() else null
+        private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = TEXT
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+        }
+        private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = TEXT
+            style = Paint.Style.FILL
+        }
+        private val glyphPath = Path()
+        private val glyphBounds = Rect()
+
+        override fun onDraw(canvas: Canvas) {
+            if (iconDrawable != null) {
+                val size = (18f * d).toInt()
+                val left = (width - size) / 2
+                val top = (height - size) / 2
+                iconDrawable.setBounds(left, top, left + size, top + size)
+                iconDrawable.setTint(currentTextColor)
+                iconDrawable.draw(canvas)
+                return
+            }
+            val s = text?.toString().orEmpty()
+            if (s.isEmpty()) return
+            val cx = width / 2f
+            val cy = height / 2f
+            strokePaint.color = currentTextColor
+            fillPaint.color = currentTextColor
+            when (s) {
+                "+" -> {
+                    val r = 5.5f * d
+                    strokePaint.strokeWidth = 1.8f * d
+                    canvas.drawLine(cx - r, cy, cx + r, cy, strokePaint)
+                    canvas.drawLine(cx, cy - r, cx, cy + r, strokePaint)
+                }
+                "✓" -> {
+                    strokePaint.strokeWidth = 1.8f * d
+                    glyphPath.reset()
+                    glyphPath.moveTo(cx - 5f * d, cy + 0.3f * d)
+                    glyphPath.lineTo(cx - 1.5f * d, cy + 3.8f * d)
+                    glyphPath.lineTo(cx + 5.2f * d, cy - 3.4f * d)
+                    canvas.drawPath(glyphPath, strokePaint)
+                }
+                "↺" -> {
+                    val r = 5.8f * d
+                    strokePaint.strokeWidth = 1.6f * d
+                    canvas.drawArc(RectF(cx - r, cy - r, cx + r, cy + r), -135f, 285f, false, strokePaint)
+                    val ax = cx - 4.1f * d
+                    val ay = cy - 4.1f * d
+                    glyphPath.reset()
+                    glyphPath.moveTo(ax, ay - 2.8f * d)
+                    glyphPath.lineTo(ax, ay + 0.4f * d)
+                    glyphPath.lineTo(ax + 3.2f * d, ay + 0.4f * d)
+                    canvas.drawPath(glyphPath, strokePaint)
+                }
+                "ⓘ" -> {
+                    val r = 6.8f * d
+                    strokePaint.strokeWidth = 1.5f * d
+                    canvas.drawCircle(cx, cy, r, strokePaint)
+                    strokePaint.strokeWidth = 1.6f * d
+                    canvas.drawLine(cx, cy - 0.5f * d, cx, cy + 3.6f * d, strokePaint)
+                    canvas.drawCircle(cx, cy - 3.2f * d, 0.95f * d, fillPaint)
+                }
+                else -> {
+                    paint.color = currentTextColor
+                    paint.getTextBounds(s, 0, s.length, glyphBounds)
+                    canvas.drawText(s, cx - glyphBounds.exactCenterX(), cy - glyphBounds.exactCenterY(), paint)
+                }
+            }
+        }
+    }.apply {
+        text = symbol
+        textSize = 18f
+        setTextColor(TEXT_2)
+        gravity = Gravity.CENTER
+        includeFontPadding = false
+        contentDescription = description
+        isFocusable = true
+        background = glass(ICON_BUTTON_H / 2)
+        setOnFocusChangeListener { v, has ->
+            v.background = glass(ICON_BUTTON_H / 2, has)
+            setTextColor(if (has) TEXT else TEXT_2)
+            v.grow(has, CHIP_GROW).start()
+            onFocus(has)
+        }
+        setOnClickListener { action() }
+        layoutParams = LinearLayout.LayoutParams(dp(ICON_BUTTON_H), dp(ICON_BUTTON_H))
+    }
+
     /** The warm-white primary action; focus lifts and grows it with a centered tungsten glow. */
     protected fun pill(label: String, icon: Int = 0): TextView = text(label, SMALL, bold = true).apply {
         isFocusable = true
@@ -353,10 +459,6 @@ abstract class Screen : Activity() {
         fun style(focused: Boolean) {
             val r = dp(BUTTON_H / 2).toFloat()
             background = object : Drawable() {
-                private val glow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = TEXT
-                    if (focused) setShadowLayer(dp(12).toFloat(), 0f, 0f, TUNGSTEN_GLOW)
-                }
                 private val face = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = TEXT }
                 private val rim = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     style = Paint.Style.STROKE
@@ -365,17 +467,14 @@ abstract class Screen : Activity() {
                 }
                 override fun draw(canvas: Canvas) {
                     val box = RectF(bounds)
-                    if (focused) canvas.drawRoundRect(box, r, r, glow)
                     canvas.drawRoundRect(box, r, r, face)
                     if (focused) canvas.drawRoundRect(box, r, r, rim)
                 }
                 override fun setAlpha(alpha: Int) {
-                    glow.alpha = alpha
                     face.alpha = alpha
                     rim.alpha = alpha
                 }
                 override fun setColorFilter(colorFilter: ColorFilter?) {
-                    glow.colorFilter = colorFilter
                     face.colorFilter = colorFilter
                     rim.colorFilter = colorFilter
                 }
@@ -403,11 +502,11 @@ abstract class Screen : Activity() {
             .takeWhile { it !is android.widget.ScrollView && it !is android.widget.HorizontalScrollView && it !is android.widget.AbsListView }
             .forEach { it.clipChildren = false; it.clipToPadding = false }
         return animate().scaleX(if (on) by else 1f).scaleY(if (on) by else 1f).setDuration(FOCUS_MS)
-            .setInterpolator(if (on) SETTLE else EASE_OUT)
+            .setInterpolator(EASE_OUT)
     }
 
     /** Something arrives (a panel, an overlay, a line of text): [ENTER_MS], easing out. Chain the target values. */
-    protected fun View.enter(ms: Long = ENTER_MS): android.view.ViewPropertyAnimator =
+    internal fun View.enter(ms: Long = ENTER_MS): android.view.ViewPropertyAnimator =
         animate().setDuration(ms).setInterpolator(EASE_OUT)
 
     /** Something leaves: [QUICK_MS], easing in, so it gets out of the way faster than it came. */
@@ -437,17 +536,34 @@ abstract class Screen : Activity() {
         setOnFocusChangeListener { v, has -> v.background = glass(CHIP_H / 2, has); v.grow(has, CHIP_GROW).start() }
     }
 
+    /** A chip that opens a list ([choose]): full-strength words, a chevron centred after them, solid glass. */
+    protected fun dropdown(label: String) = chip(label).apply {
+        setTextColor(TEXT)
+        setCompoundDrawablesRelative(null, null, getDrawable(R.drawable.ic_chevron_down)?.mutate()?.apply {
+            setTint(TEXT_2); setBounds(0, 0, dp(14), dp(14))
+        }, null)
+        compoundDrawablePadding = dp(4)
+        setPadding(dp(16), 0, dp(12), 0)
+    }
+
+    /** Solid smoked glass over posters; focus lights the face without an outline. */
+    protected fun listChipBackground(focused: Boolean) = GradientDrawable().apply {
+        cornerRadius = dp(CHIP_H / 2).toFloat()
+        setColor(if (focused) CHIP_FOCUSED else CHIP_REST)
+    }
+
     /** A [chip]'s open state: the tungsten dot and full-strength words. */
     protected fun TextView.select(label: String, selected: Boolean) {
+        isSelected = selected
         setTextColor(if (selected) TEXT else TEXT_2)
         text = if (!selected) label else android.text.SpannableString("•  $label").apply {
             setSpan(android.text.style.ForegroundColorSpan(TUNGSTEN), 0, 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
     }
 
-    protected fun caption(value: String, keepPrevious: Boolean = true) = text(value, SMALL).apply {
+    protected fun caption(value: String, keepPrevious: Boolean = true, shade: Float = 0f) = text(value, SMALL).apply {
         setPadding(dp(12), dp(6), dp(12), dp(6))
-        background = glassOver(this, 16, keepPrevious = keepPrevious)
+        background = glassOver(this, 16, shade = shade, keepPrevious = keepPrevious)
     }
 
     /** "[OK] Play / pause": the key in a small box, then what it does. */
@@ -482,8 +598,12 @@ abstract class Screen : Activity() {
     }
 
     /** The source's tag beside a rating ("IMDb", "Letterboxd"), as tall as the letters. */
-    protected fun ratingTag(source: String = "IMDb", sp: Float = SMALL) = text(source, sp, bold = true, color = BASE).apply {
-        background = rounded(TUNGSTEN, 3)
+    protected fun ratingTag(source: String = "IMDb", sp: Float = SMALL) = text(source, sp, bold = true, color = TUNGSTEN).apply {
+        background = GradientDrawable().apply {
+            cornerRadius = dp(3).toFloat()
+            setColor(GLASS)
+            setStroke(dp(1), TUNGSTEN_RIM)
+        }
         includeFontPadding = false
         setLineSpacing(0f, 1f)
         setPadding(dp(4), dp(1), dp(4), dp(1))
@@ -529,6 +649,8 @@ abstract class Screen : Activity() {
         field.requestFocus()
     }
 
+    private var phoneEntry: PhoneEntry? = null
+
     /**
      * Text too long for a remote (an API key), sent from a phone: a QR opens a one-box page served by the TV itself on
      * the home network (PhoneEntry). "Type it instead" falls back to [askText], as does a TV with no network address.
@@ -542,8 +664,14 @@ abstract class Screen : Activity() {
             }) { typed -> main.post { if (dialog.isShowing) dialog.dismiss(); done(typed) } }
         }.getOrNull()
         val url = entry?.url ?: run { entry?.close(); return askText(title, R.string.action_ok, initial = initial, done = done) }
+        phoneEntry?.close()
+        phoneEntry = entry
         val back = currentFocus // the row that opened it, so the remote stays there when the phone sends the text
-        dialog.setOnDismissListener { entry.close(); back?.requestFocus() }
+        dialog.setOnDismissListener {
+            if (phoneEntry === entry) phoneEntry = null
+            entry.close()
+            back?.requestFocus()
+        }
         val typeInstead = pill(R.string.phone_entry_type).apply {
             setOnClickListener { dialog.dismiss(); askText(title, R.string.action_ok, initial = initial, done = done) }
         }
@@ -639,50 +767,22 @@ abstract class Screen : Activity() {
         }
     }
 
-    /** One poster/portrait focus treatment; the poster itself supplies its glow colour. */
-    protected fun View.cardFocus(radiusDp: Int = 6, also: (Boolean) -> Unit = {}) {
-        isFocusable = true
-        setOnFocusChangeListener { v, has ->
-            v.lift(has, radiusDp)
-            also(has)
-        }
-    }
-
-    private val glowCache = java.util.WeakHashMap<View, Pair<Bitmap, Int>>()
-
-    private fun posterBitmap(view: View): Bitmap? = when (view) {
-        is ImageView -> (view.drawable as? BitmapDrawable)?.bitmap
-        is android.view.ViewGroup -> (0 until view.childCount).firstNotNullOfOrNull { posterBitmap(view.getChildAt(it)) }
-        else -> null
-    }
-
-    protected fun View.lift(on: Boolean, radiusDp: Int = 6, rim: Boolean = true) {
-        foreground = if (on && rim) GradientDrawable().apply {
-            setColor(Color.TRANSPARENT)
-            cornerRadius = dp(radiusDp).toFloat()
-            setStroke(dp(1), TUNGSTEN_RIM)
-        } else null
-        if (on && android.os.Build.VERSION.SDK_INT >= 28) {
-            val poster = posterBitmap(this)
-            val known = if (poster == null) TUNGSTEN_GLOW else glowCache[this]?.takeIf { it.first === poster }?.second
-            outlineSpotShadowColor = known ?: TUNGSTEN_GLOW
-            // Reading a poster's pixels back from the GPU took ~7 ms on the main thread per press: the glow is sampled
-            // off it and tints the shadow a moment later, while the lift is still growing.
-            if (known == null && poster != null) background({ samplePixels(poster, 16, 24)?.let(::filmGlow) }) { r ->
-                r.getOrNull()?.let { glow -> glowCache[this] = poster to glow; if (hasFocus()) outlineSpotShadowColor = glow }
-            }
-        }
-        grow(on)
-            .translationZ(if (on) dp(CARD_LIFT).toFloat() else 0f).start()
+    /** Focus lifts and subtly scales the card above its neighbours with no outline or heavy shadow. */
+    internal fun View.lift(on: Boolean, scale: Float = CARD_GROW, shadow: Boolean = true) {
+        foreground = null
+        if (android.os.Build.VERSION.SDK_INT >= 28 && !shadow) outlineSpotShadowColor = Color.TRANSPARENT
+        grow(on, scale)
+            .translationZ(if (on) (if (shadow) dp(CARD_LIFT).toFloat() else 1f) else 0f).start()
     }
 
     /** The screen's art, behind its glass: what [glassOver] frosts. Screens with art behind them name it. */
     protected open val backdrop: ImageView? get() = null
 
+    private class FrostHost(val view: View, var attached: Boolean = view.isAttachedToWindow)
     private var frostSource: Bitmap? = null
     private var frostFor: Bitmap? = null
     private var frostBitmap: Bitmap? = null
-    private val frostHosts = mutableListOf<View>()
+    private val frostHosts = mutableListOf<FrostHost>()
 
     /**
      * Frosted glass, as the episode list draws it: the art behind, blurred, seen through a rounded pane under the
@@ -693,13 +793,28 @@ abstract class Screen : Activity() {
     protected fun glassOver(host: View, radiusDp: Int, shade: Float = 0f, keepPrevious: Boolean = true): Drawable {
         // No art to frost (Settings): the glass sits on the base colour, so a dialog doesn't show the rows under it.
         val behind = backdrop ?: return LayerDrawable(arrayOf(rounded(BASE, radiusDp), glass(radiusDp)))
-        frostHosts += host
+        frostHosts.removeAll { it.attached && !it.view.isAttachedToWindow }
+        if (frostHosts.none { it.view === host }) {
+            val entry = FrostHost(host)
+            frostHosts += entry
+            host.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(v: View) {
+                    entry.attached = true
+                    if (frostHosts.none { it === entry }) frostHosts += entry
+                }
+
+                override fun onViewDetachedFromWindow(v: View) {
+                    frostHosts.remove(entry)
+                }
+            })
+        }
         return Frost(host, behind, dp(radiusDp).toFloat(), shade, keepPrevious)
     }
 
     /** The art behind changed: glass redraws with the new picture once it's blurred. */
     protected fun refrost() {
-        frostHosts.forEach { it.invalidate() }
+        frostHosts.removeAll { it.attached && !it.view.isAttachedToWindow }
+        frostHosts.toList().forEach { if (it.view.isAttachedToWindow) it.view.invalidate() }
         updateWindowShade()
     }
 
@@ -759,11 +874,13 @@ abstract class Screen : Activity() {
         @Deprecated("Drawable API") override fun getOpacity() = PixelFormat.TRANSLUCENT
     }
 
-    /** A thin watched-so-far bar over a dark track. */
-    protected fun progressBar(progress: Float, color: Int = TUNGSTEN) = LinearLayout(this).apply {
+    /** A thin rounded watched-so-far bar over a dark track. */
+    internal fun progressBar(progress: Float, color: Int = TUNGSTEN) = LinearLayout(this).apply {
         val p = progress.coerceIn(0f, 1f)
-        setBackgroundColor(PROGRESS_TRACK)
-        addView(View(context).apply { setBackgroundColor(color) }, LinearLayout.LayoutParams(0, -1, p))
+        background = rounded(PROGRESS_TRACK, 2)
+        outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
+        clipToOutline = true
+        addView(View(context).apply { background = rounded(color, 2) }, LinearLayout.LayoutParams(0, -1, p))
         addView(View(context), LinearLayout.LayoutParams(0, -1, 1f - p))
     }
 
@@ -784,9 +901,10 @@ abstract class Screen : Activity() {
      * place of Android's grey dialog. [checked] gets a tick (the choice in use); the remote starts on [focus].
      */
     protected fun choose(title: String, items: List<String>, message: String? = null, checked: Int = -1,
-                         focus: Int = maxOf(checked, 0), pick: (Int) -> Unit) {
+                         focus: Int = maxOf(checked, 0), widthDp: Int = if (items.size > 8) 300 else 340,
+                         pick: (Int) -> Unit) {
         val dialog = android.app.Dialog(this).apply { requestWindowFeature(android.view.Window.FEATURE_NO_TITLE) }
-        val list = column(Gravity.START).apply { setPadding(dp(12), dp(16), dp(12), dp(12)) }
+        val list = column(Gravity.START).apply { setPadding(dp(12), dp(14), dp(12), dp(14)) }
         val words = column(Gravity.START, text(title, BODY, bold = true)).apply { setPadding(dp(16), 0, dp(16), dp(10)) }
         message?.let { words.addView(text(it, SMALL, color = TEXT_2).marginTop(6)) }
         list.addView(words, LinearLayout.LayoutParams(-1, -2))
@@ -794,20 +912,33 @@ abstract class Screen : Activity() {
             text(label, BODY).apply {
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(16), dp(10), dp(16), dp(10))
-                if (i == checked) setCompoundDrawablesRelative(null, null, getDrawable(R.drawable.ic_check)?.mutate()?.apply { setBounds(0, 0, dp(16), dp(16)) }, null)
+                if (i == checked) {
+                    setTextColor(TUNGSTEN)
+                    setCompoundDrawablesRelative(null, null, getDrawable(R.drawable.ic_check)?.mutate()?.apply {
+                        setTint(TUNGSTEN); setBounds(0, 0, dp(16), dp(16))
+                    }, null)
+                }
                 rowFocus()
                 setOnClickListener { dialog.dismiss(); pick(i) }
                 list.addView(this, LinearLayout.LayoutParams(-1, -2))
             }
         }
-        dialog.setContentView(android.widget.ScrollView(this).apply {
+        // A long list (services, genres) stops short of the screen's edges and scrolls; the fading edge is also the
+        // space ScrollView keeps past the focused row, so the next row always shows.
+        val maxHeight = (resources.displayMetrics.heightPixels * 0.72f).toInt()
+        dialog.setContentView(object : android.widget.ScrollView(this) {
+            override fun onMeasure(w: Int, h: Int) =
+                super.onMeasure(w, MeasureSpec.makeMeasureSpec(maxHeight, MeasureSpec.AT_MOST))
+        }.apply {
             isVerticalScrollBarEnabled = false
+            isVerticalFadingEdgeEnabled = true
+            setFadingEdgeLength(dp(44))
             background = glassOver(this, 16, shade = FROST_READING)
             addView(list)
         })
         dialog.window?.apply {
             setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0))
-            setLayout(dp(340), -2)
+            setLayout(dp(widthDp), -2) // a long list of names needs less width
             setDimAmount(0.6f)
         }
         dialog.show()
@@ -816,229 +947,297 @@ abstract class Screen : Activity() {
 
     /** Highlights come from CHANGELOG.md; the full release notes remain one remote action away. */
     protected fun whatsNew(version: String = Updates.mine(this), quiet: Boolean = false) {
-        val changes = runCatching { assets.open("CHANGELOG.md").bufferedReader().use { it.readText() } }.getOrNull()
-            ?.let { text -> changesFor(text, version).ifEmpty { changesFor(text, "Unreleased") } }.orEmpty()
+        val changelog = runCatching { assets.open("CHANGELOG.md").bufferedReader().use { it.readText() } }.getOrDefault("")
+        val debug = applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0
+        val preview = if (debug) changesFor(changelog, "Unreleased") else emptyList()
+        val changes = preview.ifEmpty { changesFor(changelog, version) }.ifEmpty { changesFor(changelog, "Unreleased") }
         if (changes.isEmpty()) {
             if (!quiet) choose(getString(R.string.whats_new), listOf(getString(R.string.action_ok)),
                 getString(R.string.whats_new_no_notes, version)) {}
             return
         }
+
         val dialog = android.app.Dialog(this).apply { requestWindowFeature(android.view.Window.FEATURE_NO_TITLE) }
         val highlights = showcaseHighlights(changes)
-
+        val highlightsName = getString(R.string.whats_new_highlights_short)
         val metrics = resources.displayMetrics
-        val dialogW = minOf(dp(1060), (metrics.widthPixels * 0.88f).toInt())
-        val dialogH = minOf(dp(620), (metrics.heightPixels * 0.84f).toInt())
 
-        val root = FrameLayout(this).apply {
-            background = glassOver(this, 16, shade = FROST_DENSE)
-            outlineProvider = object : android.view.ViewOutlineProvider() {
-                override fun getOutline(view: View, outline: android.graphics.Outline) =
-                    outline.setRoundRect(0, 0, view.width, view.height, dp(16).toFloat())
+        fun panel(radius: Int, first: Int, last: Int, edge: Int) =
+            GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(first, last)).apply {
+                cornerRadius = dp(radius).toFloat()
+                setStroke(dp(1), edge)
             }
-            clipToOutline = true
-        }
 
-        val columns = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(dp(28), dp(24), dp(28), dp(24))
-            clipChildren = false
-            clipToPadding = false
+        val root = column(Gravity.START).apply {
+            setPadding(dp(44), dp(24), dp(44), dp(27))
         }
-        root.addView(columns, FrameLayout.LayoutParams(-1, -1))
-
-        // The selected change stays in view while the remote moves through the list.
-        val left = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            clipChildren = false
-            clipToPadding = false
-        }
-        columns.addView(left, LinearLayout.LayoutParams(0, -1, 0.58f))
-
         val header = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             addView(brand(WORDMARK))
-            addView(tag(getString(R.string.whats_new_version, version), TUNGSTEN).apply {
-                layoutParams = LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(10) }
+            addView(View(context).apply { setBackgroundColor(0x50DFB886) }, LinearLayout.LayoutParams(dp(1), dp(25)).apply {
+                marginStart = dp(12)
+                marginEnd = dp(14)
             })
+            addView(text(R.string.whats_new, BODY, bold = true))
+            addView(View(context), LinearLayout.LayoutParams(0, 1, 1f))
+            val label = if (preview.isNotEmpty()) getString(R.string.whats_new_preview)
+                else getString(R.string.whats_new_version, version)
+            addView(text(label, SMALL, color = TUNGSTEN))
         }
-        left.addView(header)
-
-        val heroScroll = android.widget.ScrollView(this).apply {
-            isVerticalScrollBarEnabled = false
-        }
-        val heroContent = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, dp(24), dp(16), dp(16))
-        }
-        val categoryTag = caps(R.string.whats_new_group, TUNGSTEN)
-        val titleView = text("", SERIF_TITLE, serif = true).apply {
-            setLineSpacing(dp(2).toFloat(), 1f)
-        }
-        val descView = text("", BODY, color = TEXT).apply {
-            setLineSpacing(dp(4).toFloat(), 1f)
-        }
-        heroContent.addView(categoryTag)
-        heroContent.addView(titleView, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-        heroContent.addView(descView, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
-        heroScroll.addView(heroContent)
-        left.addView(heroScroll, LinearLayout.LayoutParams(-1, 0, 1f))
-
-        val gotIt = pill(R.string.action_got_it).apply {
-            id = View.generateViewId()
-            setOnClickListener { dialog.dismiss() }
-        }
-        val buttons = LinearLayout(this).apply {
-            gravity = Gravity.CENTER_VERTICAL
-            addView(gotIt)
-        }
-        left.addView(buttons, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
-
-        val divider = View(this).apply {
-            setBackgroundColor(GLASS_EDGE)
-        }
-        columns.addView(divider, LinearLayout.LayoutParams(dp(1), -1).apply {
-            marginStart = dp(24)
-            marginEnd = dp(24)
+        root.addView(header, LinearLayout.LayoutParams(-1, dp(34)))
+        root.addView(View(this).apply { setBackgroundColor(0x40DFB886) }, LinearLayout.LayoutParams(-1, dp(1)).apply {
+            topMargin = dp(4)
+            bottomMargin = dp(14)
         })
 
-        val right = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            clipChildren = true
-            clipToPadding = true
+        val page = LinearLayout(this)
+        root.addView(page, LinearLayout.LayoutParams(-1, 0, 1f))
+        val left = column(Gravity.START)
+        val detailScroll = android.widget.ScrollView(this).apply {
+            isFocusable = false
+            isVerticalScrollBarEnabled = false
+            addView(left, FrameLayout.LayoutParams(-1, -2))
         }
-        columns.addView(right, LinearLayout.LayoutParams(0, -1, 0.42f))
+        page.addView(detailScroll, LinearLayout.LayoutParams(0, -1, 1.94f))
 
-        val listHeader = caps(plural(R.plurals.whats_new_highlights, highlights.size), TUNGSTEN)
-        right.addView(listHeader)
+        val titleView = text("", 34f, serif = true).apply { includeFontPadding = false }
+        val caption = text("", BODY, color = TEXT_2)
+        val summary = text("", 16f, color = TEXT_2).apply {
+            setPadding(dp(12), 0, 0, 0)
+            background = LayerDrawable(arrayOf(rounded(0xA9EAC68C.toInt(), 0))).apply {
+                setLayerGravity(0, Gravity.START or Gravity.FILL_VERTICAL)
+                setLayerWidth(0, dp(1))
+            }
+        }
+        val pathView = text("", SMALL, color = TEXT_2).apply {
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            background = panel(7, 0xFF2C221B.toInt(), 0xFF271E18.toInt(), 0x48DFB886)
+        }
 
+        var hero = true
+        val picture = object : ImageView(this) {
+            override fun onMeasure(widthSpec: Int, heightSpec: Int) {
+                val width = MeasureSpec.getSize(widthSpec)
+                val art = drawable
+                val height = if (art == null || art.intrinsicWidth <= 0) 0
+                    else (width.toFloat() * art.intrinsicHeight / art.intrinsicWidth).toInt()
+                setMeasuredDimension(width, minOf(height, (metrics.heightPixels * if (hero) 0.59f else 0.30f).toInt()))
+            }
+        }.apply {
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            background = rounded(0xFF120E0B.toInt(), 7)
+            clipToOutline = true
+        }
+        val frame = FrameLayout(this).apply {
+            background = panel(10, 0xFF31271F.toInt(), 0xFF241C16.toInt(), 0x7AD9B889)
+            setPadding(dp(3), dp(3), dp(3), dp(3))
+            addView(picture, FrameLayout.LayoutParams(-1, -2))
+        }
+        val handoff = LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(20), dp(24), dp(20), dp(24))
+            background = panel(10, 0xFF342820.toInt(), 0xFF2C221C.toInt(), 0x60DFB886)
+        }
+        fun detail(view: View, top: Int, width: Int = -1) =
+            left.addView(view, LinearLayout.LayoutParams(width, -2).apply { topMargin = dp(top) })
+        detail(titleView, 0)
+        detail(summary, 12)
+        detail(frame, 12)
+        detail(handoff, 16)
+        detail(caption, 10)
+        detail(pathView, 16, -2)
+
+        val right = column(Gravity.START).apply {
+            clipChildren = true
+            background = panel(10, 0xFF30251F.toInt(), 0xFF241C18.toInt(), 0x42DFB886)
+            setPadding(dp(11), dp(10), dp(11), dp(8))
+        }
+        page.addView(right, LinearLayout.LayoutParams(0, -1, 1f).apply { marginStart = dp(30) })
         val listScroll = android.widget.ScrollView(this).apply {
             isVerticalScrollBarEnabled = false
-            clipChildren = true
-            clipToPadding = true
+            isVerticalFadingEdgeEnabled = true
+            setFadingEdgeLength(dp(12))
         }
-        val entriesColumn = column(Gravity.START)
-        listScroll.addView(entriesColumn, FrameLayout.LayoutParams(-1, -2))
-        right.addView(listScroll, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(10) })
-
-        val keyHints = LinearLayout(this).apply {
+        val list = column(Gravity.START).apply {
+            clipChildren = true
+            setPadding(0, 0, 0, dp(6))
+        }
+        listScroll.addView(list, FrameLayout.LayoutParams(-1, -2))
+        right.addView(listScroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        right.addView(View(this).apply { setBackgroundColor(0x40DFB886) }, LinearLayout.LayoutParams(-1, dp(1)))
+        val gotIt = pill(R.string.action_got_it).apply { setOnClickListener { dialog.dismiss() } }
+        val hints = LinearLayout(this).apply {
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
             addView(keyHint("↑ ↓", getString(R.string.key_browse)))
+            addView(keyHint(getString(R.string.key_back), getString(R.string.key_exit)), LinearLayout.LayoutParams(-2, -2).apply {
+                marginStart = dp(8)
+            })
         }
-        val backHint = keyHint(getString(R.string.key_back), getString(R.string.key_exit)).apply {
-            layoutParams = LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(12) }
+        right.addView(LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            addView(gotIt)
+            addView(hints, LinearLayout.LayoutParams(0, -2, 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
+        // Long translated hints may need the width beneath the button at Large text size.
+        right.addOnLayoutChangeListener { _, l, _, r, _, oldL, _, oldR, _ ->
+            if (r - l == oldR - oldL) return@addOnLayoutChangeListener
+            hints.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+            gotIt.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+            val stacked = hints.measuredWidth + gotIt.measuredWidth > r - l - right.paddingStart - right.paddingEnd
+            val footer = hints.parent as LinearLayout
+            footer.orientation = if (stacked) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+            hints.layoutParams = if (stacked) LinearLayout.LayoutParams(-1, -2) else LinearLayout.LayoutParams(0, -2, 1f)
         }
-        keyHints.addView(backHint)
-        right.addView(keyHints, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
 
-        fun updateHero(change: Change, index: Int, total: Int) {
-            val group = (change.group ?: getString(R.string.whats_new_group)).uppercase()
-            categoryTag.text = "✦ $group  ·  ${index + 1} / $total"
-            val displayTitle = change.title.ifEmpty { change.text }
-            titleView.text = displayTitle
-            val desc = change.description.ifEmpty { change.text }
-            descView.text = changeLine(desc)
-            heroScroll.scrollTo(0, 0)
+        val thumbnails = HashMap<String, Bitmap?>()
+        val heroCache = android.util.LruCache<String, Bitmap>(2)
+        fun decode(path: String, sample: Int): Bitmap? = runCatching {
+            assets.open(path).use {
+                android.graphics.BitmapFactory.decodeStream(it, null, android.graphics.BitmapFactory.Options().apply {
+                    inSampleSize = sample
+                })
+            }
+        }.getOrNull()
+
+        fun renderHandoff(example: PlayerExample?) {
+            handoff.visibility = if (example == null) View.GONE else View.VISIBLE
+            handoff.removeAllViews()
+            if (example == null) return
+            fun card() = LinearLayout(this).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                minimumHeight = dp(68)
+                setPadding(dp(12), dp(8), dp(12), dp(8))
+                background = panel(8, 0xFF211914.toInt(), 0xFF1C1511.toInt(), 0x42DFB886)
+            }
+            handoff.addView(card().apply { addView(brand(24f)) }, LinearLayout.LayoutParams(0, -2, 1f))
+            handoff.addView(text(if (handoff.layoutDirection == View.LAYOUT_DIRECTION_RTL) "←" else "→", 27f, color = TUNGSTEN).apply {
+                gravity = Gravity.CENTER
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(dp(42), -2))
+            handoff.addView(card().apply {
+                addView(ImageView(context).apply {
+                    setImageBitmap(thumbnails.getOrPut(example.icon) { decode(example.icon, 2) })
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                }, LinearLayout.LayoutParams(dp(38), dp(38)).apply { marginEnd = dp(10) })
+                addView(column(Gravity.START,
+                    text(example.name, 16f, bold = true),
+                    text(R.string.whats_new_example_player, 11f, color = TEXT_2),
+                ), LinearLayout.LayoutParams(0, -2, 1f))
+            }, LinearLayout.LayoutParams(0, -2, 1.15f))
         }
 
-        var firstRow: View? = null
-        var allChangesShown = false
-        fun render(showAll: Boolean) {
-            allChangesShown = showAll
-            val visible = if (showAll) changes else highlights
-            listHeader.text = if (showAll) getString(R.string.whats_new_all, changes.size)
-                else plural(R.plurals.whats_new_highlights, highlights.size)
-            (backHint.getChildAt(1) as TextView).text = getString(if (showAll) R.string.whats_new_highlights_short else R.string.key_exit)
-            entriesColumn.removeAllViews()
-            listScroll.scrollTo(0, 0)
-            firstRow = null
-            var currentGroup: String? = null
-            visible.forEachIndexed { index, change ->
-                if (showAll && change.group != null && change.group != currentGroup) {
-                    currentGroup = change.group
-                    entriesColumn.addView(caps(change.group, TUNGSTEN).apply {
-                        setPadding(dp(10), dp(16), dp(10), dp(4))
-                    })
-                }
-                val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
+        val neutral = 0xFF34271F.toInt()
+        fun show(change: Change) {
+            val title = change.title
+            titleView.text = title.ifEmpty { change.text }
+            titleView.textSize = if (change.image != null) 34f else 40f
+            val artPath = change.image ?: change.detailImage
+            val bitmap = artPath?.let { path ->
+                heroCache.get(path) ?: decode(path, if (change.image != null && metrics.widthPixels <= 1280) 2 else 1)
+                    ?.also { heroCache.put(path, it) }
+            }
+            hero = change.image != null && bitmap != null
+            val accent = if (hero) {
+                change.image?.let { path -> thumbnails.getOrPut(path) { decode(path, 8) } }
+                    ?.let { samplePixels(it, 12, 8) }?.let(::filmGlow)
+            } else null
+            val ambient = accent?.let { color ->
+                Color.rgb((Color.red(color) + 112) / 4, (Color.green(color) + 82) / 4, (Color.blue(color) + 66) / 4)
+            } ?: neutral
+            root.background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(ambient, 0xFF140F0D.toInt()))
+            left.setPadding(0, dp(if (hero) 8 else if (bitmap != null || change.player != null) 32 else 56), 0, dp(4))
+            picture.setImageBitmap(bitmap)
+            picture.requestLayout()
+            frame.visibility = if (bitmap == null) View.GONE else View.VISIBLE
+            renderHandoff(change.player)
+            val copy = if (title.isEmpty()) "" else changeLine(change.summary)
+            summary.text = copy
+            caption.text = copy
+            summary.visibility = if (hero || copy.isEmpty()) View.GONE else View.VISIBLE
+            caption.visibility = if (hero && copy.isNotEmpty()) View.VISIBLE else View.GONE
+            val path = change.settingsPath
+            pathView.visibility = if (path == null) View.GONE else View.VISIBLE
+            if (path != null) {
+                val steps = path.split(" → ")
+                pathView.text = changeLine(steps.dropLast(1).joinToString("  ›  ", postfix = "  ›  ") + "**" + steps.last() + "**")
+            }
+            detailScroll.scrollTo(0, 0)
+        }
+
+        var first: View? = null
+        var shown: View? = null
+        fun section(name: String) {
+            if (list.childCount > 0) list.addView(View(this).apply { setBackgroundColor(0x40DFB886) },
+                LinearLayout.LayoutParams(-1, dp(1)).apply { topMargin = dp(8); marginStart = dp(6); marginEnd = dp(6) })
+            list.addView(text(name.uppercase(), 10f, bold = true, color = TEXT_2).apply {
+                letterSpacing = 0.09f
+                setPadding(dp(7), dp(8), dp(7), dp(4))
+            })
+        }
+
+        fun row(change: Change, highlighted: Boolean) {
+            val icon = change.player?.icon
+            val thumbnailPath = icon ?: change.image
+            val thumbnail = thumbnailPath?.takeIf { highlighted }?.let { path ->
+                thumbnails.getOrPut(path) { decode(path, if (icon != null) 2 else 8) }
+            }
+            val row = LinearLayout(this).apply {
                 gravity = Gravity.CENTER_VERTICAL
                 isFocusable = true
-                isFocusableInTouchMode = true
-                id = View.generateViewId()
-                nextFocusLeftId = gotIt.id
-                setPadding(dp(12), dp(9), dp(12), dp(9))
-
-                val dot = View(context).apply {
-                    background = rounded(TUNGSTEN, 3)
-                    visibility = View.INVISIBLE
-                }
-                addView(dot, LinearLayout.LayoutParams(dp(6), dp(6)).apply { marginEnd = dp(10) })
-
-                val rowTitle = change.title.ifEmpty { change.text }
-                val label = text(rowTitle, BODY, color = TEXT_2).apply {
-                    maxLines = 1
-                    ellipsize = android.text.TextUtils.TruncateAt.END
-                    includeFontPadding = false
-                }
-                addView(label, LinearLayout.LayoutParams(0, -2, 1f))
-
-                rowFocus(8, rest = { null }) { hasFocus ->
-                    dot.visibility = if (hasFocus) View.VISIBLE else View.INVISIBLE
-                    label.setTextColor(if (hasFocus) TEXT else TEXT_2)
-                    if (hasFocus) {
-                        gotIt.nextFocusRightId = id
-                        updateHero(change, index, visible.size)
-                    }
-                }
-                setOnClickListener { updateHero(change, index, visible.size) }
+                minimumHeight = dp(if (highlighted) 35 else 27)
+                setPadding(dp(7), dp(4), dp(7), dp(4))
             }
-                if (firstRow == null) {
-                    firstRow = row
-                }
-                entriesColumn.addView(row, LinearLayout.LayoutParams(-1, -2))
+            if (thumbnail != null) {
+                row.addView(ImageView(this).apply {
+                    setImageBitmap(thumbnail)
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    background = rounded(0xFF241B16.toInt(), 3)
+                    clipToOutline = true
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                }, LinearLayout.LayoutParams(dp(41), dp(23)).apply { marginEnd = dp(8) })
             }
-
-            val action = text(if (showAll) getString(R.string.whats_new_back) else plural(R.plurals.whats_new_see_all, changes.size),
-                BODY, color = TUNGSTEN).apply {
-                id = View.generateViewId()
-                isFocusable = true
-                isFocusableInTouchMode = true
-                nextFocusLeftId = gotIt.id
-                setPadding(dp(28), dp(16), dp(12), dp(16))
-                rowFocus(8, rest = { null }) { hasFocus ->
-                    if (hasFocus) gotIt.nextFocusRightId = id
+            val name = text(change.title.ifEmpty { change.text }, 13f, color = TEXT_2)
+            row.addView(name, LinearLayout.LayoutParams(0, -2, 1f))
+            val selected = panel(6, 0xFF48372A.toInt(), 0xFF423228.toInt(), 0xCFF3D9B1.toInt())
+            fun activate() {
+                if (shown != row) {
+                    shown?.background = null
+                    shown = row
+                    row.background = selected
+                    show(change)
                 }
-                setOnClickListener { render(!showAll) }
             }
-            entriesColumn.addView(action, LinearLayout.LayoutParams(-1, -2))
-            if (firstRow == null) firstRow = action
-            visible.firstOrNull()?.let { updateHero(it, 0, visible.size) }
-            firstRow?.id?.let { gotIt.nextFocusRightId = it }
-            if (dialog.isShowing) firstRow?.requestFocus()
+            row.setOnFocusChangeListener { _, focused ->
+                name.setTextColor(if (focused) TEXT else TEXT_2)
+                if (focused) activate()
+            }
+            row.setOnClickListener { activate() }
+            list.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(2) })
+            if (first == null) first = row
         }
 
-        render(false)
-        dialog.setOnKeyListener { _, keyCode, event ->
-            if (keyCode == android.view.KeyEvent.KEYCODE_BACK && event.action == android.view.KeyEvent.ACTION_UP && allChangesShown) {
-                render(false)
-                true
-            } else false
+        section(highlightsName)
+        highlights.forEach { change -> row(change, true) }
+        var group: String? = null
+        changes.filter { it !in highlights }.forEach { change ->
+            val name = change.group ?: getString(R.string.whats_new_group)
+            if (name != group) { group = name; section(name) }
+            row(change, false)
         }
+
         dialog.setContentView(root)
-        dialog.window?.apply {
-            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0))
-            setLayout(dialogW, dialogH)
-            setDimAmount(0.6f)
-        }
         dialog.show()
-        firstRow?.requestFocus()
+        dialog.window?.apply {
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
+            setLayout(-1, -1)
+        }
+        first?.requestFocus()
     }
 
     /** One glass error card with a plain message and a next action. */
     protected fun failed(message: String, retry: () -> Unit) = column(Gravity.START,
-        text("!", SERIF_NAME, color = TUNGSTEN, serif = true),
-        text(message, BODY, color = TEXT).marginTop(10),
+        text(message, BODY, color = TEXT),
         pill(R.string.action_try_again).apply { setOnClickListener { retry() } }.marginTop(16),
     ).apply {
         setPadding(dp(18), dp(18), dp(18), dp(18))
@@ -1068,10 +1267,10 @@ abstract class Screen : Activity() {
         const val FROST_DENSE = 0.55f
         const val HERO_W = 520 // dp: a title's block on Home and its page, half the screen so the story reads in full lines
         const val BUTTON_H = 34
-        const val SHORT_LIST = 5 // "What's new" entries shown before See all changes
-        const val WHATS_NEW_W = 480 // dp
+        const val ICON_BUTTON_H = 38
         const val CHIP_H = 24 // the mocks' 46–48 px chips
-        const val CARD_GROW = 1.08f
+        const val CARD_GROW = 1.06f
+        const val GRID_GROW = 1.05f
         const val CHIP_GROW = 1.04f // a wide chip grown as much as a card filled the gap to its neighbour
         const val CARD_LIFT = 8
 
@@ -1094,6 +1293,8 @@ abstract class Screen : Activity() {
         // Spacing, everywhere rows of pictures appear: between cards, from a row's heading to its cards (plus room for
         // the focused card to grow), and above a heading, so each heading belongs to the row under it.
         const val CARD_GAP = 14
+        const val CARD_GAP_RAIL = 16
+        const val CARD_RADIUS = 6
         const val POSTER_W = 88
         const val POSTER_H = 132
         const val HEADING_GAP = 24
@@ -1114,6 +1315,10 @@ abstract class Screen : Activity() {
         val LEADING = mapOf(SERIF_HERO to 40f, SERIF_TITLE to 30f, SERIF_NAME to 21f, BODY to 20f, SMALL to 17f, CODE to 40f)
 
         const val BASE = 0xFF0E0C0A.toInt()
+        const val CARD_PLACEHOLDER = 0xFF28221E.toInt()
+        const val CARD_DIM = 0.45f
+        const val GRID_DIM = 0.25f
+        const val CARD_CONTINUE_DIM = 0.45f
         const val TEXT = 0xFFF3EEE6.toInt()
         const val TEXT_2 = 0xB8F3EEE6.toInt()
         const val TEXT_3 = 0x73F3EEE6
@@ -1127,20 +1332,37 @@ abstract class Screen : Activity() {
         const val VIDEO_GLASS_BASE = 0xD90E0C0A.toInt()
         const val VIDEO_CONTROL_BASE = 0xA60E0C0A.toInt()
         const val ROW_FOCUSED = 0x29F3EEE6
-        const val PROGRESS_TRACK = 0x4DFFFFFF // light enough that a short fill still reads as a bar, not a dash
+        const val CHIP_REST = 0xE6191512.toInt() // list chips over posters: near-solid smoked glass
+        const val CHIP_FOCUSED = 0xFF4C4136.toInt()
+        const val PROGRESS_TRACK = 0x9938322C.toInt() // visible over both light and dark poster art without a scrim
         internal val pool = Executors.newFixedThreadPool(6)
     }
 }
 
 /** One changelog entry and the "### " heading it sits under (New, Easier to use, Fixes), null above the first. */
-internal class Change(val group: String?, val text: String, val spotlight: Boolean = false) {
+internal class Change(
+    val group: String?,
+    val text: String,
+    val spotlight: Boolean = false,
+    val image: String? = null,
+    val detailImage: String? = null,
+    val player: PlayerExample? = null,
+) {
     /** The bold lead-in title from **Title.**, without markdown marks or trailing period. */
     val title: String get() = Regex("""\*\*(.+?)\*\*""").find(text)?.groupValues?.get(1)?.trimEnd('.').orEmpty()
 
     /** The description after the bold lead-in title, keeping markdown marks for changeLine(). */
     val description: String get() = text.replaceFirst(Regex("""^\s*-\s*"""), "")
         .replaceFirst(Regex("""^\s*\*\*(.+?)\*\*\.?\s*"""), "").trim()
+
+    private val path get() = changeSettingsPath.find(description)
+    val settingsPath: String? get() = path?.groupValues?.get(1)
+    val summary: String get() = path?.let { description.substring(0, it.range.first).trimEnd() } ?: description
 }
+
+internal data class PlayerExample(val name: String, val icon: String)
+
+private val changeSettingsPath = Regex("""(?:^|(?<=\.)\s+)\*\*((?:Settings|Audio & subtitles) → [^*]+)\*\*\.?$""")
 
 /** Spotlight markers set the short first view. Older changelogs fall back to their first seven entries. */
 internal fun showcaseHighlights(changes: List<Change>): List<Change> =
@@ -1152,11 +1374,27 @@ internal fun changesFor(changelog: String, version: String): List<Change> {
     val start = lines.indexOfFirst { it.trim() == "## $version" }.takeIf { it >= 0 } ?: return emptyList()
     var group: String? = null
     var spotlight = false
+    var image: String? = null
+    var detailImage: String? = null
+    var player: PlayerExample? = null
+    val marker = Regex("""^<!--\s*Spotlight\s*(?::\s*(\S+))?\s*-->$""")
+    val detailMarker = Regex("""^<!--\s*Detail:\s*(\S+)\s*-->$""")
+    val playerMarker = Regex("""^<!--\s*Player:\s*(.+?)\s+(\S+)\s*-->$""")
     return lines.drop(start + 1).takeWhile { !it.startsWith("## ") }.mapNotNull { line ->
+        val spot = marker.find(line.trim())
+        val detail = detailMarker.find(line.trim())
+        val example = playerMarker.find(line.trim())
         when {
-            line.startsWith("### ") -> { group = line.removePrefix("### ").trim(); spotlight = false; null }
-            line.trim() == "<!-- Spotlight -->" -> { spotlight = true; null }
-            line.startsWith("- ") -> Change(group, line.removePrefix("- ").trim(), spotlight).also { spotlight = false }
+            line.startsWith("### ") -> {
+                group = line.removePrefix("### ").trim()
+                spotlight = false; image = null; detailImage = null; player = null
+                null
+            }
+            spot != null -> { spotlight = true; image = spot.groupValues[1].ifEmpty { null }; null }
+            detail != null -> { detailImage = detail.groupValues[1]; null }
+            example != null -> { player = PlayerExample(example.groupValues[1], example.groupValues[2]); null }
+            line.startsWith("- ") -> Change(group, line.removePrefix("- ").trim(), spotlight, image, detailImage, player)
+                .also { spotlight = false; image = null; detailImage = null; player = null }
             else -> null
         }
     }

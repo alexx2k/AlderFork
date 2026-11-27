@@ -1,11 +1,7 @@
 package dev.alder
 
 import android.content.Intent
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.Rect
-import android.graphics.RectF
+import android.content.SharedPreferences
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.text.TextUtils
@@ -40,20 +36,31 @@ internal fun heroCastPreview(allMembers: List<CastMember>, maxCount: Int = 3): L
     return ordered.take(maxCount)
 }
 
+private val dayPattern = Regex("\\d{4}-\\d{2}-\\d{2}")
+
+// Made once per thread, not per episode: building them for every episode of every series in Continue held Home's
+// main thread for 1.5 s at start (SimpleDateFormat isn't thread-safe, so not one shared copy).
+private class EpisodeDates {
+    val utcDay = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { isLenient = false; timeZone = TimeZone.getTimeZone("UTC") }
+    val utcTime = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
+    val localDay = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+}
+private val episodeDates = object : ThreadLocal<EpisodeDates>() { override fun initialValue() = EpisodeDates() }
+
 internal fun isEpisodeAired(released: String?, now: Long = System.currentTimeMillis()): Boolean {
     if (released.isNullOrBlank()) return true
-    val day = released.take(10).takeIf { it.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) } ?: return true
-    val source = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { isLenient = false; timeZone = TimeZone.getTimeZone("UTC") }
-    if (runCatching { source.parse(day) }.getOrNull() == null) return true
+    val day = released.take(10).takeIf { it.matches(dayPattern) } ?: return true
+    val f = episodeDates.get()!!
+    if (runCatching { f.utcDay.parse(day) }.getOrNull() == null) return true
 
     if (released.length >= 19 && released.contains('T')) {
-        val iso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
-        val full = runCatching { iso.parse(released.take(19)) }.getOrNull()
+        val full = runCatching { f.utcTime.parse(released.take(19)) }.getOrNull()
         if (full != null && full.time <= now) return true
     }
 
-    val localToday = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(now))
-    val utcToday = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }.format(Date(now))
+    f.localDay.timeZone = TimeZone.getDefault()
+    val localToday = f.localDay.format(Date(now))
+    val utcToday = f.utcDay.format(Date(now))
     return day <= localToday || day <= utcToday
 }
 
@@ -79,6 +86,86 @@ internal fun episodeDate(value: String?, locale: Locale = Locale.getDefault()): 
     val source = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { isLenient = false; timeZone = TimeZone.getTimeZone("UTC") }
     val parsed = runCatching { source.parse(day) }.getOrNull() ?: return null
     return SimpleDateFormat("d MMM yyyy", locale).apply { timeZone = TimeZone.getTimeZone("UTC") }.format(parsed)
+}
+
+internal enum class HeroControlFocus {
+    PLAY,
+    TRAILER,
+    START_OVER,
+    LIST,
+    INFO,
+    CAST,
+}
+
+internal data class HeroFocusState(
+    val control: HeroControlFocus = HeroControlFocus.PLAY,
+    val castIndex: Int = 0,
+)
+
+internal data class DetailsOverlayState(
+    val guideOpen: Boolean = false,
+    val infoOpen: Boolean = false,
+    val similarOpen: Boolean = false,
+    val filmographyOpen: Boolean = false,
+) {
+    val anyOpen: Boolean
+        get() = guideOpen || infoOpen || similarOpen || filmographyOpen
+}
+
+internal enum class FilmographyReturnTarget {
+    LAST_FOCUSED_ACTOR,
+    INFO_OVERLAY,
+    PLAY_BUTTON,
+}
+
+internal fun shouldShowHero(overlays: DetailsOverlayState): Boolean = !overlays.anyOpen
+
+internal fun shouldRefreshHeroOnOverlayClose(
+    heroNeedsRefresh: Boolean,
+    overlays: DetailsOverlayState,
+): Boolean = heroNeedsRefresh && !overlays.anyOpen
+
+internal fun shouldCloseInfoOnRestart(infoOpen: Boolean, filmographyOpen: Boolean): Boolean =
+    infoOpen && !filmographyOpen
+
+internal fun shouldRefreshInfoOnCastLoad(infoOpen: Boolean, filmographyOpen: Boolean): Boolean =
+    infoOpen && !filmographyOpen
+
+internal fun shouldIncludeResumeAtExtra(resumeAt: Long, startOver: Boolean): Boolean =
+    !startOver && resumeAt > 0L
+
+internal fun resolveHeroFocusTarget(
+    saved: HeroFocusState,
+    hasTrailer: Boolean,
+    hasStartOver: Boolean,
+    castCount: Int,
+): HeroFocusState = when (saved.control) {
+    HeroControlFocus.TRAILER -> if (hasTrailer) saved else HeroFocusState(HeroControlFocus.PLAY)
+    HeroControlFocus.START_OVER -> if (hasStartOver) saved else HeroFocusState(HeroControlFocus.PLAY)
+    HeroControlFocus.CAST -> if (castCount > 0) {
+        HeroFocusState(HeroControlFocus.CAST, saved.castIndex.coerceIn(0, castCount - 1))
+    } else {
+        HeroFocusState(HeroControlFocus.PLAY)
+    }
+    HeroControlFocus.PLAY, HeroControlFocus.LIST, HeroControlFocus.INFO -> saved
+}
+
+internal fun resolveFilmographyReturnTarget(
+    actorAttached: Boolean,
+    infoOpen: Boolean,
+): FilmographyReturnTarget = when {
+    actorAttached -> FilmographyReturnTarget.LAST_FOCUSED_ACTOR
+    infoOpen -> FilmographyReturnTarget.INFO_OVERLAY
+    else -> FilmographyReturnTarget.PLAY_BUTTON
+}
+
+internal fun resolveFilmographyHeroFocus(
+    actorAttached: Boolean,
+    castIndex: Int,
+): HeroFocusState = if (actorAttached && castIndex >= 0) {
+    HeroFocusState(HeroControlFocus.CAST, castIndex)
+} else {
+    HeroFocusState(HeroControlFocus.PLAY)
 }
 
 // A title stays in place over its art; episodes and related titles open over the same scene.
@@ -115,10 +202,17 @@ class DetailsActivity : Screen() {
     private lateinit var listButton: TextView
     private lateinit var playButton: TextView
     private lateinit var infoButton: TextView
+    private var trailerButton: TextView? = null
+    private var startOverButton: TextView? = null
     private lateinit var infoOverlay: FrameLayout
     private var guideOpen = false
     private var similarOpen = false
     private var infoOpen = false
+    private var heroNeedsRefresh = false
+
+    private fun overlays() = DetailsOverlayState(guideOpen, infoOpen, similarOpen, filmographyOpen)
+
+    private fun anyOverlayOpen() = overlays().anyOpen
     private val infoCastCards = mutableListOf<View>()
     private var storyScrollView: ScrollView? = null
     private var richCast: List<CastMember> = emptyList()
@@ -180,8 +274,9 @@ class DetailsActivity : Screen() {
             }
             richCast = m.castMembers
             certificate = m.certification ?: certificate
-            showHero(m)
-            if (hasEpisodes(type, m.videos) && m.videos.isNotEmpty()) buildGuide(m.videos)
+            val wasGuide = guideOpen // fresh details can land while the guide is open: rebuild it open, as onRestart does
+            if (anyOverlayOpen()) heroNeedsRefresh = true else showHero(m)
+            if (hasEpisodes(type, m.videos) && m.videos.isNotEmpty()) { buildGuide(m.videos); if (wasGuide) showGuide() }
             if (!hasEpisodes(type, m.videos) && !similarRequested) { similarRequested = true; loadSimilar() }
             loadRichCast()
             if (!certificateRequested && certificate == null && m.id.startsWith("tt")) {
@@ -190,7 +285,7 @@ class DetailsActivity : Screen() {
                     val resolved = r.getOrNull()
                     if (resolved != null && resolved != certificate) {
                         certificate = resolved
-                        if (!guideOpen && !infoOpen && !similarOpen && !filmographyOpen) showHero(meta)
+                        if (anyOverlayOpen()) heroNeedsRefresh = true else showHero(meta)
                     }
                 }
             }
@@ -202,7 +297,7 @@ class DetailsActivity : Screen() {
                     val score = r.getOrNull()
                     if (score != null && score != letterboxdScore) {
                         letterboxdScore = score
-                        if (!guideOpen && !infoOpen && !similarOpen && !filmographyOpen) showHero(meta)
+                        if (anyOverlayOpen()) heroNeedsRefresh = true else showHero(meta)
                     }
                 }
             }
@@ -213,20 +308,27 @@ class DetailsActivity : Screen() {
                     if (resolved.isNotEmpty()) {
                         val hadTrailer = m.trailerStreams.isNotEmpty() || m.trailerYtId != null || imdbTrailers.isNotEmpty()
                         imdbTrailers = resolved
-                        if (!hadTrailer && !guideOpen && !infoOpen && !similarOpen && !filmographyOpen) showHero(meta)
+                        if (!hadTrailer) {
+                            if (anyOverlayOpen()) heroNeedsRefresh = true else showHero(meta)
+                        }
                     }
                 }
             }
         }
         background({
-            (Stremio.savedAddons(key) ?: Stremio.addons(key)).savedMeta(type, metaId) to ProfileLibrary.savedLibrary(applicationContext, libraryProfile)?.firstOrNull { it.optString("_id") == metaId }
+            (Stremio.savedAddons(key) ?: Stremio.addons(key)).savedMeta(type, metaId, episodes = true) to ProfileLibrary.savedLibrary(applicationContext, libraryProfile)?.firstOrNull { it.optString("_id") == metaId }
         }) { result ->
             result.getOrNull()?.let { (saved, libraryItem) ->
-                if (!itemChangedHere && item == null) item = libraryItem
+                if (!itemChangedHere && item == null && libraryItem != null) {
+                    item = libraryItem
+                    if (meta != null) {
+                        if (anyOverlayOpen()) heroNeedsRefresh = true else showHero(meta)
+                    }
+                }
                 if (meta == null) saved?.let(::show)
             }
         }
-        background({ Stremio.addons(key).meta(type, metaId, together = true, reportFailure = true) }) { result ->
+        background({ Stremio.addons(key).meta(type, metaId, together = true, reportFailure = true, episodes = true) }) { result ->
             val fresh = result.getOrNull()
             if (fresh != null) show(fresh)
             else if (meta == null) {
@@ -237,15 +339,90 @@ class DetailsActivity : Screen() {
         }
         background({ ProfileLibrary.library(applicationContext, libraryProfile, listOf(metaId)).firstOrNull() }) { result ->
             if (!itemChangedHere && !savingEdit) {
-                item = result.getOrNull() ?: item
-                if (meta != null) showHero(meta)
+                val loaded = result.getOrNull()
+                if (loaded != null) item = loaded
+                if (meta != null) {
+                    if (anyOverlayOpen()) {
+                        if (loaded != null) heroNeedsRefresh = true
+                    } else {
+                        showHero(meta)
+                    }
+                }
             }
         }
     }
 
     // ---------- title and watch window ----------
 
-    private fun showHero(m: Meta?, failure: Failure? = null) {
+    private fun captureHeroFocus(): HeroFocusState? {
+        val focused = currentFocus ?: return null
+        if (!::hero.isInitialized || !isInside(focused, hero)) return null
+        val castIndex = castChips.indexOfFirst { it === focused || isInside(focused, it) }
+        if (castIndex >= 0) return HeroFocusState(HeroControlFocus.CAST, castIndex)
+        return when {
+            ::playButton.isInitialized && (focused === playButton || isInside(focused, playButton)) ->
+                HeroFocusState(HeroControlFocus.PLAY)
+            trailerButton?.let { focused === it || isInside(focused, it) } == true ->
+                HeroFocusState(HeroControlFocus.TRAILER)
+            startOverButton?.let { focused === it || isInside(focused, it) } == true ->
+                HeroFocusState(HeroControlFocus.START_OVER)
+            ::listButton.isInitialized && (focused === listButton || isInside(focused, listButton)) ->
+                HeroFocusState(HeroControlFocus.LIST)
+            ::infoButton.isInitialized && (focused === infoButton || isInside(focused, infoButton)) ->
+                HeroFocusState(HeroControlFocus.INFO)
+            else -> HeroFocusState(HeroControlFocus.PLAY)
+        }
+    }
+
+    private fun heroFocusView(target: HeroFocusState): View? = when (target.control) {
+        HeroControlFocus.PLAY -> if (::playButton.isInitialized) playButton else null
+        HeroControlFocus.TRAILER -> trailerButton ?: if (::playButton.isInitialized) playButton else null
+        HeroControlFocus.START_OVER -> startOverButton ?: if (::playButton.isInitialized) playButton else null
+        HeroControlFocus.LIST -> if (::listButton.isInitialized) listButton else null
+        HeroControlFocus.INFO -> if (::infoButton.isInitialized) infoButton else null
+        HeroControlFocus.CAST -> castChips.getOrNull(target.castIndex) ?: if (::playButton.isInitialized) playButton else null
+    }
+
+    private fun restoreHeroFocus(target: View?) {
+        if (target == null || anyOverlayOpen()) return
+        if (!hero.isAttachedToWindow || !target.requestFocus()) {
+            target.post { if (!anyOverlayOpen() && target.isAttachedToWindow) target.requestFocus() }
+        }
+    }
+
+    private fun refreshHeroIfNeeded(
+        preferredFocus: HeroControlFocus? = null,
+        preferredCastIndex: Int = 0,
+    ): Boolean {
+        if (!shouldRefreshHeroOnOverlayClose(heroNeedsRefresh, overlays())) return false
+        val currentMeta = meta ?: return false
+        val focusState = preferredFocus?.let { HeroFocusState(it, preferredCastIndex) }
+        showHero(currentMeta, preferredFocus = focusState)
+        return true
+    }
+
+    private fun revealHero(preferredFocus: HeroControlFocus) {
+        if (!shouldShowHero(overlays())) return
+        hero.visibility = View.VISIBLE
+        if (!refreshHeroIfNeeded(preferredFocus)) {
+            when (preferredFocus) {
+                HeroControlFocus.INFO -> if (::infoButton.isInitialized) infoButton.requestFocus()
+                else -> if (::playButton.isInitialized) playButton.requestFocus()
+            }
+        }
+    }
+
+    private fun showHero(
+        m: Meta?,
+        failure: Failure? = null,
+        preferredFocus: HeroFocusState? = null,
+    ) {
+        heroNeedsRefresh = false
+        val savedFocus = preferredFocus ?: captureHeroFocus() ?: HeroFocusState(HeroControlFocus.PLAY)
+        castChips.clear()
+        castStripSlot = null
+        trailerButton = null
+        startOverButton = null
         hero.removeAllViews()
         val title = text(m?.name ?: name, SERIF_HERO, serif = true).onArt().apply {
             maxLines = 2; ellipsize = TextUtils.TruncateAt.END; gravity = Gravity.BOTTOM or Gravity.START
@@ -277,34 +454,9 @@ class DetailsActivity : Screen() {
             val error = failed(failure?.let { failureMessage(R.string.details_load_failed, it) }
                 ?: getString(R.string.details_load_failed)) { recreate() }
             stack.addView(error.marginTop(16))
-            error.post { error.getChildAt(2).requestFocus() }
+            error.post { if (!anyOverlayOpen() && error.isAttachedToWindow) error.getChildAt(1).requestFocus() }
         } else {
-            val length = if (hasEpisodes(type, m.videos)) m.videos.map { it.season }.filter { it > 0 }.distinct().size
-                .takeIf { it > 0 }?.let(::seasons) else m.runtime
-            val facts = listOfNotNull(m.year, m.genres.firstOrNull(), length).joinToString(DOT)
-            val factRow = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-            // Content rating first, as a hairline-bordered badge: [ TV-MA ] · 2024 · Drama · 2 seasons
-            certificate?.let { cert ->
-                factRow.addView(text(cert, 9.5f, bold = true, color = TEXT_2).apply {
-                    includeFontPadding = false
-                    setLineSpacing(0f, 1f)
-                    setPadding(dp(5), dp(2), dp(5), dp(2))
-                    background = GradientDrawable().apply {
-                        cornerRadius = dp(3).toFloat()
-                        setStroke(dp(1), 0x55FFFFFF)
-                    }
-                })
-                if (facts.isNotBlank()) factRow.addView(text(DOT, SMALL, color = TEXT_2).onArt())
-            }
-            factRow.addView(text(facts, SMALL, color = TEXT_2).onArt().apply {
-                maxLines = 1; ellipsize = TextUtils.TruncateAt.END
-            })
-            val ratings = shownRatings(Settings.ratings(this), m.rating, letterboxdScore)
-            if (ratings.isNotEmpty()) {
-                factRow.addView(text(DOT, SMALL, color = TEXT_2).onArt())
-                addRatings(factRow, ratings, tagSp = 9.5f, firstGap = 0)
-            }
-            stack.addView(factRow, wrap().apply { topMargin = dp(12) })
+            stack.addView(buildMetadataRow(m, detailed = false), wrap().apply { topMargin = dp(12) })
             m.description?.takeIf { it.isNotBlank() }?.let {
                 stack.addView(text(it, BODY, color = TEXT).onArt().apply {
                     maxLines = 3; ellipsize = TextUtils.TruncateAt.END
@@ -321,7 +473,7 @@ class DetailsActivity : Screen() {
                     addView(castStrip)
                 }
                 castStripSlot = slot
-                stack.addView(slot, wrap().apply { topMargin = dp(10) })
+                stack.addView(slot, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
             }
             addWatch(m, stack)
         }
@@ -337,6 +489,15 @@ class DetailsActivity : Screen() {
             }, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.START).apply {
                 leftMargin = dp(PAD); bottomMargin = dp(28)
             })
+        }
+        if (m != null) {
+            val resolved = resolveHeroFocusTarget(
+                saved = savedFocus,
+                hasTrailer = trailerButton != null,
+                hasStartOver = startOverButton != null,
+                castCount = castChips.size,
+            )
+            restoreHeroFocus(heroFocusView(resolved))
         }
     }
 
@@ -376,20 +537,21 @@ class DetailsActivity : Screen() {
             playButton = pill(R.string.action_episodes).apply {
                 setOnClickListener { showGuide() }
             }
-            val trailerButton = if (hasTrailer) trailerPill { playTrailer(m) } else null
+            val trailer = if (hasTrailer) iconButton("", getString(R.string.action_trailer), iconRes = R.drawable.ic_trailer) { playTrailer(m) } else null
+            trailerButton = trailer
+            startOverButton = null
             infoButton = iconButton("ⓘ", getString(R.string.action_more_info)) { showInfo() }
-            listButton = listButton()
+            listButton = buildListButton()
             buttonRow = LinearLayout(this).apply {
                 gravity = Gravity.CENTER_VERTICAL
                 clipChildren = false
                 clipToPadding = false
-                addView(playButton, wrap().apply { marginEnd = dp(if (trailerButton != null) 10 else 14) })
-                trailerButton?.let { addView(it, wrap().apply { marginEnd = dp(10) }) }
-                addView(listButton, LinearLayout.LayoutParams(dp(BUTTON_H), dp(BUTTON_H)).apply { marginEnd = dp(8) })
-                addView(infoButton, LinearLayout.LayoutParams(dp(BUTTON_H), dp(BUTTON_H)))
+                addView(playButton, wrap().apply { marginEnd = dp(14) })
+                trailer?.let { addView(it, LinearLayout.LayoutParams(dp(ICON_BUTTON_H), dp(ICON_BUTTON_H)).apply { marginEnd = dp(8) }) }
+                addView(listButton, LinearLayout.LayoutParams(dp(ICON_BUTTON_H), dp(ICON_BUTTON_H)).apply { marginEnd = dp(8) })
+                addView(infoButton, LinearLayout.LayoutParams(dp(ICON_BUTTON_H), dp(ICON_BUTTON_H)))
             }
             stack.addView(buttonRow, wrap().apply { topMargin = dp(16) })
-            playButton.post { if (!guideOpen && !infoOpen && !similarOpen) playButton.requestFocus() }
             return
         }
         val duration = item?.optJSONObject("state")?.optLong("duration") ?: 0L
@@ -408,127 +570,70 @@ class DetailsActivity : Screen() {
             // Held OK: every source, to choose one by hand.
             setOnLongClickListener { openSources(target?.first ?: metaId, startOver = false, pick = true); true }
         }
-        val trailerButton = if (hasTrailer) trailerPill { playTrailer(m) } else null
+        val trailer = if (hasTrailer) iconButton("", getString(R.string.action_trailer), iconRes = R.drawable.ic_trailer) { playTrailer(m) } else null
         val startOver = if (resumeAt > 0) iconButton("↺", getString(R.string.action_start_over)) {
             openSources(target?.first ?: metaId, startOver = true)
         } else null
+        trailerButton = trailer
+        startOverButton = startOver
         infoButton = iconButton("ⓘ", getString(R.string.action_more_info)) { showInfo(focusCast = false) }
-        listButton = listButton()
+        listButton = buildListButton()
         buttonRow = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             clipChildren = false
             clipToPadding = false
-            addView(playButton, wrap().apply { marginEnd = dp(if (trailerButton != null) 10 else 14) })
-            trailerButton?.let { addView(it, wrap().apply { marginEnd = dp(10) }) }
-            startOver?.let { addView(it, LinearLayout.LayoutParams(dp(BUTTON_H), dp(BUTTON_H)).apply { marginEnd = dp(8) }) }
-            addView(listButton, LinearLayout.LayoutParams(dp(BUTTON_H), dp(BUTTON_H)).apply { marginEnd = dp(8) })
-            addView(infoButton, LinearLayout.LayoutParams(dp(BUTTON_H), dp(BUTTON_H)))
+            addView(playButton, wrap().apply { marginEnd = dp(14) })
+            trailer?.let { addView(it, LinearLayout.LayoutParams(dp(ICON_BUTTON_H), dp(ICON_BUTTON_H)).apply { marginEnd = dp(8) }) }
+            startOver?.let { addView(it, LinearLayout.LayoutParams(dp(ICON_BUTTON_H), dp(ICON_BUTTON_H)).apply { marginEnd = dp(8) }) }
+            addView(listButton, LinearLayout.LayoutParams(dp(ICON_BUTTON_H), dp(ICON_BUTTON_H)).apply { marginEnd = dp(8) })
+            addView(infoButton, LinearLayout.LayoutParams(dp(ICON_BUTTON_H), dp(ICON_BUTTON_H)))
         }
         stack.addView(buttonRow, wrap().apply { topMargin = dp(16) })
-        playButton.post { if (!guideOpen && !infoOpen && !similarOpen && !filmographyOpen) playButton.requestFocus() }
+    }
+
+    private fun buildMetadataRow(m: Meta, detailed: Boolean): LinearLayout {
+        val seasonCount = if (hasEpisodes(type, m.videos)) {
+            m.videos.map { it.season }.filter { it > 0 }.distinct().size.takeIf { it > 0 }?.let(::seasons)
+        } else null
+        val genreText = if (detailed) {
+            m.genres.take(3).joinToString(" / ").ifEmpty { null }
+        } else {
+            m.genres.firstOrNull()
+        }
+        val lengthParts = if (detailed) {
+            listOfNotNull(seasonCount, m.runtime)
+        } else {
+            listOfNotNull(seasonCount ?: m.runtime)
+        }
+        val facts = (listOfNotNull(m.year, genreText) + lengthParts).joinToString(DOT)
+        return LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            certificate?.let { cert ->
+                addView(text(cert, 9.5f, bold = true, color = TEXT_2).apply {
+                    includeFontPadding = false
+                    setLineSpacing(0f, 1f)
+                    setPadding(dp(5), dp(2), dp(5), dp(2))
+                    background = GradientDrawable().apply {
+                        cornerRadius = dp(3).toFloat()
+                        setStroke(dp(1), GLASS_EDGE)
+                    }
+                })
+                if (facts.isNotBlank()) addView(text(DOT, SMALL, color = TEXT_2).onArt())
+            }
+            if (facts.isNotBlank()) {
+                addView(text(facts, SMALL, color = TEXT_2).onArt().apply {
+                    maxLines = 1; ellipsize = TextUtils.TruncateAt.END
+                })
+            }
+            val ratings = shownRatings(Settings.ratings(this@DetailsActivity), m.rating, letterboxdScore)
+            if (ratings.isNotEmpty()) {
+                if (facts.isNotBlank() || certificate != null) addView(text(DOT, SMALL, color = TEXT_2).onArt())
+                addRatings(this, ratings, tagSp = 9.5f, firstGap = 0)
+            }
+        }
     }
 
     private fun seasonName(season: Int) = if (season == 0) getString(R.string.season_specials) else getString(R.string.season_number, season)
-
-    private fun trailerPill(action: () -> Unit) = text(R.string.action_trailer, SMALL, bold = true).apply {
-        isFocusable = true
-        gravity = Gravity.CENTER_VERTICAL
-        minHeight = dp(BUTTON_H)
-        setPadding(dp(14), 0, dp(16), 0)
-        compoundDrawablePadding = dp(6)
-        val icon = getDrawable(R.drawable.ic_play)?.mutate()?.apply {
-            setBounds(0, 0, dp(15), dp(15))
-            setTint(TEXT)
-        }
-        setCompoundDrawablesRelative(icon, null, null, null)
-        background = glass(BUTTON_H / 2)
-        setOnFocusChangeListener { v, has ->
-            v.background = glass(BUTTON_H / 2, has)
-            v.grow(has, CHIP_GROW).start()
-        }
-        setOnClickListener { action() }
-    }
-
-    private fun iconButton(symbol: String, description: String, action: () -> Unit): TextView = object : TextView(this) {
-        private val d = resources.displayMetrics.density
-        private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = TEXT
-            style = Paint.Style.STROKE
-            strokeCap = Paint.Cap.ROUND
-            strokeJoin = Paint.Join.ROUND
-        }
-        private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = TEXT
-            style = Paint.Style.FILL
-        }
-        private val glyphPath = Path()
-        private val glyphBounds = Rect()
-
-        override fun onDraw(canvas: Canvas) {
-            val s = text?.toString().orEmpty()
-            if (s.isEmpty()) return
-            val cx = width / 2f
-            val cy = height / 2f
-            strokePaint.color = currentTextColor
-            fillPaint.color = currentTextColor
-            when (s) {
-                "+" -> {
-                    val r = 5.5f * d
-                    strokePaint.strokeWidth = 1.8f * d
-                    canvas.drawLine(cx - r, cy, cx + r, cy, strokePaint)
-                    canvas.drawLine(cx, cy - r, cx, cy + r, strokePaint)
-                }
-                "✓" -> {
-                    strokePaint.strokeWidth = 1.8f * d
-                    glyphPath.reset()
-                    glyphPath.moveTo(cx - 5f * d, cy + 0.3f * d)
-                    glyphPath.lineTo(cx - 1.5f * d, cy + 3.8f * d)
-                    glyphPath.lineTo(cx + 5.2f * d, cy - 3.4f * d)
-                    canvas.drawPath(glyphPath, strokePaint)
-                }
-                "↺" -> {
-                    val r = 5.8f * d
-                    strokePaint.strokeWidth = 1.6f * d
-                    canvas.drawArc(RectF(cx - r, cy - r, cx + r, cy + r), -135f, 285f, false, strokePaint)
-                    val ax = cx - 4.1f * d
-                    val ay = cy - 4.1f * d
-                    glyphPath.reset()
-                    glyphPath.moveTo(ax, ay - 2.8f * d)
-                    glyphPath.lineTo(ax, ay + 0.4f * d)
-                    glyphPath.lineTo(ax + 3.2f * d, ay + 0.4f * d)
-                    canvas.drawPath(glyphPath, strokePaint)
-                }
-                "ⓘ" -> {
-                    val r = 6.8f * d
-                    strokePaint.strokeWidth = 1.5f * d
-                    canvas.drawCircle(cx, cy, r, strokePaint)
-                    strokePaint.strokeWidth = 1.6f * d
-                    canvas.drawLine(cx, cy - 0.5f * d, cx, cy + 3.6f * d, strokePaint)
-                    canvas.drawCircle(cx, cy - 3.2f * d, 0.95f * d, fillPaint)
-                }
-                else -> {
-                    paint.color = currentTextColor
-                    paint.getTextBounds(s, 0, s.length, glyphBounds)
-                    canvas.drawText(s, cx - glyphBounds.exactCenterX(), cy - glyphBounds.exactCenterY(), paint)
-                }
-            }
-        }
-    }.apply {
-        text = symbol
-        textSize = 18f
-        setTextColor(TEXT)
-        gravity = Gravity.CENTER
-        includeFontPadding = false
-        contentDescription = description
-        isFocusable = true
-        background = glass(BUTTON_H / 2)
-        setOnFocusChangeListener { v, has ->
-            v.background = glass(BUTTON_H / 2, has)
-            v.grow(has, CHIP_GROW).start()
-        }
-        setOnClickListener { action() }
-        layoutParams = LinearLayout.LayoutParams(dp(BUTTON_H), dp(BUTTON_H))
-    }
 
     /** What Play opens: the episode Continue Watching points at, or the first episode, or the movie itself. */
     private fun playTarget(m: Meta?): Pair<String, Video?>? {
@@ -545,17 +650,20 @@ class DetailsActivity : Screen() {
         return video.id to video
     }
 
-    private fun listButton(): TextView {
+    private fun buildListButton(): TextView {
         val inList = Library.inList(item)
-        return iconButton(if (inList) "✓" else "+",
-            getString(if (inList) R.string.action_remove_from_list else R.string.action_add_to_list), ::toggleList)
+        val desc = getString(if (inList) R.string.action_remove_from_list else R.string.action_add_to_list)
+        return iconButton(if (inList) "✓" else "+", desc, action = ::toggleList)
     }
 
     private fun toggleList() {
+        val profile = Profiles.active(this)?.takeIf { it.id == libraryProfile.id } ?: return
+        val dates = Library.listDates(this, profile.id)
         val add = !Library.inList(item)
-        editLibrary({ Library.setInList(it, add) }, R.string.list_update_failed) {
+        editLibrary({ Library.setInList(it, add) }, R.string.list_update_failed, listDates = dates) {
             listButton.text = if (add) "✓" else "+"
-            listButton.contentDescription = getString(if (add) R.string.action_remove_from_list else R.string.action_add_to_list)
+            val desc = getString(if (add) R.string.action_remove_from_list else R.string.action_add_to_list)
+            listButton.contentDescription = desc
         }
     }
 
@@ -579,6 +687,10 @@ class DetailsActivity : Screen() {
         val height = resources.displayMetrics.heightPixels - top - dp(27)
         val largeText = resources.configuration.fontScale > 1.15f
         guide = FrameLayout(this).apply { visibility = View.GONE }
+        guide.addView(View(this).apply {
+            background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(0xD90E0C0A.toInt(), 0x800E0C0A.toInt(), 0x000E0C0A))
+        }, FrameLayout.LayoutParams(-1, dp(136), Gravity.TOP))
         val smallLogo = ImageView(this).apply { scaleType = ImageView.ScaleType.FIT_START }
         guide.addView(smallLogo, FrameLayout.LayoutParams(dp(150), dp(42)).apply {
             leftMargin = x; topMargin = dp(27)
@@ -621,31 +733,31 @@ class DetailsActivity : Screen() {
             background = rounded(BASE, 8)
             clipToOutline = true
         }
-        pane.addView(previewImage, FrameLayout.LayoutParams(previewWidth, dp(226)).apply {
+        pane.addView(previewImage, FrameLayout.LayoutParams(previewWidth, dp(200)).apply {
             leftMargin = previewX; topMargin = dp(14)
         })
         previewProgress = FrameLayout(this)
         pane.addView(previewProgress, FrameLayout.LayoutParams(previewWidth - dp(20), dp(3)).apply {
-            leftMargin = previewX + dp(10); topMargin = dp(229)
+            leftMargin = previewX + dp(10); topMargin = dp(203)
         })
         previewTitle = text("", 22f, serif = true).onArt().apply {
             maxLines = 1; ellipsize = TextUtils.TruncateAt.END
         }
         pane.addView(previewTitle, FrameLayout.LayoutParams(previewWidth, -2).apply {
-            leftMargin = previewX; topMargin = dp(251)
+            leftMargin = previewX; topMargin = dp(225)
         })
         previewFacts = text("", SMALL, color = TEXT_2).onArt().apply {
             maxLines = 1; ellipsize = TextUtils.TruncateAt.END
         }
         pane.addView(previewFacts, FrameLayout.LayoutParams(previewWidth, -2).apply {
-            leftMargin = previewX; topMargin = dp(if (largeText) 285 else 280)
+            leftMargin = previewX; topMargin = dp(if (largeText) 259 else 254)
         })
         previewAbout = text("", SMALL, color = TEXT).onArt().apply {
-            maxLines = if (largeText) 2 else 3
+            maxLines = if (largeText) 3 else 5
             ellipsize = TextUtils.TruncateAt.END
         }
         pane.addView(previewAbout, FrameLayout.LayoutParams(previewWidth, -2).apply {
-            leftMargin = previewX; topMargin = dp(if (largeText) 313 else 304)
+            leftMargin = previewX; topMargin = dp(if (largeText) 287 else 278)
         })
         guide.addView(pane, FrameLayout.LayoutParams(width, height).apply {
             leftMargin = x; topMargin = top
@@ -765,18 +877,17 @@ class DetailsActivity : Screen() {
         leftShade(true)
         guide.exit().alpha(0f).translationY(dp(24).toFloat()).withEndAction {
             guide.visibility = View.GONE
-            hero.visibility = View.VISIBLE
-            if (::playButton.isInitialized) playButton.requestFocus()
+            revealHero(HeroControlFocus.PLAY)
         }.start()
     }
 
     private fun editLibrary(change: (JSONObject) -> Unit, title: Int = R.string.library_edit_failed,
-                            previous: Failure? = null, done: () -> Unit) {
+                            previous: Failure? = null, listDates: SharedPreferences? = null, done: () -> Unit) {
         if (savingEdit) return
         savingEdit = true
         val entry = Library.newItem(metaId, type, meta?.name ?: name, meta?.poster ?: poster)
         background({
-            ProfileLibrary.editLibrary(applicationContext, libraryProfile, metaId, entry, change)
+            ProfileLibrary.editLibrary(applicationContext, libraryProfile, metaId, entry, listDates, change)
         }) { result ->
             savingEdit = false
             if (isFinishing) return@background
@@ -789,14 +900,14 @@ class DetailsActivity : Screen() {
                 val failure = failureOf(it)
                 FailureLog.record(FailureLog.Operation.LIBRARY_EDIT, failure)
                 choose(getString(title), listOf(getString(R.string.action_try_again), getString(R.string.action_cancel)),
-                    getString(failure.message)) { choice -> if (choice == 0) editLibrary(change, title, failure, done) }
+                    getString(failure.message)) { choice -> if (choice == 0) editLibrary(change, title, failure, listDates, done) }
             }
         }
     }
 
     private fun refreshAfterEdit(focusEpisodeId: String? = null, focusSeason: Int? = null) {
         fillGuide()
-        meta?.let(::showHero)
+        if (anyOverlayOpen()) heroNeedsRefresh = true else meta?.let(::showHero)
         if (focusEpisodeId != null) {
             val target = (0 until guideRows.childCount).map { guideRows.getChildAt(it) }
                 .firstOrNull { it.tag == focusEpisodeId }
@@ -941,10 +1052,6 @@ class DetailsActivity : Screen() {
                 intArrayOf(0xEB0E0C0A.toInt(), 0xD90E0C0A.toInt(), 0x990E0C0A.toInt()))
         }, FrameLayout.LayoutParams(-1, -1))
 
-        val facts = (listOfNotNull(m.year, m.runtime,
-            m.genres.take(2).joinToString(" / ").ifEmpty { null }) +
-            shownRatings(Settings.ratings(this), m.rating, letterboxdScore).map { (source, value) -> "$source $value" }).joinToString(DOT)
-
         val content = column(Gravity.START).apply {
             clipChildren = false
             clipToPadding = false
@@ -953,19 +1060,26 @@ class DetailsActivity : Screen() {
         content.addView(text(m.name, SERIF_TITLE, bold = true, serif = true).onArt().apply {
             maxLines = 2; ellipsize = TextUtils.TruncateAt.END
         })
-        content.addView(text(facts, SMALL, color = TEXT_2).onArt().apply {
-            maxLines = 1; ellipsize = TextUtils.TruncateAt.END
-        }.marginTop(6))
+        content.addView(buildMetadataRow(m, detailed = true), wrap().apply { topMargin = dp(8) })
 
         m.description?.takeIf { it.isNotBlank() }?.let { desc ->
             content.addView(caps(R.string.details_the_story, TEXT_2).onArt().marginTop(14))
             val story = ScrollView(this).apply {
                 isVerticalScrollBarEnabled = false
+                isVerticalFadingEdgeEnabled = true
+                setFadingEdgeLength(dp(20))
                 isFocusable = true
+                setPadding(dp(8), dp(6), dp(8), dp(6))
+                setOnFocusChangeListener { v, has ->
+                    v.background = if (has) rounded(ROW_FOCUSED, 8) else null
+                }
                 addView(text(desc, BODY, color = TEXT).onArt())
             }
             storyScrollView = story
-            content.addView(story, LinearLayout.LayoutParams(dp(HERO_W), dp(110)).apply { topMargin = dp(6) })
+            content.addView(story, LinearLayout.LayoutParams(dp(HERO_W), dp(110)).apply {
+                topMargin = dp(6)
+                leftMargin = -dp(8)
+            })
         }
 
         val fullCast = richCast.ifEmpty {
@@ -977,13 +1091,12 @@ class DetailsActivity : Screen() {
             content.addView(caps(R.string.details_cast, TEXT_2).onArt().marginTop(14))
             val castRow = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
+                gravity = Gravity.TOP
                 clipChildren = false
                 clipToPadding = false
             }
 
             val avatarSize = dp(56)
-            val ringBox = avatarSize + dp(6)
 
             fullCast.forEachIndexed { index, actor ->
                 val card = LinearLayout(this).apply {
@@ -992,20 +1105,13 @@ class DetailsActivity : Screen() {
                     isFocusable = true
                     clipChildren = false
                     clipToPadding = false
-                    setPadding(dp(4), dp(4), dp(4), dp(6))
+                    setPadding(dp(8), dp(8), dp(8), dp(8))
                 }
 
-                val avatarContainer = FrameLayout(this).apply { clipChildren = false }
-
-                val ring = View(this).apply {
-                    background = GradientDrawable().apply {
-                        shape = GradientDrawable.OVAL
-                        setColor(0x00000000)
-                        setStroke(dp(2), TUNGSTEN)
-                    }
-                    visibility = View.INVISIBLE
+                val avatarContainer = FrameLayout(this).apply {
+                    clipChildren = false
+                    alpha = 0.65f
                 }
-                avatarContainer.addView(ring, FrameLayout.LayoutParams(ringBox, ringBox, Gravity.CENTER))
 
                 val avatarFrame = FrameLayout(this).apply {
                     background = GradientDrawable().apply {
@@ -1042,30 +1148,33 @@ class DetailsActivity : Screen() {
 
                 card.addView(avatarContainer, wrap())
 
-                val nameView = text(actor.name, SMALL, bold = true, color = TEXT).apply {
+                val nameView = text(actor.name, SMALL, bold = true, color = TEXT_2).apply {
                     gravity = Gravity.CENTER_HORIZONTAL
                     textAlignment = View.TEXT_ALIGNMENT_CENTER
                     maxLines = 2
                     ellipsize = TextUtils.TruncateAt.END
                 }
-                card.addView(nameView, LinearLayout.LayoutParams(dp(82), -2).apply { topMargin = dp(6) })
+                card.addView(nameView, LinearLayout.LayoutParams(dp(96), -2).apply { topMargin = dp(8) })
 
                 val role = if (actor.isDirector) getString(R.string.cast_director) else actor.character
                 val charView = if (!role.isNullOrBlank()) {
-                    text(role, 11f, color = TEXT_2).apply {
+                    text(role, 11f, color = TEXT_3).apply {
                         gravity = Gravity.CENTER_HORIZONTAL
                         textAlignment = View.TEXT_ALIGNMENT_CENTER
-                        maxLines = 1
+                        maxLines = 2
                         ellipsize = TextUtils.TruncateAt.END
                     }
                 } else null
-                charView?.let { card.addView(it, LinearLayout.LayoutParams(dp(82), -2).apply { topMargin = dp(2) }) }
+                charView?.let { card.addView(it, LinearLayout.LayoutParams(dp(96), -2).apply { topMargin = dp(2) }) }
 
-                card.setOnFocusChangeListener { _, focused ->
-                    card.grow(focused).start()
-                    ring.visibility = if (focused) View.VISIBLE else View.INVISIBLE
-                    nameView.setTextColor(if (focused) 0xFFFBF8F5.toInt() else TEXT)
-                    charView?.setTextColor(if (focused) TEXT else TEXT_2)
+                card.setOnFocusChangeListener { v, focused ->
+                    v.background = if (focused) rounded(ROW_FOCUSED, 10) else null
+                    avatarContainer.grow(focused)
+                        .translationZ(if (focused) dp(CARD_LIFT).toFloat() else 0f)
+                        .alpha(if (focused) 1f else 0.65f)
+                        .start()
+                    nameView.setTextColor(if (focused) TEXT else TEXT_2)
+                    charView?.setTextColor(if (focused) TEXT_2 else TEXT_3)
                 }
 
                 card.setOnClickListener {
@@ -1074,18 +1183,20 @@ class DetailsActivity : Screen() {
 
                 infoCastCards.add(card)
                 castRow.addView(card, LinearLayout.LayoutParams(-2, -2).apply {
-                    if (index > 0) marginStart = dp(12)
+                    if (index > 0) marginStart = dp(8)
                 })
             }
 
             val room = dp(8)
             val castScroll = HorizontalScrollView(this).apply {
                 isHorizontalScrollBarEnabled = false
+                isHorizontalFadingEdgeEnabled = true
+                setFadingEdgeLength(dp(32))
                 clipToPadding = false
                 setPadding(room, room, room, room)
                 addView(castRow)
             }
-            content.addView(castScroll, LinearLayout.LayoutParams(-1, dp(128) + 2 * room).apply {
+            content.addView(castScroll, LinearLayout.LayoutParams(-1, -2).apply {
                 leftMargin = -room
                 rightMargin = -room
                 topMargin = dp(6) - room
@@ -1101,10 +1212,22 @@ class DetailsActivity : Screen() {
         infoOverlay.translationY = dp(20).toFloat()
         infoOverlay.enter().alpha(1f).translationY(0f).start()
 
+        val story = storyScrollView
         if (focusCast && infoCastCards.isNotEmpty()) {
             infoCastCards.first().requestFocus()
+        } else if (story != null) {
+            story.post {
+                val canScroll = story.canScrollVertically(1) || story.canScrollVertically(-1)
+                if (canScroll || infoCastCards.isEmpty()) {
+                    story.isFocusable = true
+                } else {
+                    story.isFocusable = false
+                    infoCastCards.first().requestFocus()
+                }
+            }
+            story.requestFocus()
         } else {
-            storyScrollView?.requestFocus() ?: infoCastCards.firstOrNull()?.requestFocus()
+            infoCastCards.firstOrNull()?.requestFocus()
         }
     }
 
@@ -1114,22 +1237,19 @@ class DetailsActivity : Screen() {
             val closing = infoOverlay
             closing.exit().alpha(0f).translationY(dp(20).toFloat()).withEndAction {
                 root.removeView(closing)
-                if (!infoOpen) {
-                    hero.visibility = View.VISIBLE
-                    infoButton.requestFocus()
-                }
+                revealHero(HeroControlFocus.INFO)
             }.start()
         } else {
-            hero.visibility = View.VISIBLE
-            infoButton.requestFocus()
+            revealHero(HeroControlFocus.INFO)
         }
     }
 
     private fun loadSimilar() {
         background({
-            Stremio.addons(key).firstNotNullOfOrNull { addon ->
+            val fromAddons = Stremio.addons(key).firstNotNullOfOrNull { addon ->
                 runCatching { addon.similar(type, metaId) }.getOrNull()?.takeIf { it.isNotEmpty() }
             }.orEmpty()
+            fromAddons.ifEmpty { Tmdb.similar(metaId, type) }
         }) { result ->
             result.getOrNull()?.let { titles ->
                 titles.asSequence().filter { it.id != metaId && it.type == type }
@@ -1139,11 +1259,10 @@ class DetailsActivity : Screen() {
         }
     }
 
-    /** Movies reveal one Home-sized poster row without moving the title off the screen. */
-    private fun showSimilar(heading: String, titles: List<Meta>) {
-        if (::similarOverlay.isInitialized) root.removeView(similarOverlay)
-        similarOverlay = FrameLayout(this).apply { visibility = View.GONE }
-        similarOverlay.addView(View(this).apply {
+    /** Shared poster-row overlay for "More like this" and cast filmography. */
+    private fun buildPosterRowOverlay(heading: String, titles: List<Meta>, onFirstCard: (View?) -> Unit): FrameLayout {
+        val overlay = FrameLayout(this).apply { visibility = View.GONE }
+        overlay.addView(View(this).apply {
             background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP,
                 intArrayOf(0xF70E0C0A.toInt(), 0xA60E0C0A.toInt(), 0x000E0C0A))
         }, FrameLayout.LayoutParams(-1, dp(280), Gravity.BOTTOM))
@@ -1163,25 +1282,40 @@ class DetailsActivity : Screen() {
         content.addView(headerRow, LinearLayout.LayoutParams(-1, -2).apply {
             bottomMargin = dp(12)
         })
-        val row = LinearLayout(this).apply { clipChildren = false; clipToPadding = false }
-        similarFirst = null
+        onFirstCard(addPosterRail(content, titles, captionPill))
+        overlay.addView(content, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM).apply {
+            leftMargin = dp(PAD); rightMargin = dp(PAD); bottomMargin = dp(38)
+        })
+        return overlay
+    }
+
+    /** Movies reveal one Home-sized poster row without moving the title off the screen. */
+    private fun showSimilar(heading: String, titles: List<Meta>) {
+        if (::similarOverlay.isInitialized) root.removeView(similarOverlay)
+        similarOverlay = buildPosterRowOverlay(heading, titles) { similarFirst = it }
+        root.addView(similarOverlay, FrameLayout.LayoutParams(-1, -1))
+        if (anyOverlayOpen()) heroNeedsRefresh = true else showHero(meta)
+    }
+
+    private fun addPosterRail(content: LinearLayout, titles: List<Meta>, captionPill: TextView): View? {
+        val room = dp(8)
+        val rail = HorizontalCardRail(
+            screen = this,
+            cardGapPx = dp(CARD_GAP),
+            paddingStartPx = room,
+            paddingTopPx = room,
+            paddingEndPx = room,
+            paddingBottomPx = room,
+            cullLeft = false,
+        )
+        var firstCard: View? = null
         titles.forEachIndexed { index, title ->
-            val card = FrameLayout(this).apply {
-                background = rounded(BASE, 6)
-                outlineProvider = object : android.view.ViewOutlineProvider() {
-                    override fun getOutline(view: View, outline: android.graphics.Outline) =
-                        outline.setRoundRect(0, 0, view.width, view.height, dp(6).toFloat())
-                }
-                clipToOutline = true
-                val image = ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
-                addView(image, FrameLayout.LayoutParams(-1, -1))
-                val fallback = text(title.name, SMALL, bold = true).apply {
-                    maxLines = 3; ellipsize = TextUtils.TruncateAt.END
-                    setPadding(dp(8), 0, dp(8), dp(8)); visibility = View.GONE
-                }
-                addView(fallback, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
-                cardFocus(6) { has ->
+            val card = MediaCardView(this, title.name, title.poster, title.background, fadeIn = false).apply {
+                dim(true, animate = false)
+                setOnFocusChanged { has ->
+                    dim(!has)
                     if (has) {
+                        rail.scrollToCard(index)
                         val yearStr = title.year?.take(4)?.let { "  ·  $it" } ?: ""
                         captionPill.text = "${title.name}$yearStr"
                         captionPill.visibility = View.VISIBLE
@@ -1192,32 +1326,18 @@ class DetailsActivity : Screen() {
                         .putExtra("type", title.type).putExtra("id", title.id).putExtra("name", title.name)
                         .putExtra("poster", title.poster).putExtra("background", title.background))
                 }
-                Images.load(title.poster ?: title.background, image, dp(POSTER_W), failed = {
-                    fallback.visibility = View.VISIBLE
-                })
+                load()
             }
-            if (similarFirst == null) similarFirst = card
-            row.addView(card, LinearLayout.LayoutParams(dp(POSTER_W), dp(POSTER_H)).apply {
-                if (index > 0) marginStart = dp(CARD_GAP)
-            })
+            if (firstCard == null) firstCard = card
+            rail.appendCard(card)
         }
-        val room = dp(8)
-        content.addView(HorizontalScrollView(this).apply {
-            isHorizontalScrollBarEnabled = false
-            clipToPadding = false
-            setPadding(room, room, room, room)
-            addView(row)
-        }, LinearLayout.LayoutParams(-1, dp(POSTER_H) + 2 * room).apply {
+        content.addView(rail.scroller, LinearLayout.LayoutParams(-1, dp(POSTER_H) + 2 * room).apply {
             leftMargin = -room
             rightMargin = -room
             topMargin = -room
             bottomMargin = -room
         })
-        similarOverlay.addView(content, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM).apply {
-            leftMargin = dp(PAD); rightMargin = dp(PAD); bottomMargin = dp(38)
-        })
-        root.addView(similarOverlay, FrameLayout.LayoutParams(-1, -1))
-        showHero(meta)
+        return firstCard
     }
 
     private fun showSimilar() {
@@ -1235,8 +1355,7 @@ class DetailsActivity : Screen() {
         similarOpen = false
         similarOverlay.exit().alpha(0f).translationY(dp(20).toFloat()).withEndAction {
             similarOverlay.visibility = View.GONE
-            hero.visibility = View.VISIBLE
-            playButton.requestFocus()
+            revealHero(HeroControlFocus.PLAY)
         }.start()
     }
 
@@ -1247,24 +1366,40 @@ class DetailsActivity : Screen() {
             val enhanced = result.getOrNull().orEmpty()
             if (enhanced.isNotEmpty()) {
                 richCast = enhanced
-                castStripSlot?.let { slot ->
+                val focused = currentFocus
+                val focusedCastIndex = if (!anyOverlayOpen()) {
+                    focused?.let { v -> castChips.indexOfFirst { it === v || isInside(v, it) } } ?: -1
+                } else -1
+                val slot = castStripSlot
+                if (slot != null) {
                     slot.removeAllViews()
                     buildCastChips(richCast)?.let { slot.addView(it) }
+                } else if (meta != null) {
+                    if (anyOverlayOpen()) heroNeedsRefresh = true else showHero(meta)
                 }
-                if (infoOpen) {
-                    showInfo(focusCast = currentFocus in infoCastCards)
+                if (focusedCastIndex >= 0 && !anyOverlayOpen()) {
+                    val resolved = resolveHeroFocusTarget(
+                        saved = HeroFocusState(HeroControlFocus.CAST, focusedCastIndex),
+                        hasTrailer = trailerButton != null,
+                        hasStartOver = startOverButton != null,
+                        castCount = castChips.size,
+                    )
+                    restoreHeroFocus(heroFocusView(resolved))
+                }
+                if (shouldRefreshInfoOnCastLoad(infoOpen, filmographyOpen)) {
+                    showInfo(focusCast = currentFocus?.let { v -> infoCastCards.any { it === v || isInside(v, it) } } == true)
                 }
             }
         }
     }
 
     private fun buildCastChips(allMembers: List<CastMember>): View? {
+        castChips.clear()
         val members = heroCastPreview(
             allMembers,
             maxCount = if (allMembers.size <= 4 && allMembers.sumOf { it.name.length } <= 52) 4 else 3
         )
         if (members.isEmpty()) return null
-        castChips.clear()
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -1313,18 +1448,16 @@ class DetailsActivity : Screen() {
                 }
                 addView(avatarFrame, LinearLayout.LayoutParams(avatarSize, avatarSize).apply { marginEnd = dp(7) })
 
-                val nameView = text(castChipLabel(actor), SMALL, color = TEXT).apply {
+                val nameView = text(castChipLabel(actor), SMALL, color = TEXT_2).apply {
                     includeFontPadding = false
                     maxLines = 1
-                    ellipsize = TextUtils.TruncateAt.END
-                    maxWidth = dp(115)
                 }
                 addView(nameView, wrap())
 
                 setOnFocusChangeListener { v, has ->
                     v.background = if (has) glass(14, true) else rest
                     v.grow(has, CHIP_GROW).start()
-                    nameView.setTextColor(TEXT)
+                    nameView.setTextColor(if (has) TEXT else TEXT_2)
                 }
                 setOnClickListener { showFilmography(actor, this) }
             }
@@ -1337,8 +1470,9 @@ class DetailsActivity : Screen() {
         val totalCastCount = (richCast.ifEmpty { allMembers }).size
         val remainingCount = totalCastCount - members.size
         if (remainingCount > 0) {
-            val moreChip = text(getString(R.string.cast_more, remainingCount), SMALL, color = TEXT).apply {
+            val moreChip = text(getString(R.string.cast_more, remainingCount), SMALL, color = TEXT_2).apply {
                 gravity = Gravity.CENTER
+                setSingleLine()
                 includeFontPadding = false
                 minHeight = dp(28)
                 setPadding(dp(12), dp(4), dp(12), dp(4))
@@ -1347,6 +1481,7 @@ class DetailsActivity : Screen() {
                 isFocusable = true
                 setOnFocusChangeListener { v, has ->
                     v.background = if (has) glass(14, true) else rest
+                    setTextColor(if (has) TEXT else TEXT_2)
                     v.grow(has, CHIP_GROW).start()
                 }
                 setOnClickListener { showInfo(focusCast = true) }
@@ -1355,19 +1490,40 @@ class DetailsActivity : Screen() {
             container.addView(moreChip, LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(8) })
         }
 
-        return container
+        val room = dp(4)
+        return HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+            clipToPadding = false
+            clipChildren = false
+            setPadding(room, room, room, room)
+            addView(container)
+            layoutParams = FrameLayout.LayoutParams(-1, -2).apply {
+                leftMargin = -room
+                rightMargin = -room
+                topMargin = -room
+                bottomMargin = -room
+            }
+        }
     }
 
     private fun showFilmography(actor: CastMember, originView: View) {
+        if (resolvingStreams != null) return
         lastFocusedActor = originView
+        var canceled = false
+        resolvingStreams = object : Cancellable { override fun cancel() { canceled = true } }
+        loadingStatus.text = getString(R.string.filmography_loading)
+        loadingView.visibility = View.VISIBLE
+        loadingView.bringToFront()
         background({
             val creditedTitles = runCatching {
                 Tmdb.personCredits(actor.tmdbId, actor.name, actor.isDirector)
             }.getOrDefault(emptySet())
 
-            val allMetas = Stremio.addons(key).flatMap { addon ->
-                runCatching { addon.search(actor.name) }.getOrNull().orEmpty()
-            }.distinctBy { it.id }.filter { it.id != metaId }
+            val searches = Stremio.addons(key).map { addon -> runCatching { addon.search(actor.name) } }
+            // Every add-on failed: the viewer hears why, not an empty list.
+            searches.takeIf { it.isNotEmpty() && it.all { r -> r.isFailure } }?.let { throw it.first().exceptionOrNull()!! }
+            val allMetas = searches.flatMap { it.getOrNull().orEmpty() }.distinctBy { it.id }.filter { it.id != metaId }
 
             val actorLower = actor.name.lowercase().trim()
 
@@ -1397,9 +1553,25 @@ class DetailsActivity : Screen() {
                 isCredited || allMetas.size <= 4 || !metaTitleLower.contains(actorLower)
             }.take(16)
         }) { result ->
+            if (canceled) return@background
+            cancelStreamResolution()
+            result.exceptionOrNull()?.let { error ->
+                val reason = failureOf(error)
+                FailureLog.record(FailureLog.Operation.SEARCH, reason)
+                choose(actor.name, listOf(getString(R.string.action_ok)),
+                    failureMessage(R.string.filmography_failed, reason, advice = false)) {
+                    val fallback = if (infoOpen) infoOverlay else if (::playButton.isInitialized) playButton else null
+                    (originView.takeIf { it.isAttachedToWindow } ?: fallback)?.requestFocus()
+                }
+                return@background
+            }
             val titles = result.getOrNull().orEmpty()
             if (titles.isEmpty()) {
-                if (!infoOpen) showInfo(focusCast = true)
+                choose(actor.name, listOf(getString(R.string.action_ok)),
+                    getString(R.string.filmography_empty)) {
+                    val fallback = if (infoOpen) infoOverlay else if (::playButton.isInitialized) playButton else null
+                    (originView.takeIf { it.isAttachedToWindow } ?: fallback)?.requestFocus()
+                }
                 return@background
             }
             val heading = if (actor.isDirector) getString(R.string.directed_by, actor.name) else actor.name
@@ -1410,80 +1582,7 @@ class DetailsActivity : Screen() {
 
     private fun buildFilmographyOverlay(heading: String, titles: List<Meta>) {
         if (::filmographyOverlay.isInitialized) root.removeView(filmographyOverlay)
-        filmographyOverlay = FrameLayout(this).apply { visibility = View.GONE }
-        filmographyOverlay.addView(View(this).apply {
-            background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP,
-                intArrayOf(0xF70E0C0A.toInt(), 0xA60E0C0A.toInt(), 0x000E0C0A))
-        }, FrameLayout.LayoutParams(-1, dp(280), Gravity.BOTTOM))
-        val content = column(Gravity.START)
-        val captionPill = caption("").apply {
-            visibility = View.INVISIBLE
-            maxWidth = dp(360)
-            maxLines = 1
-            ellipsize = TextUtils.TruncateAt.END
-        }
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            addView(caps(heading).onArt())
-            addView(captionPill, LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(14) })
-        }
-        content.addView(headerRow, LinearLayout.LayoutParams(-1, -2).apply {
-            bottomMargin = dp(12)
-        })
-        val row = LinearLayout(this).apply { clipChildren = false; clipToPadding = false }
-        filmographyFirst = null
-        titles.forEachIndexed { index, title ->
-            val card = FrameLayout(this).apply {
-                background = rounded(BASE, 6)
-                outlineProvider = object : android.view.ViewOutlineProvider() {
-                    override fun getOutline(view: View, outline: android.graphics.Outline) =
-                        outline.setRoundRect(0, 0, view.width, view.height, dp(6).toFloat())
-                }
-                clipToOutline = true
-                val image = ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
-                addView(image, FrameLayout.LayoutParams(-1, -1))
-                val fallback = text(title.name, SMALL, bold = true).apply {
-                    maxLines = 3; ellipsize = TextUtils.TruncateAt.END
-                    setPadding(dp(8), 0, dp(8), dp(8)); visibility = View.GONE
-                }
-                addView(fallback, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
-                cardFocus(6) { has ->
-                    if (has) {
-                        val yearStr = title.year?.take(4)?.let { "  ·  $it" } ?: ""
-                        captionPill.text = "${title.name}$yearStr"
-                        captionPill.visibility = View.VISIBLE
-                    }
-                }
-                setOnClickListener {
-                    startActivity(Intent(this@DetailsActivity, DetailsActivity::class.java)
-                        .putExtra("type", title.type).putExtra("id", title.id).putExtra("name", title.name)
-                        .putExtra("poster", title.poster).putExtra("background", title.background))
-                }
-                Images.load(title.poster ?: title.background, image, dp(POSTER_W), failed = {
-                    fallback.visibility = View.VISIBLE
-                })
-            }
-            if (filmographyFirst == null) filmographyFirst = card
-            row.addView(card, LinearLayout.LayoutParams(dp(POSTER_W), dp(POSTER_H)).apply {
-                if (index > 0) marginStart = dp(CARD_GAP)
-            })
-        }
-        val room = dp(8)
-        content.addView(HorizontalScrollView(this).apply {
-            isHorizontalScrollBarEnabled = false
-            clipToPadding = false
-            setPadding(room, room, room, room)
-            addView(row)
-        }, LinearLayout.LayoutParams(-1, dp(POSTER_H) + 2 * room).apply {
-            leftMargin = -room
-            rightMargin = -room
-            topMargin = -room
-            bottomMargin = -room
-        })
-        filmographyOverlay.addView(content, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM).apply {
-            leftMargin = dp(PAD); rightMargin = dp(PAD); bottomMargin = dp(38)
-        })
+        filmographyOverlay = buildPosterRowOverlay(heading, titles) { filmographyFirst = it }
         root.addView(filmographyOverlay, FrameLayout.LayoutParams(-1, -1))
     }
 
@@ -1502,6 +1601,15 @@ class DetailsActivity : Screen() {
         filmographyFirst?.requestFocus()
     }
 
+    private fun focusFilmographyReturnTarget(actorAttached: Boolean) {
+        val target = when (resolveFilmographyReturnTarget(actorAttached, infoOpen)) {
+            FilmographyReturnTarget.LAST_FOCUSED_ACTOR -> lastFocusedActor
+            FilmographyReturnTarget.INFO_OVERLAY -> infoOverlay
+            FilmographyReturnTarget.PLAY_BUTTON -> if (::playButton.isInitialized) playButton else null
+        }
+        target?.requestFocus()
+    }
+
     private fun hideFilmography() {
         if (!filmographyOpen) return
         filmographyOpen = false
@@ -1509,10 +1617,16 @@ class DetailsActivity : Screen() {
             filmographyOverlay.visibility = View.GONE
             if (infoOpen) {
                 infoOverlay.visibility = View.VISIBLE
-            } else {
+                focusFilmographyReturnTarget(lastFocusedActor?.isAttachedToWindow == true)
+            } else if (shouldShowHero(overlays())) {
                 hero.visibility = View.VISIBLE
+                val actorAttached = lastFocusedActor?.isAttachedToWindow == true
+                val castIndex = if (actorAttached) castChips.indexOf(lastFocusedActor) else -1
+                val heroFocus = resolveFilmographyHeroFocus(actorAttached, castIndex)
+                if (!refreshHeroIfNeeded(heroFocus.control, heroFocus.castIndex)) {
+                    focusFilmographyReturnTarget(actorAttached)
+                }
             }
-            (lastFocusedActor ?: if (infoOpen) infoOverlay else playButton).requestFocus()
         }.start()
     }
 
@@ -1576,9 +1690,9 @@ class DetailsActivity : Screen() {
         val opened = runCatching {
             startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("vnd.youtube:$id")))
         }.isSuccess
-        if (!opened) runCatching {
+        if (!opened && runCatching {
             startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com/watch?v=$id")))
-        }
+        }.isFailure) choose(getString(R.string.action_trailer), listOf(getString(R.string.action_ok)), getString(R.string.trailer_no_app)) {}
     }
 
     private fun openSources(videoId: String, startOver: Boolean, next: String? = null, label: String? = null, pick: Boolean = false) {
@@ -1597,7 +1711,7 @@ class DetailsActivity : Screen() {
             .putExtra("logo", m?.logo).putExtra("still", video?.thumbnail).putExtra("runtime", m?.runtime)
             .putExtra("blurStill", Settings.blurThumbnails(this) && video != null && video.id !in Library.watched(item, m?.videos.orEmpty()))
             .putExtra("episode", video?.let { v -> listOfNotNull("S${v.season} E${v.episode}", v.title.takeIf { it.isNotBlank() }).joinToString("  ·  ") })
-            .putExtra("resumeAt", resumeAt)
+            .apply { if (shouldIncludeResumeAtExtra(resumeAt, startOver)) putExtra("resumeAt", resumeAt) }
 
         if (pick || Settings.alwaysList(this)) {
             startActivity(intent)
@@ -1619,9 +1733,17 @@ class DetailsActivity : Screen() {
             ?: ProfileLibrary.savedLibrary(applicationContext, libraryProfile)?.firstOrNull { it.optString("_id") == metaId } }) { result ->
             item = result.getOrNull() ?: item
             val wasGuide = guideOpen
-            if (infoOpen) { root.removeView(infoOverlay); infoOpen = false }
-            hero.visibility = View.VISIBLE
-            showHero(meta)
+            if (shouldCloseInfoOnRestart(infoOpen, filmographyOpen)) {
+                root.removeView(infoOverlay)
+                infoOpen = false
+                storyScrollView = null
+            }
+            hero.visibility = if (shouldShowHero(overlays())) View.VISIBLE else View.INVISIBLE
+            if (anyOverlayOpen()) {
+                heroNeedsRefresh = true
+            } else {
+                showHero(meta)
+            }
             meta?.videos?.takeIf { episodic && it.isNotEmpty() }?.let(::buildGuide)
             if (wasGuide) showGuide()
         }
@@ -1658,7 +1780,8 @@ class DetailsActivity : Screen() {
                         return true
                     }
                 } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-                    if (currentFocus?.let { v -> infoCastCards.any { it === v || isInside(v, it) } } == true) {
+                    if (currentFocus?.let { v -> infoCastCards.any { it === v || isInside(v, it) } } == true &&
+                        storyScrollView?.isFocusable == true) {
                         storyScrollView?.requestFocus()
                         return true
                     }
@@ -1672,11 +1795,11 @@ class DetailsActivity : Screen() {
                     KeyEvent.KEYCODE_DPAD_RIGHT -> if (chipIndex == castChips.lastIndex) return true
                 }
             } else if (!infoOpen && !similarOpen && !filmographyOpen &&
-                currentFocus?.let { it === playButton || (::buttonRow.isInitialized && isInside(it, buttonRow)) } == true) {
+                currentFocus?.let { (::playButton.isInitialized && it === playButton) || (::buttonRow.isInitialized && isInside(it, buttonRow)) } == true) {
                 if (event.keyCode == KeyEvent.KEYCODE_DPAD_UP) {
                     castChips.firstOrNull()?.requestFocus()
                     return true
-                } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT && currentFocus === playButton) {
+                } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT && ::playButton.isInitialized && currentFocus === playButton) {
                     return true
                 } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && ::buttonRow.isInitialized &&
                     currentFocus === (0 until buttonRow.childCount).map { buttonRow.getChildAt(it) }.lastOrNull { it.visibility == View.VISIBLE && it.isFocusable }) {
@@ -1704,6 +1827,6 @@ class DetailsActivity : Screen() {
     }
 
     private companion object {
-        const val GUIDE_ART = 0.6f // the film's brightness behind the episode guide
+        const val GUIDE_ART = 0.45f // the film's brightness behind the episode guide
     }
 }

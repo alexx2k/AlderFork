@@ -33,9 +33,11 @@ internal fun bestAudioFormat(
     formats: List<Format>,
     language: String,
     failed: Set<Format>,
+    requireLanguage: Boolean = false,
     hasLosslessOutput: (Format) -> Boolean
 ): Format? = formats
     .filter { it !in failed && it.label?.contains("commentary", ignoreCase = true) != true }
+    .filter { !requireLanguage || Languages.match(it.language, language) > 0 }
     .maxWithOrNull(compareBy(
         { Languages.match(it.language, language) },
         hasLosslessOutput,
@@ -43,14 +45,56 @@ internal fun bestAudioFormat(
         { it.channelCount }
     ))
 
+/** Whether the audio route can take [Format]s as they are (passthrough), not decoded to PCM. */
 @androidx.annotation.OptIn(UnstableApi::class)
-internal fun losslessOutput(context: Context, attributes: AudioAttributes): (Format) -> Boolean {
+internal fun passthroughOutput(context: Context, attributes: AudioAttributes): (Format) -> Boolean {
     val capabilities = AudioCapabilities.getCapabilities(context, attributes, null)
     return { format ->
-        losslessEncoding(format) != null && canPassAudio(
+        format.sampleMimeType != MimeTypes.AUDIO_RAW && canPassAudio(
             format, false, capabilities.getEncodingAndChannelConfigForPassthrough(format, attributes)?.first
         )
     }
+}
+
+internal fun losslessOutput(context: Context, attributes: AudioAttributes): (Format) -> Boolean {
+    val passes = passthroughOutput(context, attributes)
+    return { format -> losslessEncoding(format) != null && passes(format) }
+}
+
+// Playback speeds offered in the player. Any but 1x needs PCM: a passthrough stream can't be time-stretched.
+internal val SPEEDS = listOf(0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
+
+internal fun speedLabel(speed: Float): String = speed.toString().trimEnd('0').trimEnd('.') + "×"
+
+internal fun isSpeedAvailable(isTrailer: Boolean, isLive: Boolean): Boolean = !isTrailer && !isLive
+
+internal fun shouldSeekOnAudioRetry(isLive: Boolean, seekable: Boolean): Boolean = !isLive && seekable
+
+internal enum class SpeedChangeAction {
+    UNAVAILABLE,
+    BLOCKED_UNSEEKABLE_PASSTHROUGH,
+    APPLY_IN_PLACE,
+    REOPEN_AUDIO_AND_APPLY,
+}
+
+internal fun resolveSpeedChange(
+    isTrailer: Boolean,
+    isLive: Boolean,
+    seekable: Boolean,
+    currentSpeed: Float,
+    targetSpeed: Float,
+    passthroughOut: Boolean,
+    trackPassesAudio: Boolean,
+): SpeedChangeAction {
+    if (!isSpeedAvailable(isTrailer, isLive)) return SpeedChangeAction.UNAVAILABLE
+    if (targetSpeed == currentSpeed) return SpeedChangeAction.APPLY_IN_PLACE
+    val reopen = if (targetSpeed != 1f) passthroughOut else trackPassesAudio
+    if (!reopen) return SpeedChangeAction.APPLY_IN_PLACE
+    if (!seekable) {
+        return if (targetSpeed != 1f) SpeedChangeAction.BLOCKED_UNSEEKABLE_PASSTHROUGH
+        else SpeedChangeAction.APPLY_IN_PLACE
+    }
+    return SpeedChangeAction.REOPEN_AUDIO_AND_APPLY
 }
 
 @androidx.annotation.OptIn(UnstableApi::class)

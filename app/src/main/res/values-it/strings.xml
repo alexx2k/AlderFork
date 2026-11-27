@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="card_watched">Visto</string>
+    <string name="card_progress">%1$d%% visto</string>
 
     <!-- Shared -->
     <string name="action_ok">OK</string>
@@ -22,28 +24,31 @@
     <string name="whats_new">Novità</string>
     <string name="whats_new_no_notes">Non ci sono note per la versione %1$s.</string>
     <string name="whats_new_version">Versione %1$s</string>
+    <string name="whats_new_preview">Anteprima della versione</string>
+    <string name="whats_new_example_player">Esempio di lettore esterno</string>
     <string name="whats_new_group">Novità</string>
-    <plurals name="whats_new_highlights">
-        <item quantity="one">Novità · %1$d in evidenza</item>
-        <item quantity="many">Novità · %1$d in evidenza</item>
-        <item quantity="other">Novità · %1$d in evidenza</item>
-    </plurals>
-    <string name="whats_new_all">Tutte le modifiche (%1$d)</string>
     <string name="whats_new_highlights_short">In evidenza</string>
-    <string name="whats_new_back">← Torna alle novità in evidenza</string>
-    <plurals name="whats_new_see_all">
-        <item quantity="one">Vedi %1$d modifica  →</item>
-        <item quantity="many">Vedi tutte le %1$d modifiche  →</item>
-        <item quantity="other">Vedi tutte le %1$d modifiche  →</item>
-    </plurals>
 
     <!-- Home -->
     <string name="tab_home">Home</string>
+    <string name="tab_discover">Scopri</string>
+    <string name="discover_genre">Genere</string>
+    <string name="discover_year">Decennio</string>
+    <string name="discover_all_genres">Tutti i generi</string>
+    <string name="discover_all_decades">Tutti i decenni</string>
+    <string name="discover_all_services">Tutti i servizi</string>
+    <string name="discover_before_1980">Prima del 1980</string>
+    <string name="discover_on">Servizio</string>
+    <string name="discover_sort_popular">Popolari</string>
+    <string name="discover_sort_top">Più votati</string>
+    <string name="discover_sort_new">Più recenti</string>
+    <string name="discover_empty">Niente corrisponde a queste scelte. Prova con meno filtri.</string>
+    <string name="tmdb_notice">Questo prodotto usa l’API di TMDB, ma non è approvato né certificato da TMDB.</string>
     <string name="tab_shows">Serie</string>
     <string name="tab_movies">Film</string>
     <string name="tab_live">Dirette</string>
     <string name="tab_anime">Anime</string>
-    <string name="tab_my_list">La mia lista</string>
+    <string name="tab_my_list">My Alder</string>
     <string name="nav_profile">Profilo</string>
     <string name="nav_search">Cerca</string>
     <string name="updates_ready">Alder %1$s è pronto</string>
@@ -55,7 +60,6 @@
     <string name="menu_settings">Impostazioni</string>
     <string name="action_play">Riproduci</string>
     <string name="action_resume">Riprendi</string>
-    <string name="new_episode">Nuovo episodio</string>
     <string name="stopped_at">Interrotto a %1$s</string>
     <string name="time_left_hours">Mancano %1$d h %2$d min</string>
     <string name="time_left_minutes">Mancano %1$d min</string>
@@ -75,18 +79,14 @@
     <string name="list_sort_recent">Aggiunti di recente</string>
     <string name="list_sort_name">A–Z</string>
     <string name="list_sort_unwatched">Prima i non visti</string>
-    <plurals name="list_title_count">
-        <item quantity="one">%1$d titolo</item>
-        <item quantity="many">%1$d titoli</item>
-        <item quantity="other">%1$d titoli</item>
-    </plurals>
     <string name="list_empty">I titoli che salvi con + compaiono qui</string>
-    <string name="list_empty_movies">Nessun film in La mia lista</string>
-    <string name="list_empty_shows">Nessuna serie in La mia lista</string>
-    <string name="list_empty_unwatched">Nessun titolo non visto in La mia lista</string>
-    <string name="action_remove_from_list">Rimuovi da La mia lista</string>
+    <string name="list_empty_movies">Nessun film in My Alder</string>
+    <string name="list_empty_shows">Nessuna serie in My Alder</string>
+    <string name="list_empty_unwatched">Nessun titolo non visto in My Alder</string>
+    <string name="list_clear_filters">Cancella filtri</string>
+    <string name="action_remove_from_list">Rimuovi da My Alder</string>
     <string name="action_mark_watched">Segna come visto</string>
-    <string name="list_update_failed">Impossibile aggiornare La mia lista</string>
+    <string name="list_update_failed">Impossibile aggiornare My Alder</string>
     <string name="check_connection">Controlla la connessione e riprova.</string>
     <string name="action_choose_source">Scegli una fonte</string>
     <string name="action_remove_from_continue">Rimuovi da Continua a guardare</string>
@@ -105,7 +105,7 @@
     <string name="action_more_info">Altre informazioni</string>
     <string name="action_start_over">Ricomincia</string>
     <string name="action_trailer">Trailer</string>
-    <string name="action_add_to_list">Aggiungi a La mia lista</string>
+    <string name="action_add_to_list">Aggiungi a My Alder</string>
     <string name="season_specials">Speciali</string>
     <string name="season_number">Stagione %1$d</string>
     <string name="episode_number">Episodio %1$d</string>
@@ -136,7 +136,6 @@
     <string name="player_starting_stream">Avvio dello stream…</string>
     <string name="player_source_failed_next">Questa fonte non funziona · provo la successiva</string>
     <string name="player_source_failed_choose">Questa fonte non funziona · scegline un’altra</string>
-    <string name="player_keeps_buffering">Continua a caricare</string>
     <string name="player_switch_prompt">Passare a %1$dp?</string>
     <string name="player_switch_desc">Questa fonte %1$dp si è fermata 3 volte in un minuto. Un file più leggero potrebbe essere più fluido da %2$s.</string>
     <string name="player_switch_to">Passa a %1$dp</string>
@@ -145,25 +144,18 @@
     <string name="player_source_failed">Fonte non riuscita</string>
     <string name="player_try_another">Prova un’altra fonte</string>
     <string name="player_next_episode">Episodio successivo</string>
-    <string name="player_up_next">Prossimo</string>
     <string name="player_exit_home">Torna alla Home</string>
     <string name="player_still_watching">Stai ancora guardando?</string>
-    <string name="player_still_prompt_description">Il prossimo episodio è pronto quando vuoi.</string>
-    <string name="player_still_episode">S%1$d E%2$d</string>
-    <string name="player_still_keep_watching">Continua a guardare</string>
-    <string name="player_still_dont_ask">Non chiedere più</string>
-    <string name="player_still_stop">Interrompi la visione</string>
     <string name="player_sleep_paused">Il timer di spegnimento ha messo in pausa.</string>
     <string name="skip_intro">Salta intro</string>
     <string name="skip_recap">Salta riassunto</string>
-    <string name="player_paused">In pausa</string>
     <string name="player_seek">Avanza o torna indietro</string>
     <string name="player_audio_subtitles">Audio e sottotitoli</string>
+    <string name="player_speed">Velocità di riproduzione</string>
+    <string name="player_speed_passthrough_note">L\'audio si interrompe brevemente passando a o da 1×.</string>
     <string name="player_change_stream">Cambia fonte</string>
     <string name="player_pause">Pausa</string>
     <string name="player_info">Info</string>
-    <string name="key_play_pause">Riproduci / pausa</string>
-    <string name="key_seek">Spostati sulla barra</string>
     <string name="player_live">Diretta</string>
     <string name="player_chapters">%1$s  ·  ▲ Capitoli</string>
     <string name="player_cannot_seek">Questa fonte non permette di avanzare · Cambia fonte per provarne un’altra</string>
@@ -181,14 +173,11 @@
     <string name="track_preferred">Preferito</string>
     <string name="track_recent">Recente</string>
     <string name="track_in_file">nel file</string>
-    <string name="subtitles_heading">Sottotitoli · %1$s</string>
     <string name="quick_timing">Regolazione rapida</string>
     <string name="subtitle_color">Colore sottotitoli</string>
     <string name="tracks_pinned">Fissati</string>
     <string name="all_languages">Tutte le lingue (%1$d)</string>
-    <string name="audio_heading">Audio · %1$s</string>
     <string name="all_audio_tracks">Tutte le tracce audio (%1$d)</string>
-    <string name="audio_enhancement">Miglioramento audio</string>
     <string name="clear_dialogue">Dialoghi chiari</string>
     <string name="clear_dialogue_hint">Mette in risalto le voci sopra musica ed effetti</string>
     <string name="timing_earlier_heading">Prima</string>
@@ -202,7 +191,6 @@
     <string name="size_extra_large">Molto grande</string>
     <string name="color">Colore</string>
     <string name="background_box">Sfondo</string>
-    <string name="playback_sleep">Riproduzione e spegnimento</string>
     <string name="sleep_timer">Timer di spegnimento</string>
     <string name="player_change_stream_arrow">Cambia fonte  →</string>
     <string name="subtitles_off">Sottotitoli disattivati</string>
@@ -268,7 +256,7 @@
     <string name="player_no_other_app">Su questa TV non c’è un altro lettore video. Alder riproduce il video.</string>
     <string name="clear_dialogue_setting_hint">Mette in risalto le voci sopra musica ed effetti forti con gli altoparlanti della TV.</string>
     <string name="dubbed">Versioni doppiate</string>
-    <string name="dubbed_hint">Prima l’originale mette in fondo le versioni doppiate; Prima la mia lingua usa la lingua audio di questo profilo.</string>
+    <string name="dubbed_hint">Prima l’originale mette in fondo le versioni doppiate. Prima la mia lingua verifica l’audio nel lettore di Alder prima della riproduzione automatica. Puoi ancora scegliere qualsiasi fonte.</string>
     <string name="dubbed_original">Prima l’originale</string>
     <string name="dubbed_mine">Prima la mia lingua</string>
     <string name="subs_default">Sottotitoli predefiniti</string>
@@ -329,6 +317,10 @@
     <string name="ratings_source">Valutazioni</string>
     <string name="ratings_source_hint">Sceglie le valutazioni nelle pagine dei titoli e nella Home. Letterboxd vale solo per i film e richiede una chiave MDBList. Le serie usano sempre IMDb.</string>
     <string name="ratings_both">Entrambe</string>
+    <string name="episode_badges">Badge nuovi episodi</string>
+    <string name="episode_badges_hint">Sceglie il numero sui poster delle serie. Appena usciti conta gli episodi usciti dopo l’ultima visione. Stagione attuale conta gli episodi rimasti nella stagione che guardi.</string>
+    <string name="episode_badges_aired">Appena usciti</string>
+    <string name="episode_badges_season">Stagione attuale</string>
     <string name="mdblist_key">Chiave MDBList</string>
     <string name="mdblist_key_hint">La tua chiave API gratuita da mdblist.com/preferences. Alder la usa solo per le valutazioni Letterboxd.</string>
     <string name="key_not_set">Non impostata</string>
@@ -376,15 +368,14 @@
     <string name="unhide_row_hint">Seleziona una riga per ripristinarla.</string>
     <string name="custom">Personalizzato</string>
     <string name="source_choice">Scelta della fonte</string>
-    <string name="source_choice_hint">Immagine migliore: prima Blu-ray completo e Dolby Vision. Bilanciato: file più leggeri. Avvio rapido: versioni web. Ordine dell’add-on: segue l’add-on.</string>
-    <string name="preset_addon_order">Ordine dell’add-on</string>
+    <string name="source_choice_hint">Immagine migliore: prima Blu-ray completo e Dolby Vision. Bilanciato: file più leggeri. Avvio rapido: versioni web. Qualsiasi versione: la copia più nitida, qualunque sia la versione.</string>
+    <string name="preset_addon_order">Qualsiasi versione</string>
     <string name="preset_best_picture">Immagine migliore</string>
     <string name="preset_balanced">Bilanciato</string>
     <string name="preset_fast_start">Avvio rapido</string>
 
     <!-- Search -->
     <string name="search_clear">Cancella ricerca</string>
-    <string name="search_voice_unavailable">Ricerca vocale non disponibile</string>
     <string name="search_space">Spazio</string>
     <string name="search_recent">Recenti</string>
     <string name="search_recent_hint">%1$s. Tieni premuto OK per rimuoverla dalle ricerche recenti</string>
@@ -547,8 +538,6 @@
     <string name="profiles_all_set">Tutto pronto</string>
     <string name="profiles_ready">Il profilo di %1$s è pronto. Puoi aggiungere altri add-on più tardi in Impostazioni.</string>
     <string name="time_left_under_minute">Meno di 1 min</string>
-    <string name="catalog_jump_to">Vai a</string>
-    <string name="catalog_jump_top">Inizio</string>
     <string name="display_resolution">Risoluzione dello schermo</string>
     <string name="display_resolution_hint">Scegli la risoluzione del TV che Alder usa per selezionare una sorgente. Scegli 4K se il tuo dispositivo indica 1080p ma trasmette in 4K.</string>
     <string name="error_sign_in">accedi di nuovo a Stremio</string>
@@ -558,11 +547,42 @@
     <string name="error_network">errore di rete</string>
     <string name="library_edit_failed">Impossibile salvare lo stato di visione</string>
     <string name="search_incomplete">I risultati della ricerca sono incompleti</string>
+    <string name="catalog_addon_failed">Impossibile caricare %1$s</string>
+    <string name="failure_web_page">invia una pagina web, non titoli</string>
+    <string name="failure_advice_sign_in">Accedi di nuovo a Stremio.</string>
+    <string name="failure_advice_access">Controlla la chiave o l\'account nelle impostazioni di questo add-on in Stremio.</string>
+    <string name="failure_advice_timeout">Controlla la connessione a Internet, poi riprova.</string>
+    <string name="failure_advice_address">Controlla la connessione a Internet. Se funziona, l\'add-on potrebbe essersi spostato: aggiornalo in Stremio.</string>
+    <string name="failure_advice_connection">Il servizio potrebbe essere non disponibile. Riprova più tardi.</string>
+    <string name="failure_advice_secure">Controlla data e ora sulla TV, poi riprova.</string>
+    <string name="failure_advice_busy">Aspetta un minuto, poi riprova.</string>
+    <string name="failure_advice_server">Il servizio ha un problema. Riprova più tardi.</string>
+    <string name="failure_advice_response">Se continua così, aggiorna o rimuovi l\'add-on in Stremio.</string>
+    <string name="failure_advice_missing">Prova un altro add-on o un\'altra fonte.</string>
+    <string name="failure_advice_format">Prova un\'altra fonte.</string>
+    <string name="failure_advice_network">Controlla la connessione a Internet, poi riprova.</string>
+    <string name="failure_advice_web_page">L\'add-on potrebbe essersi spostato o chiuso: aggiornalo o rimuovilo in Stremio.</string>
+    <string name="failure_advice_other">Riprova. Se continua così, invia una segnalazione da Impostazioni › Informazioni.</string>
+    <string name="filmography_failed">Impossibile ottenere i titoli di questa persona</string>
+    <string name="trailer_no_app">Nessuna app di questa TV può riprodurre il trailer. Installa YouTube per guardarlo.</string>
     <string name="catalog_incomplete">Impossibile caricare alcuni cataloghi</string>
     <string name="progress_saved_on_tv">I progressi sono salvati su questo TV. Alder proverà a sincronizzarli di nuovo.</string>
     <string name="library_load_failed">Impossibile caricare la tua libreria Stremio</string>
+    <string name="filmography_loading">Ricerca titoli…</string>
+    <string name="filmography_empty">Nessun altro titolo trovato nei tuoi cataloghi.</string>
+    <string name="streams_no_preferred_audio">Nessuna fonte corrisponde alle lingue per la riproduzione automatica. Scegli una fonte per continuare.</string>
+    <string name="audio_fallback">Lingua audio di riserva</string>
+    <string name="audio_fallback_hint">Con Prima la mia lingua, Alder prova la tua lingua, questa lingua di riserva e infine l’inglese. Seleziona Disattivato per usare solo la tua lingua.</string>
+    <string name="failure_preferred_audio">nessuna traccia audio supportata nella tua lingua preferita</string>
+    <string name="failure_advice_preferred_audio">Scegli una fonte con la tua lingua audio.</string>
+    <string name="list_added_on">Aggiunto il %1$s</string>
 
-    <!-- Profile and avatar features (v1.1.0) -->
+    <!-- Alder Fork additions -->
+    <string name="player_still_prompt_description">Il prossimo episodio è pronto quando vuoi.</string>
+    <string name="player_still_episode">S%1$d E%2$d</string>
+    <string name="player_still_keep_watching">Continua a guardare</string>
+    <string name="player_still_dont_ask">Non chiedere più</string>
+    <string name="player_still_stop">Interrompi la visione</string>
     <string name="profiles_avatar">Cambia immagine del profilo</string>
     <string name="profiles_avatar_setup">Scegli l’immagine del profilo</string>
     <string name="profiles_avatar_choose">Sfoglia gli avatar predefiniti</string>

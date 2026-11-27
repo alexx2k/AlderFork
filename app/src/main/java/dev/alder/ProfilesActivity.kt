@@ -35,6 +35,8 @@ class ProfilesActivity : Screen() {
     private var galleryScrollY = 0
     private var signInGeneration = 0
     private var nameInput: EditText? = null
+    // The unlocked profile the picker was opened from (via "pick"); null otherwise so Back cannot bypass a PIN.
+    private var originProfileId: String? = null
     // Where Back goes from the profile menu's screens (PIN, rename); null elsewhere.
     private var backTo: (() -> Unit)? = null
 
@@ -47,15 +49,32 @@ class ProfilesActivity : Screen() {
         // The activity is exported, so the extra is untrusted: enter() still asks for the PIN, and a profile that
         // isn't signed out just opens.
         val again = intent.getStringExtra("signIn")?.let { id -> profiles.firstOrNull { it.id == id } }
+        // Settings asks before Clear storage: any locked profile's PIN answers it. Only the result goes back, so
+        // another app that sends this extra gets nothing cleared.
+        if (intent.getBooleanExtra(UNLOCK, false)) {
+            val pins = profiles.mapNotNull { it.pin }
+            if (pins.isEmpty()) { setResult(RESULT_OK); return finish() }
+            return askPin(getString(R.string.clear_storage_title), { setResult(RESULT_CANCELED); finish() }) { typed ->
+                (typed in pins).also { ok -> if (ok) { setResult(RESULT_OK); finish() } }
+            }
+        }
+        val pick = intent.getBooleanExtra("pick", false)
         when {
             again != null -> enter(again)
             profiles.isEmpty() -> showName()
-            profiles.size == 1 && !intent.getBooleanExtra("pick", false) -> enter(profiles[0])
-            else -> showPicker()
+            profiles.size == 1 && !pick -> enter(profiles[0])
+            else -> {
+                if (pick) {
+                    val storedActiveId = getSharedPreferences("account", MODE_PRIVATE).getString("active", null)
+                    originProfileId = pickerReturnProfile(profiles, storedActiveId)?.id
+                }
+                showPicker()
+            }
         }
     }
 
     override fun onDestroy() {
+        ++signInGeneration
         waitingCode = null
         stopAvatarUpload()
         AvatarImages.stopPrefetch()
@@ -115,14 +134,23 @@ class ProfilesActivity : Screen() {
     }
 
     private fun openHome(profile: Profile) {
+        val previousActiveId = getSharedPreferences("account", MODE_PRIVATE).getString("active", null)
+        WatchNext.invalidate()
         Profiles.setActive(this, profile.id)
+        if (profile.pin != null || previousActiveId != profile.id) clearWatchNextAfterInvalidation()
         val home = Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         // Opened from the Google TV home's Continue Watching: Home, with that title's page on top of it.
         // A fresh task, so an app already open in the background doesn't end up with two Homes.
-        if (intent.hasExtra("id")) startActivities(arrayOf(home,
+        if (hasValidTitleId(intent)) startActivities(arrayOf(home,
             Intent(intent).setClass(this, DetailsActivity::class.java).setFlags(0)))
         else startActivity(home)
         finish()
+    }
+
+    private fun clearWatchNextAfterInvalidation() {
+        val generation = WatchNext.currentGeneration()
+        val appContext = applicationContext
+        pool.execute { WatchNext.clearIfCurrent(appContext, generation) }
     }
 
     // ---------- who's watching ----------
@@ -131,16 +159,17 @@ class ProfilesActivity : Screen() {
         discardDraftSetup()
         stopAvatarUpload()
         AvatarImages.stopPrefetch()
-        // Opened from inside a profile (Switch profile, Manage profiles): Back returns to it instead of leaving Alder.
-        val current = Profiles.active(this)?.takeIf { intent.getBooleanExtra("pick", false) }
-        backTo = current?.let { { openHome(it) } }
+        ++signInGeneration // a sign-in still on the way is left behind
+        val profiles = Profiles.all(this)
+        // Opened from inside an unlocked profile (Switch profile, Manage profiles): Back returns to it instead of leaving Alder.
+        val current = pickerReturnProfile(profiles, originProfileId)
+        backTo = current?.let { { enter(it) } }
         nameInput = null
         // Left a sign-in: stop its polling, or approving the abandoned code would still change the profile.
         signingIn = false
         waitingCode = null
         relinkLocalId = null
         ++pickerGeneration
-        val profiles = Profiles.all(this)
         // Temporary flat-black test mode: no faded film/series banner behind profiles.
         val selected = profiles.firstOrNull { it.id == Profiles.active(this)?.id } ?: profiles.first()
         // Top-aligned, so Add (no "last watched" line) sits level with the portraits; padding above for the 10% lift.
@@ -705,7 +734,12 @@ class ProfilesActivity : Screen() {
         askPin(getString(R.string.profiles_choose_pin, p.name), ::showPicker) { first ->
             askPin(getString(R.string.profiles_pin_again), ::showPicker, getString(R.string.profiles_pin_mismatch)) { second ->
                 (second == first).also { same ->
-                    if (same) { Profiles.update(this, p.id, pin = first); showPicker() }
+                    if (same) {
+                        val wasActive = Profiles.active(this)?.id == p.id
+                        Profiles.update(this, p.id, pin = first)
+                        if (wasActive) clearWatchNextAfterInvalidation()
+                        showPicker()
+                    }
                 }
             }
             true
@@ -817,7 +851,10 @@ class ProfilesActivity : Screen() {
         choose(getString(R.string.profiles_remove_title, p.name), listOf(getString(R.string.action_cancel), getString(R.string.action_remove)),
             warning) { i ->
             if (i == 0) return@choose
+            val wasActive = Profiles.active(this)?.id == p.id
             Profiles.remove(this, p.id)
+            if (wasActive) clearWatchNextAfterInvalidation()
+            if (p.id == originProfileId) originProfileId = null
             background({ Http.forget() }) {}
             // Best effort; the TV forgets the profile either way. A sign-in another profile still uses stays signed in.
             if (Profiles.all(this).none { it.authKey == p.authKey }) {
@@ -833,6 +870,7 @@ class ProfilesActivity : Screen() {
     private fun showName() {
         ++pickerGeneration
         AvatarImages.stopPrefetch()
+        ++signInGeneration // a sign-in still on the way is left behind
         backTo = if (Profiles.all(this).isEmpty()) null else ::showPicker
         signingIn = false
         waitingCode = null
@@ -904,6 +942,7 @@ class ProfilesActivity : Screen() {
 
     private fun createLocalProfile(name: String, owner: Profile) {
         val profile = finishDraftProfile(Profiles.addLocal(this, name, owner.id, draftColor))
+        clearWatchNextAfterInvalidation()
         showReady(profile)
     }
 
@@ -1061,7 +1100,7 @@ class ProfilesActivity : Screen() {
                 fun tick() {
                     if (!signingIn || request != signInGeneration || waitingCode != link.code) return
                     val leftSeconds = ((5 * 60_000L - (SystemClock.elapsedRealtime() - started)).coerceAtLeast(0) / 1000).toInt()
-                    status.text = pollFailure?.let { failureMessage(R.string.profiles_unreachable, it) }
+                    status.text = pollFailure?.let { failureMessage(R.string.profiles_unreachable, it, source = "Stremio", advice = false) }
                         ?: getString(R.string.profiles_waiting, "${leftSeconds / 60}:${"%02d".format(leftSeconds % 60)}")
                     countdown.progress = leftSeconds * 1000 / 300
                     main.postDelayed(::tick, 1_000)
@@ -1076,7 +1115,7 @@ class ProfilesActivity : Screen() {
             }.onFailure {
                 val failure = failureOf(it)
                 FailureLog.record(FailureLog.Operation.SIGN_IN, failure)
-                status.text = failureMessage(R.string.profiles_unreachable, failure)
+                status.text = failureMessage(R.string.profiles_unreachable, failure, source = "Stremio", advice = false)
                 main.postDelayed({ if (signingIn && request == signInGeneration) showSignIn(name, again) }, 5_000)
             }
         }
@@ -1165,11 +1204,13 @@ class ProfilesActivity : Screen() {
      */
     private fun approved(name: String, key: String, again: Profile?) {
         val others = Profiles.all(this).filter { it.id != again?.id && it.libraryMode == LibraryMode.STREMIO }
+        val request = signInGeneration
         background({
             others.firstOrNull { it.authKey == key } ?: Stremio.userId(key).let { account ->
                 others.firstOrNull { runCatching { Stremio.userId(it.authKey) }.getOrNull() == account }
             }
         }) { result ->
+            if (request != signInGeneration) return@background // Back during the check: no profile is made
             val same = result.getOrNull() ?: return@background signedIn(name, key, again) // unknown: don't hold anyone up
             choose(getString(R.string.profiles_same_account, same.name),
                 listOf(getString(R.string.profiles_other_account), getString(R.string.profiles_continue_anyway)),
@@ -1188,6 +1229,7 @@ class ProfilesActivity : Screen() {
         }
         val others = Profiles.all(this)
         val profile = finishDraftProfile(Profiles.add(this, name, key, draftColor))
+        if (others.isNotEmpty()) clearWatchNextAfterInvalidation()
         // Each profile brings its own add-ons (stream add-ons are shared in Settings, never copied);
         // the others' lists only tell where Watchly lives, so the new profile can set up its own.
         if (others.isEmpty()) openHome(profile)
@@ -1240,9 +1282,26 @@ class ProfilesActivity : Screen() {
         done.requestFocus()
     }
 
-    private companion object {
-        const val DRAFT_AVATAR_ID = "draft"
+    companion object {
+        const val UNLOCK = "unlock"
+        private const val DRAFT_AVATAR_ID = "draft"
         const val LIFT_ROOM = 8 // dp above the portraits for the focused one's 10% lift and ring
         const val KEY_H = 25 // dp a key row on the name step, so Continue fits under the colours
     }
+
 }
+
+/**
+ * The unlocked profile the picker may return to on Back, or null when no explicit unlocked origin exists.
+ * Never falls back to a lone remaining profile or returns a PIN-locked one, so removing or locking the origin
+ * (or launching the exported picker externally) cannot bypass a PIN.
+ */
+internal fun pickerReturnProfile(profiles: List<Profile>, originId: String?): Profile? =
+    originId?.let { id -> profiles.firstOrNull { it.id == id && it.pin == null } }
+
+/** True only when the launch intent carries a non-blank String title id for [DetailsActivity]. */
+internal fun hasValidTitleId(intent: Intent?): Boolean =
+    isValidTitleId { intent?.getStringExtra("id") }
+
+internal fun isValidTitleId(readId: () -> String?): Boolean =
+    !runCatching { readId() }.getOrNull().isNullOrBlank()

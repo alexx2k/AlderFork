@@ -14,14 +14,20 @@ import java.util.concurrent.TimeUnit
  * [descriptor] is the account's entry for it as Stremio stores it, kept whole so it can be copied to another profile.
  */
 class Addon(val descriptor: JSONObject) {
-    private val manifest: JSONObject = descriptor.getJSONObject("manifest")
+    // An entry with a broken manifest stays in the list with nothing to show: dropping it would drop it from the
+    // account too, the next time My add-ons saves the list.
+    private val manifest: JSONObject = descriptor.optJSONObject("manifest") ?: JSONObject()
     val id: String = manifest.optString("id")
     val name: String = manifest.optString("name")
-    val transportUrl: String = descriptor.getString("transportUrl")
+    val transportUrl: String = descriptor.optString("transportUrl")
     /** Stremio's built-ins (Cinemeta, Local Files), which every account already has. */
     val official = descriptor.optJSONObject("flags")?.optBoolean("official") == true
     /** Stremio's own that can't be removed (Cinemeta, Local Files); they can still be moved. */
     val locked = descriptor.optJSONObject("flags")?.optBoolean("protected") == true
+    /** Cinemeta speaks only English, so its titles come in the app's language from TMDB; other meta add-ons pick their own. */
+    private val translated get() = id == "com.linvo.cinemeta" && Tmdb.translates
+    private fun List<JSONObject>.inLanguage(offline: Boolean = false, budgetMs: Long = 3_000) =
+        also { if (translated) Tmdb.translateAll(it, offline, budgetMs) }
     val providesStreams: Boolean = manifest.optJSONArray("resources").items().any {
         (it as? String ?: (it as? JSONObject)?.optString("name")) == "stream"
     }
@@ -51,6 +57,8 @@ class Addon(val descriptor: JSONObject) {
      * (a search query) still leaves the catalog out.
      */
     val catalogs: List<Catalog> = manifest.optJSONArray("catalogs").objects().mapNotNull { c ->
+        val type = c.text("type") ?: return@mapNotNull null // one broken catalog leaves out only itself
+        val catalogId = c.text("id") ?: return@mapNotNull null
         val extra = c.optJSONArray("extra").objects()
         val extras = c.optJSONArray("extraSupported").strings() + extra.map { it.optString("name") }
         // The genres it can filter by: the protocol's `genre` extra options, or the older `genres` list.
@@ -62,7 +70,7 @@ class Addon(val descriptor: JSONObject) {
             val choices = own?.optJSONArray("options").strings().ifEmpty { if (name == "genre") options else emptyList() }
             own?.text("default")?.takeIf { it in choices } ?: choices.firstOrNull() ?: return@mapNotNull null
         }
-        Catalog(this, c.getString("type"), c.getString("id"), c.optString("name").ifEmpty { c.getString("id") }, "skip" in extras,
+        Catalog(this, type, catalogId, c.optString("name").ifEmpty { catalogId }, "skip" in extras,
             options.filterNot { it.equals("None", ignoreCase = true) }, required) // "None" is no filter, not a genre
     }
 
@@ -81,14 +89,14 @@ class Addon(val descriptor: JSONObject) {
     // Catalogs (one [genre] of them with Stremio's `genre` extra) and details are kept on disk as they arrive; the saved*
     // versions read last time's answer, no network.
     fun catalog(c: Catalog, genre: String? = null, timeoutMs: Int = 20_000): List<Meta> =
-        JSONObject(Http.get(catalogUrl(c, genre), true, timeoutMs, strict = true)).getJSONArray("metas").objects().map(::Meta)
+        JSONObject(Http.get(catalogUrl(c, genre), true, timeoutMs, strict = true)).getJSONArray("metas").objects().inLanguage().metas()
 
     /** The titles after the first [skip] (Stremio's paging extra); not kept on disk. */
     fun catalog(c: Catalog, skip: Int): List<Meta> =
-        JSONObject(Http.get(catalogUrl(c, null, skip), strict = true)).getJSONArray("metas").objects().map(::Meta)
+        JSONObject(Http.get(catalogUrl(c, null, skip), strict = true)).getJSONArray("metas").objects().inLanguage().metas()
 
     fun savedCatalog(c: Catalog, genre: String? = null): List<Meta>? =
-        Http.savedAnswer(catalogUrl(c, genre))?.let { runCatching { JSONObject(it) }.getOrNull() }?.optJSONArray("metas")?.objects()?.map(::Meta)
+        Http.savedAnswer(catalogUrl(c, genre))?.let { runCatching { JSONObject(it) }.getOrNull() }?.optJSONArray("metas")?.objects()?.inLanguage(offline = true)?.metas()
 
     /** /catalog/type/id/genre=Drama&skip=20.json: the catalog's required extras, the [genre] picked, and the page. */
     private fun catalogUrl(c: Catalog, genre: String?, skip: Int = 0): String {
@@ -115,15 +123,17 @@ class Addon(val descriptor: JSONObject) {
                     c.optJSONArray("extra").objects().none { it.optBoolean("isRequired") && it.optString("name") != "search" }
             }
             .distinctBy { it.optString("type") to it.optString("id") }
+        val deadline = System.currentTimeMillis() + 5_000
         fun fetch(c: JSONObject): List<Meta> {
             val path = url(arrayOf("catalog", c.getString("type"), c.getString("id"))).removeSuffix(".json")
             val searchUrl = "$path/search=${Uri.encode(query)}.json"
             val answer = JSONObject(Http.get(searchUrl, timeoutMs = 5_000, strict = true))
-            return answer.getJSONArray("metas").objects().map(::Meta)
+            // Translation waits at most 1.5 s, and never past the search's own deadline: English results beat none.
+            val budget = minOf(1_500L, deadline - System.currentTimeMillis() - 300).coerceAtLeast(0)
+            return answer.getJSONArray("metas").objects().inLanguage(budgetMs = budget).metas()
         }
         val completion = ExecutorCompletionService<Pair<Int, Result<List<Meta>>>>(catalogSearchPool)
         val pending = catalogs.mapIndexed { index, catalog -> completion.submit { index to runCatching { fetch(catalog) } } }
-        val deadline = System.currentTimeMillis() + 5_000
         val answers = mutableListOf<Pair<Int, List<Meta>>>()
         var failure: Throwable? = null
         try {
@@ -140,12 +150,19 @@ class Addon(val descriptor: JSONObject) {
         return answers.sortedBy { it.first }.flatMap { it.second } to failure
     }
 
-    fun meta(type: String, id: String): Meta? = get(true, "meta", type, id, strict = true).optJSONObject("meta")?.let { meta(it, id) }
+    /** [episodes]: also each episode's name in the app's language, for the title page. */
+    fun meta(type: String, id: String, episodes: Boolean = false): Meta? =
+        get(true, "meta", type, id, strict = true).optJSONObject("meta")?.let { meta(it, id, episodes, offline = false) }
 
-    fun savedMeta(type: String, id: String): Meta? = saved("meta", type, id)?.optJSONObject("meta")?.let { meta(it, id) }
+    fun savedMeta(type: String, id: String, maxAgeMs: Long? = null, episodes: Boolean = false): Meta? =
+        saved("meta", type, id, maxAgeMs = maxAgeMs)?.optJSONObject("meta")?.let { meta(it, id, episodes, offline = true) }
 
     /** Some add-ons leave the title's own id out of its details: it's the one asked for. */
-    private fun meta(json: JSONObject, id: String) = Meta(if (json.text("id") == null) json.put("id", id) else json)
+    private fun meta(json: JSONObject, id: String, episodes: Boolean, offline: Boolean): Meta {
+        val full = if (json.text("id") == null) json.put("id", id) else json
+        if (translated) Tmdb.translate(full, episodes, offline)
+        return Meta(full)
+    }
 
     /** A title-specific catalog, when an installed addon advertises the protocol's required `similar` extra. */
     fun similar(type: String, id: String): List<Meta>? {
@@ -156,7 +173,7 @@ class Addon(val descriptor: JSONObject) {
         } ?: return null
         val path = url(arrayOf("catalog", type, catalog.getString("id"))).removeSuffix(".json")
         return JSONObject(Http.get("$path/similar=${Uri.encode(id, ":")}.json", true))
-            .optJSONArray("metas").objects().map(::Meta)
+            .optJSONArray("metas").objects().metas()
     }
 
     /**
@@ -200,7 +217,8 @@ class Addon(val descriptor: JSONObject) {
 
     private fun get(keep: Boolean, vararg path: String, strict: Boolean = false) = JSONObject(Http.get(url(path), keep, strict = strict))
 
-    private fun saved(vararg path: String) = Http.savedAnswer(url(path))?.let { runCatching { JSONObject(it) }.getOrNull() }
+    private fun saved(vararg path: String, maxAgeMs: Long? = null) =
+        Http.savedAnswer(url(path), maxAgeMs = maxAgeMs)?.let { runCatching { JSONObject(it) }.getOrNull() }
 
     private companion object {
         val catalogSearchPool by lazy { Images.newestFirst(8) } // lazy: unit tests make Addons without Android
@@ -215,9 +233,9 @@ class Addon(val descriptor: JSONObject) {
  * that waits on the answer: a dead add-on then costs no more than its own wait. Otherwise one at a time, so Home's
  * cards don't ask every add-on for every title.
  */
-fun List<Addon>.meta(type: String, id: String, together: Boolean = false, reportFailure: Boolean = false): Meta? {
+fun List<Addon>.meta(type: String, id: String, together: Boolean = false, reportFailure: Boolean = false, episodes: Boolean = false): Meta? {
     val serving = filter { it.serves("meta", type, id) }
-    fun ask(a: Addon) = runCatching { a.meta(type, id) }
+    fun ask(a: Addon) = runCatching { a.meta(type, id, episodes) }
     val answers = if (!together || serving.size < 2) serving.asSequence().map(::ask)
         else serving.map { a -> metaPool.submit<Result<Meta?>> { ask(a) } }.asSequence().map { it.get() }
     var failure: Throwable? = null
@@ -230,10 +248,12 @@ fun List<Addon>.meta(type: String, id: String, together: Boolean = false, report
 }
 
 /** Last time's details from disk, from the first add-on in the account's order that kept some; no network. */
-fun List<Addon>.savedMeta(type: String, id: String): Meta? =
-    filter { it.serves("meta", type, id) }.firstNotNullOfOrNull { runCatching { it.savedMeta(type, id) }.getOrNull() }
+fun List<Addon>.savedMeta(type: String, id: String, maxAgeMs: Long? = null, episodes: Boolean = false): Meta? =
+    filter { it.serves("meta", type, id) }.firstNotNullOfOrNull { runCatching { it.savedMeta(type, id, maxAgeMs, episodes) }.getOrNull() }
 
-private val metaPool = java.util.concurrent.Executors.newCachedThreadPool()
+private val metaPool = java.util.concurrent.Executors.newCachedThreadPool { r ->
+    Thread(r, "alder-meta").apply { isDaemon = true }
+}
 
 class Meta(json: JSONObject) {
     val id: String = json.getString("id")
@@ -284,7 +304,7 @@ class Meta(json: JSONObject) {
 }
 
 /** [lang] is what the addon sends: ISO 639-2 ("eng") from OpenSubtitles, sometimes a two-letter code. */
-class Subtitle(val url: String, val lang: String, val addon: String) {
+data class Subtitle(val url: String, val lang: String, val addon: String) {
     val language: String get() = Languages.name(lang)
     val mimeType: String get() = url.substringBefore('?').lowercase().let {
         when {
@@ -341,6 +361,22 @@ internal fun episodeNumbers(videoId: String?): Pair<Int, Int>? {
     val season = parts[1].toIntOrNull() ?: return null
     val episode = parts[2].toIntOrNull() ?: return null
     return (season to episode).takeIf { season >= 0 && episode > 0 }
+}
+
+/**
+ * The IMDb id, season and episode IntroDB knows an episode by, or null when the show has no IMDb id.
+ * Anime metadata (AIOMetadata, for one) can list Kitsu or MAL episode ids ("kitsu:9965:1") under an IMDb show:
+ * then the show's id and the episode's season and number from the show's own [videos] stand in.
+ */
+internal fun introDbEpisode(metaId: String, videoId: String, videos: List<Video>?): Triple<String, Int, Int>? {
+    if (!metaId.startsWith("tt")) return null
+    val parts = videoId.split(':')
+    if (parts.size >= 3 && parts[0].startsWith("tt")) {
+        val (season, episode) = episodeNumbers(parts.take(3).joinToString(":")) ?: return null
+        return Triple(parts[0], season, episode)
+    }
+    val video = videos?.firstOrNull { it.id == videoId && it.season >= 0 && it.episode > 0 } ?: return null
+    return Triple(metaId, video.season, video.episode)
 }
 
 /**
@@ -440,10 +476,16 @@ class Stream(
     val dtsHdAudio = Regex("dts.?hd").containsMatchIn(words)
     val multiAudio = Regex("\\b(multi|dual)\\b").containsMatchIn(words)
     val dubbed = Regex("\\bdub(bed)?\\b").containsMatchIn(words)
+    // The names without the languages they give for subtitles only, so "🎙️ 🇬🇧 💬 🇬🇧 🇳🇱" or "NL subs" isn't a Dutch dub.
+    private val spoken = withoutSubtitleLanguages(words)
     /** The audio languages the names give, as two-letter codes; empty when they give none (see [audioLanguagesIn]). */
-    val audioLanguages = audioLanguagesIn(words)
-    /** Whether the names mention this language ("hindi" for "hi"). */
-    fun mentions(language: String) = Locale.forLanguageTag(language).getDisplayLanguage(Locale.ENGLISH).lowercase().let { it.length > 2 && it in words }
+    val audioLanguages = audioLanguagesIn(spoken)
+    /** Whether the names mention this language for the audio ("hindi" for "hi"). */
+    fun mentions(language: String): Boolean {
+        val base = Languages.base(language)
+        return language in audioLanguages || base in audioLanguages ||
+            Locale.forLanguageTag(language).getDisplayLanguage(Locale.ENGLISH).lowercase().let { it.length > 2 && it in spoken }
+    }
 
     /** Short tags for the source list: "REMUX · DV · Atmos". */
     val tags get() = listOfNotNull(
@@ -503,6 +545,9 @@ fun JSONArray?.items(): List<Any> = if (this == null) emptyList() else (0 until 
 
 fun JSONArray?.objects(): List<JSONObject> = items().filterIsInstance<JSONObject>()
 
+/** A catalog's titles: one without an id is left out, not the whole row. */
+fun List<JSONObject>.metas(): List<Meta> = mapNotNull { runCatching { Meta(it) }.getOrNull() }
+
 fun JSONArray?.strings(): List<String> = items().filterIsInstance<String>()
 
 /** The string at [key], or null when it's missing, JSON null or blank (optString would return "null" for JSON null). */
@@ -531,6 +576,30 @@ internal fun audioLanguagesIn(text: String): Set<String> {
     return found
 }
 
+/**
+ * [text] without the languages it names for subtitles only: the flags after 💬, as StremThru writes them
+ * ("🎙️ 🇬🇧 💬 🇬🇧 🇳🇱 🇫🇷"), and tags such as "NL subs", "NLSubs" or "Subs ENG". What's left speaks for the audio.
+ */
+internal fun withoutSubtitleLanguages(text: String): String {
+    // Strip "Subs <lang, ...>" before "<lang> subs" so "Audio: English Subtitles: Dutch" and "ENG.Subs.NL" keep English.
+    val withoutPrefix = subtitlePrefixTags.replace(text.replace(subtitleFlags, " ")) { m ->
+        val wordsAfter = Regex("[a-z]+").findAll(m.value.lowercase()).drop(1).toList()
+        val firstNonLang = wordsAfter.firstOrNull { it.value !in languageWords }
+        when {
+            wordsAfter.isEmpty() || wordsAfter.first().value !in languageWords -> m.value
+            firstNonLang == null -> " "
+            else -> " " + m.value.substring(firstNonLang.range.first)
+        }
+    }
+    return subtitleSuffixTags.replace(withoutPrefix) { m ->
+        if (m.groupValues[1].lowercase() in languageWords) " " else m.value
+    }
+}
+
+private val subtitleFlags = Regex("\\x{1F4AC}\\x{FE0F}?(?:[\\s/,|·&+-]*(?:[\\x{1F1E6}-\\x{1F1FF}]{2}|\\x{1F3F3}\\x{FE0F}?))*")
+private val subtitlePrefixTags = Regex("(?i)\\b(?:subs?|subtitles?)[ ._:-]+\\p{L}+(?:[ ._,/|&:-]+\\p{L}+)*\\b")
+private val subtitleSuffixTags = Regex("(?i)\\b(\\p{L}+?)[ ._-]?(?:subs?|subtitles?|subbed)\\b")
+
 private val flagLanguages = mapOf("gb" to "en", "us" to "en", "au" to "en", "it" to "it", "in" to "hi", "es" to "es",
     "mx" to "es", "fr" to "fr", "de" to "de", "pt" to "pt", "br" to "pt", "ru" to "ru", "jp" to "ja", "kr" to "ko",
     "cn" to "zh", "tw" to "zh", "hk" to "zh", "nl" to "nl", "pl" to "pl", "tr" to "tr", "se" to "sv", "dk" to "da",
@@ -544,7 +613,9 @@ private val languageWords = mapOf("english" to "en", "eng" to "en", "hindi" to "
     "french" to "fr", "fre" to "fr", "fra" to "fr", "vff" to "fr", "truefrench" to "fr", "german" to "de", "ger" to "de",
     "deu" to "de", "portuguese" to "pt", "russian" to "ru", "rus" to "ru", "japanese" to "ja", "jpn" to "ja",
     "korean" to "ko", "kor" to "ko", "chinese" to "zh", "mandarin" to "zh", "cantonese" to "zh", "dutch" to "nl",
-    "polish" to "pl", "turkish" to "tr", "swedish" to "sv", "danish" to "da", "norwegian" to "no", "finnish" to "fi",
+    // Dutch releases: "NL Gesproken", "100%NL", "NLD", Flemish ("Vlaams"); "NL subs" is taken out first.
+    "nl" to "nl", "nld" to "nl", "dut" to "nl", "nederlands" to "nl", "vlaams" to "nl", "flemish" to "nl",
+    "polish" to "pl", "polski" to "pl", "pol" to "pl", "turkish" to "tr", "swedish" to "sv", "danish" to "da", "norwegian" to "no", "finnish" to "fi",
     "greek" to "el", "hebrew" to "he", "arabic" to "ar", "thai" to "th", "vietnamese" to "vi", "indonesian" to "id",
     "ukrainian" to "uk", "czech" to "cs", "hungarian" to "hu", "romanian" to "ro", "persian" to "fa", "urdu" to "ur",
     "bengali" to "bn", "tamil" to "ta", "tam" to "ta", "telugu" to "te", "tel" to "te", "malayalam" to "ml",

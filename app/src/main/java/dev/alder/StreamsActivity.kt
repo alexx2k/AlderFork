@@ -54,6 +54,17 @@ class StreamsActivity : Screen() {
     private lateinit var languageStrip: HorizontalScrollView
     private var audio: String? = null
     private var audioOpened = false // the first list opens on the profile's language (Dubbed releases: My language first)
+    private var stopped = false
+
+    override fun onStart() {
+        super.onStart()
+        stopped = false
+    }
+
+    override fun onStop() {
+        stopped = true
+        super.onStop()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +74,12 @@ class StreamsActivity : Screen() {
         val type = intent.getStringExtra("type") ?: "movie"
         val videoId = intent.getStringExtra("videoId")!!
         val preferredProviderId = PreferredServers.forEpisode(this, viewerProfile.id, intent.getStringExtra("id"), videoId)
+        val languages = StreamsResolver.automaticLanguages(this, intent.getStringExtra("id"))
+        if (!pick && languages.isNotEmpty()) {
+            // The ordered retry queue stays in the player so large add-on lists never go through an Intent.
+            startActivity(Intent(this, PlayerActivity::class.java).putExtras(intent).apply { removeExtra("sources") })
+            return finish()
+        }
         val name = intent.getStringExtra("name") ?: ""
         val episode = intent.getStringExtra("episode") ?: intent.getStringExtra("label")?.removePrefix(name)?.trim(' ', '·')
         val where = episode?.split("·")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
@@ -175,6 +192,7 @@ class StreamsActivity : Screen() {
         val tv = Device.of(this)
 
         val lenders = Profiles.streamLenders(this)
+        var lenderFailure: Failure? = null
         // Asks every add-on again (a fixed connection, or an add-on set up again on the phone); a source found plays.
         fun tryAgain(focus: Boolean = true) {
             val again = pill(R.string.action_try_again).apply { setOnClickListener { recreate() } }
@@ -183,24 +201,25 @@ class StreamsActivity : Screen() {
         }
         background({
             val own = Stremio.addons(key).filter { it.providesStreams }
-            val lent = lenders.flatMap { lender ->
-                runCatching {
-                    (Stremio.savedAddons(lender.authKey) ?: Stremio.addons(lender.authKey)).filter { it.shareable }
-                }.getOrDefault(emptyList())
+            val lentAnswers = lenders.map { lender ->
+                runCatching { (Stremio.savedAddons(lender.authKey) ?: Stremio.addons(lender.authKey)).filter { it.shareable } }
             }
-            val household = lent.filter { it.serves("stream", type, videoId) }.distinctBy { it.id }
+            lenderFailure = lentAnswers.firstNotNullOfOrNull { it.exceptionOrNull() }?.let(::failureOf)
+            val lent = lentAnswers.flatMap { it.getOrDefault(emptyList()) }
             // Whether any stream add-on is installed besides Stremio's own (Local Files has a stream resource): if so, none
             // of them knows this kind of title.
-            (household + own.filter { it.serves("stream", type, videoId) }.filterNot { mine -> household.any { it.id == mine.id } }) to
+            StreamsResolver.mergeStreamAddons(own, lent, type, videoId) to
                 (own.any { !it.official } || lent.isNotEmpty())
         }) { result ->
             val (foundAddons, anyStreams) = result.getOrElse {
-                status.text = failureMessage(R.string.streams_load_failed, failureOf(it))
+                status.text = failureMessage(R.string.streams_load_failed, failureOf(it), source = "Stremio", advice = false)
                 return@background tryAgain()
             }
             val addons = foundAddons.sortedByDescending { it.id == preferredProviderId }
             if (addons.isEmpty()) {
-                status.text = getString(if (anyStreams) R.string.streams_none_for_kind else R.string.streams_no_addons)
+                // A shared profile's add-ons that couldn't be read: say that, not "no add-ons".
+                status.text = lenderFailure?.let { failureMessage(R.string.streams_load_failed, it, source = "Stremio", advice = false) }
+                    ?: getString(if (anyStreams) R.string.streams_none_for_kind else R.string.streams_no_addons)
                 return@background tryAgain()
             }
             val answers = arrayOfNulls<List<Stream>>(addons.size)
@@ -219,8 +238,12 @@ class StreamsActivity : Screen() {
                 val shown = audio?.let { lang -> ordered.filter { speaks(it, lang) } } ?: ordered
                 count.text = plural(R.plurals.streams_count, shown.size)
                 rows.removeAllViews()
-                playbackMessage?.let { message ->
-                    rows.addView(text(message, SMALL, color = TEXT_2).onArt().apply { setPadding(dp(12), 0, 0, dp(8)) })
+                val message = playbackMessage ?: getString(R.string.streams_no_preferred_audio).takeIf {
+                    languages.isNotEmpty() && ordered.isNotEmpty() &&
+                        eligible.none { stream -> languages.any { StreamsResolver.matchesAutomaticLanguage(stream, it) } }
+                }
+                message?.let {
+                    rows.addView(text(it, SMALL, color = TEXT_2).onArt().apply { setPadding(dp(12), 0, 0, dp(8)) })
                 }
                 cols.visibility = if (shown.isEmpty()) View.GONE else View.VISIBLE
                 val names = addons.map { it.name }
@@ -251,7 +274,7 @@ class StreamsActivity : Screen() {
                     addons[i].configureUrl != null && (failures[i]?.let(::refusedKey) ?: (torrents[i] > 0))
                 }?.let { i -> setupCode(addons[i], torrentsOnly = failures[i] == null)?.let { rows.addView(it, LinearLayout.LayoutParams(-1, -2)) } }
                 if (shown.isEmpty()) tryAgain(focusList)
-                else if (focusList) rows.getChildAt(if (playbackMessage == null) 0 else 1).requestFocus()
+                else if (focusList) rows.getChildAt(if (message == null) 0 else 1).requestFocus()
             }
             fun showList() {
                 listed = true
@@ -267,7 +290,7 @@ class StreamsActivity : Screen() {
 
             // Keep add-on order when earlier ones answer promptly; after 800 ms, a playable later answer can start.
             fun tryStart(allowGaps: Boolean = false) {
-                if (started || pick || listed) return
+                if (started || pick || listed || stopped || isFinishing || isDestroyed) return
                 val ready = readyStreams(answers, allowGaps)
                 val best = rank(ready.filter { it.isVideo && it.playableOn(tv) && wanted(it) }, videoId)
                 if (best.isEmpty() && answers.any { it == null }) return
@@ -278,9 +301,7 @@ class StreamsActivity : Screen() {
                     best.none { it.providerId != preferredProviderId }) return
                 if (best.isEmpty()) return showList()
                 started = true
-                startActivity(Intent(this, PlayerActivity::class.java).putExtras(intent)
-                    .putExtra("sources", JSONArray(StreamsResolver.playbackCandidates(best, preferredProviderId)
-                        .map { it.toJson() }).toString()))
+                launchPlayer(JSONArray(StreamsResolver.playbackCandidates(best, preferredProviderId).map { it.toJson() }).toString())
                 finish()
             }
 
@@ -315,9 +336,9 @@ class StreamsActivity : Screen() {
      * sources name only one. Sources that name no language count as English, as most English releases name none.
      */
     private fun showLanguages(streams: List<Stream>, redraw: () -> Unit) {
-        val unnamed = streams.any { it.audioLanguages.isEmpty() && !it.multiAudio }
-        val mine = Settings.audioLanguage(this)
-        val codes = (streams.flatMap { it.audioLanguages } + listOfNotNull("en".takeIf { unnamed })).distinct()
+        val hasEnglish = streams.any { it.audioLanguages.isEmpty() || it.multiAudio }
+        val mine = Languages.base(Settings.preferredAudio(this, intent.getStringExtra("id")))
+        val codes = (streams.flatMap { it.audioLanguages } + listOfNotNull("en".takeIf { hasEnglish })).distinct()
             .sortedWith(compareBy({ it != mine }, { it != "en" }, ::languageName))
         if (!audioOpened) {
             audioOpened = true
@@ -344,12 +365,14 @@ class StreamsActivity : Screen() {
         languageStrip.visibility = View.VISIBLE
     }
 
-    /** In [language] by its names: it names that language, it's multi or dual audio, or (English) it names none. */
-    private fun speaks(s: Stream, language: String) =
-        language in s.audioLanguages || s.multiAudio || (language == "en" && s.audioLanguages.isEmpty())
+    /** In [language] by its names: it names that language, or it's multi/dual audio without naming a different one, or (English) it names none. */
+    private fun speaks(s: Stream, language: String) = streamSpeaks(s, language)
 
-    private fun languageName(code: String) =
-        Locale(code).getDisplayLanguage(Locale.getDefault()).ifBlank { code }.replaceFirstChar { it.titlecase(Locale.getDefault()) }
+    /**
+     * The audio a source names, the profile's language first: "Dutch", "Dutch + English", "Dutch +3". None for a source
+     * that names only English or nothing, as most English releases do.
+     */
+    private fun spokenTag(s: Stream): String? = streamSpokenTag(s, Settings.audioLanguage(this))
 
     /**
      * A QR code for [addon]'s settings page, to set it up on a phone: a debrid service when it found [torrentsOnly], a new
@@ -389,6 +412,15 @@ class StreamsActivity : Screen() {
     private fun wanted(s: Stream): Boolean =
         StreamsResolver.wanted(this, s, intent.getIntExtra("maxHeight", 0))
 
+    private fun launchPlayer(sources: String, picked: Boolean = false) {
+        startActivity(Intent(this, PlayerActivity::class.java).putExtras(intent)
+            .putExtra("sources", sources)
+            .apply { if (picked) putExtra("picked", true) })
+        // Clear initial resume flags so backing out and picking another source uses saved playback progress.
+        intent.removeExtra("resumeAt")
+        intent.removeExtra("startOver")
+    }
+
     private fun streamRow(s: Stream, addon: String, best: Boolean): View {
         val quality = text(if (s.height > 0) "${s.height}p" else getString(R.string.streams_auto), BODY, bold = true).onArt()
         val detail = if (asAddonWrites) addonRowText(s, best) else LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
@@ -424,8 +456,7 @@ class StreamsActivity : Screen() {
                     setResult(RESULT_OK, Intent().putExtra("sources", chosen))
                     return@setOnClickListener finish()
                 }
-                startActivity(Intent(this@StreamsActivity, PlayerActivity::class.java).putExtras(intent)
-                    .putExtra("sources", chosen).putExtra("picked", true))
+                launchPlayer(chosen, picked = true)
             }
         }
     }
@@ -458,7 +489,8 @@ class StreamsActivity : Screen() {
         val sourceTag = if (s.torrent != null) getString(R.string.streams_tag_p2p) else s.debrid?.tag
         // Release and audio are in the summary already; seeders follow P2P, as they say whether it will start.
         val shared = listOf("BluRay", "WEB", "Atmos", "TrueHD", "DTS-HD")
-        (listOfNotNull(sourceTag) + s.tags.filter { it !in shared }.take(if (best) 1 else 2)).forEach { tag ->
+        val spoken = spokenTag(s)
+        (listOfNotNull(sourceTag, spoken) + s.tags.filter { it !in shared }.take((if (best) 1 else 2) - (if (spoken != null) 1 else 0))).forEach { tag ->
             val words = when (tag) {
                 "Multi audio" -> getString(R.string.streams_tag_multi_audio)
                 "Dub" -> getString(R.string.streams_tag_dub)
@@ -525,6 +557,28 @@ class StreamsActivity : Screen() {
         const val ROW_H = 38 // dp a source row: eight fit above the help line, as on the mock
     }
 }
+
+/** In [language] by its names: it names that language, or it's multi/dual audio without naming a different one, or (English) it names none. */
+internal fun streamSpeaks(s: Stream, language: String): Boolean {
+    val base = Languages.base(language)
+    return base in s.audioLanguages || (base == "en" && s.audioLanguages.isEmpty()) ||
+        (s.multiAudio && (s.audioLanguages.isEmpty() || base == "en"))
+}
+
+/** The audio a source names, [audioLanguage] first: "Dutch", "Dutch + English", "Dutch +3". */
+internal fun streamSpokenTag(s: Stream, audioLanguage: String): String? {
+    val mine = Languages.base(audioLanguage)
+    val codes = s.audioLanguages.sortedWith(compareBy({ it != mine }, { it != "en" }, ::languageName))
+    if (codes.isEmpty() || codes == listOf("en")) return null
+    return languageName(codes[0]) + when (codes.size) {
+        1 -> ""
+        2 -> " + " + languageName(codes[1])
+        else -> " +${codes.size - 1}"
+    }
+}
+
+internal fun languageName(code: String) =
+    Locale(code).getDisplayLanguage(Locale.getDefault()).ifBlank { code }.replaceFirstChar { it.titlecase(Locale.getDefault()) }
 
 /** A source's own words on one run: "Torrentio 4k  —  Night of the Living Dead 1968 2160p BluRay  ·  👤 52 💾 4.35 GB ⚙️ YTS". */
 internal fun addonWords(s: Stream): String = listOf(s.title, s.description)

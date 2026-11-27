@@ -54,6 +54,8 @@ class CastTest {
         assertEquals(emptyList<CastMember>(), Tmdb.cast("invalid_id", "movie"))
         assertEquals(emptyList<CastMember>(), Tmdb.cast("", "series"))
         assertEquals(emptySet<String>(), Tmdb.personCredits(null, "", false))
+        assertEquals(emptyList<Meta>(), Tmdb.similar("invalid_id", "movie"))
+        assertEquals(emptyList<Meta>(), Tmdb.similar("", "series"))
     }
 
     @Test

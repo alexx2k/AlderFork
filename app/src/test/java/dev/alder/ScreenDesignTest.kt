@@ -1,6 +1,8 @@
 package dev.alder
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import androidx.media3.common.MimeTypes
 import org.junit.Test
 
 class ScreenDesignTest {
@@ -49,6 +51,34 @@ class ScreenDesignTest {
         assertEquals(setOf("it"), audioLanguagesIn("Movie.2024.1080p.BluRay.ITA.x264"))
         assertEquals(setOf("fr"), audioLanguagesIn("Movie 2024 TRUEFRENCH 2160p WEB"))
         assertEquals(emptySet<String>(), audioLanguagesIn("Movie.2024.2160p.WEB-DL.DV.HDR.H265"))
+        // Subtitle flags after 💬 and "<lang> subs" tags are ignored for all languages.
+        assertEquals(setOf("en"), audioLanguagesIn(withoutSubtitleLanguages("🎙️ 🇬🇧 💬 🇬🇧 🇸🇦 🇨🇳 🇩🇰 🇳🇱 🇫🇮 🇫🇷")))
+        assertEquals(setOf("en"), audioLanguagesIn(withoutSubtitleLanguages("🎙️ 🇬🇧 💬 🇬🇧 / 🇳🇱")))
+        assertEquals(setOf("en"), audioLanguagesIn(withoutSubtitleLanguages("🎙️ 🇬🇧 💬 🇬🇧, 🇳🇱 | 🇫🇷 · 🇩🇪 & 🇪🇸 + 🇮🇹 - 🇯🇵")))
+        assertEquals(setOf("en"), audioLanguagesIn(withoutSubtitleLanguages("Movie.2024.1080p.WEB-DL.ENG.NL.Subs")))
+        assertEquals(setOf("en"), audioLanguagesIn(withoutSubtitleLanguages("Movie 2024 NLSubs ENG")))
+        assertEquals(setOf("fr"), audioLanguagesIn(withoutSubtitleLanguages("Movie 2024 FRENCH | Subs ENG")))
+        assertEquals(setOf("en"), audioLanguagesIn(withoutSubtitleLanguages("Audio: English Subtitles: Dutch, French")))
+        assertEquals(setOf("en"), audioLanguagesIn(withoutSubtitleLanguages("Movie.2024.ENG.Subs.NL")))
+        assertEquals(emptySet<String>(), audioLanguagesIn(withoutSubtitleLanguages("Movie 2024 NL Subs HEVC")))
+        assertEquals(emptySet<String>(), audioLanguagesIn(withoutSubtitleLanguages("Movie 2024 Subs NL HEVC")))
+        assertEquals(setOf("nl"), audioLanguagesIn(withoutSubtitleLanguages("Frozen (2013) BRRip NL Gesproken")))
+        assertEquals(setOf("nl"), audioLanguagesIn(withoutSubtitleLanguages("100%NL - Zootropolis")))
+        assertEquals(setOf("nl"), audioLanguagesIn(withoutSubtitleLanguages("Movie 2024 Vlaams NLD")))
+    }
+
+    @Test fun brazilianPortugueseMatchesPortugueseAudioStreams() {
+        val brazilianFlag = Stream("Torrentio", "Movie 1080p 🇧🇷 / 🇬🇧", "https://example.invalid/pt.mkv", emptyMap(), 0L, null, null)
+        assertTrue(brazilianFlag.mentions("pt-BR"))
+        assertTrue(streamSpeaks(brazilianFlag, "pt-BR"))
+        assertEquals("Portuguese + English", streamSpokenTag(brazilianFlag, "pt-BR"))
+    }
+
+    @Test fun subtitleUsesValueEqualityForSelectionLookup() {
+        val first = Subtitle("https://subs.example/en.srt", "eng", "OpenSubtitles")
+        val duplicate = Subtitle("https://subs.example/en.srt", "eng", "OpenSubtitles")
+        assertEquals(first, duplicate)
+        assertEquals(0, listOf(first).indexOf(duplicate))
     }
 
     @Test fun whatsNewReadsOneVersionsEntries() {
@@ -75,10 +105,35 @@ class ScreenDesignTest {
         """.trimMargin()
         val changes = changesFor(log, "Unreleased")
         assertEquals(listOf("Trailers", "Live TV", "Direct play"), showcaseHighlights(changes).map { it.title })
+        assertEquals(listOf(null, null, null), showcaseHighlights(changes).map { it.image })
+        val pictured = changesFor("## 2.0\n<!-- Spotlight: whats-new/p2p.webp -->\n- **P2P.** Play.\n- **Plain.** Text.", "2.0")
+        assertEquals(listOf("whats-new/p2p.webp", null), pictured.map { it.image })
+        assertEquals(listOf(true, false), pictured.map { it.spotlight })
         assertEquals(listOf("New", "New", "Easier to use"), showcaseHighlights(changes).map { it.group })
         assertEquals(5, changes.size)
         assertEquals(listOf("Trailers", "30 GB limit", "Live TV", "Direct play", "Back"),
             showcaseHighlights(changes.map { Change(it.group, it.text) }).map { it.title })
+    }
+
+    @Test fun whatsNewReadsCompactArtAndKeepsSettingsPathsSeparate() {
+        val log = """## Unreleased
+            |### New
+            |<!-- Spotlight -->
+            |<!-- Player: VLC whats-new/player-icon.webp -->
+            |- **External player.** Choose an installed player. **Settings → Streams → Video player**.
+            |<!-- Detail: whats-new/sources.webp -->
+            |- **Sources.** Find more sources.
+            |- **Picture size.** Choose **Zoom**. **Audio & subtitles → Sync & Style → Picture**.
+            |- **Older entry.** Select **Settings → Profile** to change it.
+        """.trimMargin()
+        val changes = changesFor(log, "Unreleased")
+        assertEquals(listOf("External player"), showcaseHighlights(changes).map { it.title })
+        assertEquals(listOf(null, "whats-new/sources.webp", null, null), changes.map { it.detailImage })
+        assertEquals(listOf(PlayerExample("VLC", "whats-new/player-icon.webp"), null, null, null), changes.map { it.player })
+        assertEquals(listOf("Settings → Streams → Video player", null, "Audio & subtitles → Sync & Style → Picture", null),
+            changes.map { it.settingsPath })
+        assertEquals(listOf("Choose an installed player.", "Find more sources.", "Choose **Zoom**.",
+            "Select **Settings → Profile** to change it."), changes.map { it.summary })
     }
 
     @Test fun debridServiceFromTagsAndLinks() {
@@ -98,6 +153,8 @@ class ScreenDesignTest {
         assertEquals("More like Dune", homeRowName("Because you watched Dune"))
         assertEquals("More like Crayon Shin-chan", homeRowName("Because you watched Crayon Shin-chan: Pursuit"))
         assertEquals("Popular", homeRowName("Popular"))
+        assertEquals("More like Doctor Strange in the Multiverse of Madness",
+            homeRowName("Because you watched Doctor Strange in the Multiverse of Madness"))
     }
 
     @Test fun seasonCountIsSingularForOne() {
@@ -133,6 +190,7 @@ class ScreenDesignTest {
         assertEquals("Recommended in India", shortRowName("Recommended in India"))
         assertEquals("Comedy Sci-Fi", shortRowName("Comedy Science Fiction"))
         assertEquals("Adventure", shortRowName("Short & Sweet Adventure", listOf("Drama", "Adventure")))
+        assertEquals("Top Rated Korean Dramas Of…", shortRowName("Top Rated Korean Dramas Of All Time"))
     }
 
     @Test fun homeRowsIdentifyMoviesAndShows() {
@@ -255,6 +313,13 @@ class ScreenDesignTest {
             rankSearchTitles(titles, "Dune") { it })
         assertEquals(listOf("Amelie", "Amélie Returns", "Arrival"),
             rankSearchTitles(listOf("Arrival", "Amélie Returns", "Amelie"), "Amélie") { it })
+    }
+
+    @Test fun searchTreatsTheAsOptionalAndPrefersBetterRatedTies() {
+        val titles = listOf("Matrix" to null, "The Matrix" to 8.7, "The Matrix Reloaded" to 7.2)
+        assertEquals(listOf("The Matrix", "Matrix", "The Matrix Reloaded"),
+            rankSearchTitles(titles, "matrix", rating = { it.second }) { it.first }.map { it.first })
+        assertEquals(listOf("The Thing", "Thing"), rankSearchTitles(listOf("Thing", "The Thing"), "the thing") { it })
     }
 
     @Test fun partialSearchAnswersKeepAddonOrder() {
@@ -545,6 +610,26 @@ class ScreenDesignTest {
             ),
             playerBadges(dtsRemuxTb, audioLanguage = "id", audioChannels = 6, subtitleLanguage = "eng"),
         )
+    }
+
+    @Test fun playerBadgesReadWidescreenAndPlayingTrack() {
+        fun res(w: Int, h: Int) = playerBadges(null, videoHeight = h, videoWidth = w).first().label
+        assertEquals("4K", res(3840, 1608))
+        assertEquals("4K", res(3836, 1600))
+        assertEquals("1080p", res(1920, 800))
+        assertEquals("1080p", res(1916, 1036))
+        assertEquals("720p", res(1280, 536))
+        assertEquals("1440p", res(2560, 1440))
+
+        val atmos = Stream("Torrentio 2160p", "Film.2160p.WEB-DL.DDP5.1.Atmos.mkv", "https://example.invalid/a.mkv",
+            emptyMap(), 0L, "Film.2160p.WEB-DL.DDP5.1.Atmos.mkv", null)
+        fun audio(s: Stream, mime: String?) = playerBadges(s, audioMime = mime).map { it.brand to it.label }
+        assertTrue(BadgeBrand.DOLBY to "ATMOS" in audio(atmos, MimeTypes.AUDIO_E_AC3))
+        assertTrue(audio(atmos, MimeTypes.AUDIO_AAC).none { it.first == BadgeBrand.DOLBY && it.second != "VISION" })
+
+        val dtsX = Stream("Comet 2160p", "Film.2160p.BluRay.REMUX.DTS:X.7.1.mkv", "https://example.invalid/x.mkv",
+            emptyMap(), 0L, "Film.2160p.BluRay.REMUX.DTS:X.7.1.mkv", null)
+        assertTrue(BadgeBrand.DTS to "X" in audio(dtsX, MimeTypes.AUDIO_DTS_HD))
     }
 
     @Test fun playerBadgesEmptyWhenNoStreamOrTracks() {

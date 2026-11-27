@@ -1,10 +1,17 @@
 package dev.alder
 
+import com.nuvio.engine.NuvioEngineException
 import com.nuvio.engine.NuvioTorrentFile
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
+import java.util.concurrent.CancellationException
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 class TorrentSourceTest {
     private val hash = "0123456789abcdef".repeat(2) + "01234567"
@@ -86,5 +93,91 @@ class TorrentSourceTest {
             "magnet:?xt=urn:btih:extra:$hash", "magnet:?tr=https://tracker.example")) {
             assertNull(Stream.from(JSONObject().put("url", url), allowTorrents = true))
         }
+    }
+
+    @Test fun closeStaleOpenClosesOnlyWhenStale() {
+        var closes = 0
+        val opened = Opened("http://127.0.0.1/stream.mkv", emptyMap()) { closes++ }
+
+        assertFalse(closeStaleOpen(opened, stale = false))
+        assertEquals(0, closes)
+
+        assertTrue(closeStaleOpen(opened, stale = true))
+        assertEquals(1, closes)
+
+        assertTrue(closeStaleOpen(null, stale = true))
+        assertFalse(closeStaleOpen(null, stale = false))
+    }
+
+    @Test fun awaitTorrentFilesStopsPollingWhenCanceled() = runBlocking {
+        val canceled = AtomicBoolean(false)
+        val polls = AtomicInteger(0)
+
+        val error = try {
+            withTimeout(5_000L) {
+                awaitTorrentFiles(canceled = canceled::get, pollMs = 10L) {
+                    if (polls.incrementAndGet() >= 2) canceled.set(true)
+                    throw NuvioEngineException(9, "metadata not ready")
+                }
+            }
+            null
+        } catch (e: CancellationException) {
+            e
+        }
+
+        assertNotNull(error)
+        assertEquals(2, polls.get())
+    }
+
+    @Test fun awaitTorrentFilesRetriesMetadataUntilReadyAndRethrowsOtherErrors() = runBlocking {
+        val polls = AtomicInteger(0)
+        val ready = awaitTorrentFiles(pollMs = 1L) {
+            if (polls.incrementAndGet() < 3) throw NuvioEngineException(9, "metadata not ready")
+            listOf(torrentFile(7, "Show/Show.S01E01.mkv"))
+        }
+        assertEquals(3, polls.get())
+        assertEquals(listOf(7), ready.map { it.index })
+
+        val other = try {
+            awaitTorrentFiles(pollMs = 1L) { throw NuvioEngineException(5, "fatal") }
+            null
+        } catch (e: NuvioEngineException) {
+            e
+        }
+        assertEquals(5, other?.status)
+    }
+
+    @Test fun withCancellationCancelsStuckOpenPromptlyAndPreservesNormalResults() = runBlocking {
+        val canceled = AtomicBoolean(false)
+        val cleanedUp = AtomicBoolean(false)
+        val stuck = CompletableDeferred<String>()
+
+        val error = try {
+            withTimeout(5_000L) {
+                withCancellation(canceled = canceled::get, pollMs = 10L) {
+                    try {
+                        canceled.set(true)
+                        stuck.await()
+                    } finally {
+                        cleanedUp.set(true)
+                    }
+                }
+            }
+            null
+        } catch (e: CancellationException) {
+            e
+        }
+
+        assertNotNull(error)
+        assertTrue(cleanedUp.get())
+        assertEquals("ready", withCancellation(canceled = { false }, pollMs = 1_000L) { "ready" })
+
+        val failure = try {
+            withCancellation(canceled = { false }, pollMs = 1_000L) { throw IllegalStateException("broken") }
+            null
+        } catch (e: IllegalStateException) {
+            e
+        }
+        assertEquals("broken", failure?.message)
     }
 }

@@ -11,6 +11,16 @@ class CrashesTest {
         assertEquals("failed: https://aiostreams.example.com/…", out)
     }
 
+    @Test fun userinfoTokensAreStrippedFromAddresses() {
+        val out = Crashes.redact(
+            "failed: https://secret-token@aiostreams.example.com/stream and " +
+                "https://user:pass123@proxy.example.com:8443/path?x=1"
+        )
+        assertEquals("failed: https://aiostreams.example.com/… and https://proxy.example.com/…", out)
+        assertFalse(out.contains("secret-token"))
+        assertFalse(out.contains("pass123"))
+    }
+
     @Test fun keysGoAndClassNamesStay() {
         val out = Crashes.redact("token 9f8e7d6c5b4a39281706f5e4d3c2b1a0 at dev.alder.PlayerActivity.onCreate(PlayerActivity.kt:235)\n" +
             "java.lang.IllegalStateException: ExoPlaybackExceptionWrapper")

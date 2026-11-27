@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="card_watched">देखा गया</string>
+    <string name="card_progress">%1$d%% देखा गया</string>
 
     <!-- Shared -->
     <string name="action_ok">ठीक है</string>
@@ -22,26 +24,31 @@
     <string name="whats_new">नया क्या है</string>
     <string name="whats_new_no_notes">वर्शन %1$s के लिए कोई नोट नहीं है।</string>
     <string name="whats_new_version">वर्शन %1$s</string>
+    <string name="whats_new_preview">रिलीज़ का पूर्वावलोकन</string>
+    <string name="whats_new_example_player">बाहरी प्लेयर का उदाहरण</string>
     <string name="whats_new_group">नया</string>
-    <plurals name="whats_new_highlights">
-        <item quantity="one">नया क्या है · %1$d खास बात</item>
-        <item quantity="other">नया क्या है · %1$d खास बातें</item>
-    </plurals>
-    <string name="whats_new_all">सभी बदलाव (%1$d)</string>
     <string name="whats_new_highlights_short">खास बातें</string>
-    <string name="whats_new_back">← खास बातों पर वापस</string>
-    <plurals name="whats_new_see_all">
-        <item quantity="one">%1$d बदलाव देखें  →</item>
-        <item quantity="other">सभी %1$d बदलाव देखें  →</item>
-    </plurals>
 
     <!-- Home -->
     <string name="tab_home">होम</string>
+    <string name="tab_discover">खोजें</string>
+    <string name="discover_genre">शैली</string>
+    <string name="discover_year">दशक</string>
+    <string name="discover_all_genres">सभी शैलियाँ</string>
+    <string name="discover_all_decades">सभी दशक</string>
+    <string name="discover_all_services">सभी सेवाएँ</string>
+    <string name="discover_before_1980">1980 से पहले</string>
+    <string name="discover_on">सेवा</string>
+    <string name="discover_sort_popular">लोकप्रिय</string>
+    <string name="discover_sort_top">सबसे ऊँची रेटिंग</string>
+    <string name="discover_sort_new">नवीनतम</string>
+    <string name="discover_empty">इन विकल्पों से कुछ नहीं मिला। कम विकल्प चुनें।</string>
+    <string name="tmdb_notice">यह उत्पाद TMDB API का उपयोग करता है, लेकिन TMDB इसका समर्थन या प्रमाणन नहीं करता।</string>
     <string name="tab_shows">शो</string>
     <string name="tab_movies">फ़िल्में</string>
     <string name="tab_live">लाइव</string>
     <string name="tab_anime">एनीमे</string>
-    <string name="tab_my_list">मेरी सूची</string>
+    <string name="tab_my_list">My Alder</string>
     <string name="nav_profile">प्रोफ़ाइल</string>
     <string name="nav_search">खोजें</string>
     <string name="updates_ready">Alder %1$s तैयार है</string>
@@ -53,7 +60,6 @@
     <string name="menu_settings">सेटिंग</string>
     <string name="action_play">चलाएँ</string>
     <string name="action_resume">जारी रखें</string>
-    <string name="new_episode">नया एपिसोड</string>
     <string name="stopped_at">%1$s पर रुका</string>
     <string name="time_left_hours">%1$d घं %2$d मि बाकी</string>
     <string name="time_left_minutes">%1$d मि बाकी</string>
@@ -72,17 +78,14 @@
     <string name="list_sort_recent">हाल में जोड़े गए</string>
     <string name="list_sort_name">A–Z</string>
     <string name="list_sort_unwatched">पहले बिना देखे</string>
-    <plurals name="list_title_count">
-        <item quantity="one">%1$d टाइटल</item>
-        <item quantity="other">%1$d टाइटल</item>
-    </plurals>
     <string name="list_empty">+ से सहेजे गए टाइटल यहाँ दिखते हैं</string>
-    <string name="list_empty_movies">मेरी सूची में कोई फ़िल्म नहीं</string>
-    <string name="list_empty_shows">मेरी सूची में कोई शो नहीं</string>
-    <string name="list_empty_unwatched">मेरी सूची में कोई बिना देखा टाइटल नहीं</string>
-    <string name="action_remove_from_list">मेरी सूची से हटाएँ</string>
+    <string name="list_empty_movies">My Alder में कोई फ़िल्म नहीं</string>
+    <string name="list_empty_shows">My Alder में कोई शो नहीं</string>
+    <string name="list_empty_unwatched">My Alder में कोई बिना देखा टाइटल नहीं</string>
+    <string name="list_clear_filters">फ़िल्टर साफ़ करें</string>
+    <string name="action_remove_from_list">My Alder से हटाएँ</string>
     <string name="action_mark_watched">देखा गया मार्क करें</string>
-    <string name="list_update_failed">मेरी सूची अपडेट नहीं हो सकी</string>
+    <string name="list_update_failed">My Alder अपडेट नहीं हो सकी</string>
     <string name="check_connection">कनेक्शन जाँचें और फिर से कोशिश करें।</string>
     <string name="action_choose_source">स्रोत चुनें</string>
     <string name="action_remove_from_continue">देखना जारी रखें से हटाएँ</string>
@@ -101,7 +104,7 @@
     <string name="action_more_info">ज़्यादा जानकारी</string>
     <string name="action_start_over">शुरू से देखें</string>
     <string name="action_trailer">ट्रेलर</string>
-    <string name="action_add_to_list">मेरी सूची में जोड़ें</string>
+    <string name="action_add_to_list">My Alder में जोड़ें</string>
     <string name="season_specials">स्पेशल</string>
     <string name="season_number">सीज़न %1$d</string>
     <string name="episode_number">एपिसोड %1$d</string>
@@ -132,7 +135,6 @@
     <string name="player_starting_stream">स्ट्रीम शुरू हो रही है…</string>
     <string name="player_source_failed_next">वह स्रोत नहीं चला · अगला आज़माया जा रहा है</string>
     <string name="player_source_failed_choose">वह स्रोत नहीं चला · कोई दूसरा स्रोत चुनें</string>
-    <string name="player_keeps_buffering">बार-बार बफ़र हो रहा है</string>
     <string name="player_switch_prompt">%1$dp पर जाएँ?</string>
     <string name="player_switch_desc">यह %1$dp स्रोत एक मिनट में 3 बार रुका। छोटी फ़ाइल %2$s से ज़्यादा आसानी से चल सकती है।</string>
     <string name="player_switch_to">%1$dp पर जाएँ</string>
@@ -141,25 +143,18 @@
     <string name="player_source_failed">स्रोत नहीं चला</string>
     <string name="player_try_another">कोई दूसरा स्रोत आज़माएँ</string>
     <string name="player_next_episode">अगला एपिसोड</string>
-    <string name="player_up_next">आगे है</string>
     <string name="player_exit_home">होम पर जाएँ</string>
     <string name="player_still_watching">अभी भी देख रहे हैं?</string>
-    <string name="player_still_prompt_description">अगला एपिसोड तैयार है, जब आप चाहें।</string>
-    <string name="player_still_episode">S%1$d E%2$d</string>
-    <string name="player_still_keep_watching">देखना जारी रखें</string>
-    <string name="player_still_dont_ask">दोबारा न पूछें</string>
-    <string name="player_still_stop">देखना बंद करें</string>
     <string name="player_sleep_paused">स्लीप टाइमर ने प्लेबैक रोक दिया।</string>
     <string name="skip_intro">इंट्रो छोड़ें</string>
     <string name="skip_recap">रीकैप छोड़ें</string>
-    <string name="player_paused">रुका हुआ</string>
     <string name="player_seek">आगे-पीछे करें</string>
     <string name="player_audio_subtitles">ऑडियो और सबटाइटल</string>
+    <string name="player_speed">प्लेबैक स्पीड</string>
+    <string name="player_speed_passthrough_note">1× पर या उससे बदलने पर ऑडियो थोड़ी देर रुकता है।</string>
     <string name="player_change_stream">स्रोत बदलें</string>
     <string name="player_pause">रोकें</string>
     <string name="player_info">जानकारी</string>
-    <string name="key_play_pause">चलाएँ / रोकें</string>
-    <string name="key_seek">बार पर आगे-पीछे करें</string>
     <string name="player_live">लाइव</string>
     <string name="player_chapters">%1$s  ·  ▲ चैप्टर</string>
     <string name="player_cannot_seek">यह स्रोत आगे नहीं बढ़ सकता · दूसरा आज़माने के लिए स्रोत बदलें</string>
@@ -177,14 +172,11 @@
     <string name="track_preferred">पसंदीदा</string>
     <string name="track_recent">हाल का</string>
     <string name="track_in_file">फ़ाइल में</string>
-    <string name="subtitles_heading">सबटाइटल · %1$s</string>
     <string name="quick_timing">तुरंत टाइमिंग</string>
     <string name="subtitle_color">सबटाइटल का रंग</string>
     <string name="tracks_pinned">पिन किए गए</string>
     <string name="all_languages">सभी भाषाएँ (%1$d)</string>
-    <string name="audio_heading">ऑडियो · %1$s</string>
     <string name="all_audio_tracks">सभी ऑडियो ट्रैक (%1$d)</string>
-    <string name="audio_enhancement">ऑडियो सुधार</string>
     <string name="clear_dialogue">साफ़ संवाद</string>
     <string name="clear_dialogue_hint">संगीत और इफ़ेक्ट के ऊपर आवाज़ें उभारता है</string>
     <string name="timing_earlier_heading">पहले</string>
@@ -198,7 +190,6 @@
     <string name="size_extra_large">बहुत बड़ा</string>
     <string name="color">रंग</string>
     <string name="background_box">पृष्ठभूमि</string>
-    <string name="playback_sleep">प्लेबैक और स्लीप</string>
     <string name="sleep_timer">स्लीप टाइमर</string>
     <string name="player_change_stream_arrow">स्रोत बदलें  →</string>
     <string name="subtitles_off">सबटाइटल बंद</string>
@@ -264,7 +255,7 @@
     <string name="player_no_other_app">इस टीवी पर कोई दूसरा वीडियो प्लेयर नहीं है। Alder वीडियो चलाता है।</string>
     <string name="clear_dialogue_setting_hint">टीवी स्पीकर पर संगीत और तेज़ इफ़ेक्ट के ऊपर आवाज़ें उभारता है।</string>
     <string name="dubbed">डब रिलीज़</string>
-    <string name="dubbed_hint">पहले मूल भाषा डब रिलीज़ को आख़िर में रखता है; पहले मेरी भाषा इस प्रोफ़ाइल की ऑडियो भाषा का इस्तेमाल करता है।</string>
+    <string name="dubbed_hint">पहले मूल भाषा डब रिलीज़ को आख़िर में रखता है। पहले मेरी भाषा में Alder का प्लेयर अपने आप चलाने से पहले ऑडियो की भाषा जाँचता है। आप अब भी कोई भी स्रोत चुन सकते हैं।</string>
     <string name="dubbed_original">पहले मूल भाषा</string>
     <string name="dubbed_mine">पहले मेरी भाषा</string>
     <string name="subs_default">डिफ़ॉल्ट रूप से सबटाइटल</string>
@@ -325,6 +316,10 @@
     <string name="ratings_source">रेटिंग</string>
     <string name="ratings_source_hint">टाइटल पेज और होम पर रेटिंग चुनें। Letterboxd केवल फ़िल्मों के लिए है और इसके लिए MDBList कुंजी चाहिए। शो हमेशा IMDb दिखाते हैं।</string>
     <string name="ratings_both">दोनों</string>
+    <string name="episode_badges">नए एपिसोड बैज</string>
+    <string name="episode_badges_hint">सीरीज़ पोस्टर पर दिखने वाली संख्या चुनें। नए प्रसारित पिछली बार देखने के बाद आए एपिसोड गिनता है। मौजूदा सीज़न आपके देखे जा रहे सीज़न के बाकी एपिसोड गिनता है।</string>
+    <string name="episode_badges_aired">नए प्रसारित</string>
+    <string name="episode_badges_season">मौजूदा सीज़न</string>
     <string name="mdblist_key">MDBList कुंजी</string>
     <string name="mdblist_key_hint">mdblist.com/preferences से आपकी मुफ़्त API कुंजी। Alder इसका उपयोग केवल Letterboxd रेटिंग के लिए करता है।</string>
     <string name="key_not_set">सेट नहीं</string>
@@ -372,15 +367,14 @@
     <string name="unhide_row_hint">वापस लाने के लिए पंक्ति चुनें।</string>
     <string name="custom">कस्टम</string>
     <string name="source_choice">स्रोत का चुनाव</string>
-    <string name="source_choice_hint">सबसे अच्छी तस्वीर: पहले पूरा Blu-ray और Dolby Vision। संतुलित: छोटी फ़ाइलें। तेज़ शुरुआत: वेब रिलीज़। ऐड-ऑन का क्रम: ऐड-ऑन के हिसाब से।</string>
-    <string name="preset_addon_order">ऐड-ऑन का क्रम</string>
+    <string name="source_choice_hint">सबसे अच्छी तस्वीर: पहले पूरा Blu-ray और Dolby Vision। संतुलित: छोटी फ़ाइलें। तेज़ शुरुआत: वेब रिलीज़। कोई भी रिलीज़: सबसे साफ़ कॉपी, रिलीज़ कोई भी हो।</string>
+    <string name="preset_addon_order">कोई भी रिलीज़</string>
     <string name="preset_best_picture">सबसे अच्छी तस्वीर</string>
     <string name="preset_balanced">संतुलित</string>
     <string name="preset_fast_start">तेज़ शुरुआत</string>
 
     <!-- Search -->
     <string name="search_clear">खोज साफ़ करें</string>
-    <string name="search_voice_unavailable">वॉइस सर्च उपलब्ध नहीं</string>
     <string name="search_space">स्पेस</string>
     <string name="search_recent">हाल की</string>
     <string name="search_recent_hint">%1$s. हाल की खोजों से हटाने के लिए OK दबाकर रखें</string>
@@ -540,8 +534,6 @@
     <string name="profiles_all_set">सब तैयार है</string>
     <string name="profiles_ready">%1$s की प्रोफ़ाइल तैयार है। आप बाद में सेटिंग में और ऐड-ऑन जोड़ सकते हैं।</string>
     <string name="time_left_under_minute">1 मिनट से कम बाकी</string>
-    <string name="catalog_jump_to">यहाँ जाएँ</string>
-    <string name="catalog_jump_top">ऊपर</string>
     <string name="display_resolution">स्क्रीन का रिज़ॉल्यूशन</string>
     <string name="display_resolution_hint">वह टीवी रिज़ॉल्यूशन चुनें जिसके आधार पर Alder स्रोत चुनता है। अगर आपका बॉक्स 1080p बताता है लेकिन 4K आउटपुट देता है, तो 4K चुनें।</string>
     <string name="error_sign_in">Stremio में फिर से साइन इन करें</string>
@@ -551,11 +543,42 @@
     <string name="error_network">नेटवर्क की समस्या</string>
     <string name="library_edit_failed">देखने की स्थिति सेव नहीं हो सकी</string>
     <string name="search_incomplete">खोज के नतीजे अधूरे हैं</string>
+    <string name="catalog_addon_failed">%1$s लोड नहीं हो सका</string>
+    <string name="failure_web_page">यह शीर्षक नहीं, वेब पेज भेजता है</string>
+    <string name="failure_advice_sign_in">Stremio में फिर से साइन इन करें।</string>
+    <string name="failure_advice_access">Stremio में इस ऐड-ऑन की सेटिंग में कुंजी या खाता जाँचें।</string>
+    <string name="failure_advice_timeout">अपना इंटरनेट कनेक्शन जाँचें, फिर से कोशिश करें।</string>
+    <string name="failure_advice_address">इंटरनेट कनेक्शन जाँचें। अगर यह चलता है, तो ऐड-ऑन का पता बदल गया हो सकता है: Stremio में इसे अपडेट करें।</string>
+    <string name="failure_advice_connection">सेवा शायद बंद है। बाद में फिर से कोशिश करें।</string>
+    <string name="failure_advice_secure">टीवी पर तारीख और समय जाँचें, फिर से कोशिश करें।</string>
+    <string name="failure_advice_busy">एक मिनट रुकें, फिर से कोशिश करें।</string>
+    <string name="failure_advice_server">सेवा में कोई समस्या है। बाद में फिर से कोशिश करें।</string>
+    <string name="failure_advice_response">अगर ऐसा होता रहे, तो Stremio में ऐड-ऑन अपडेट करें या हटाएँ।</string>
+    <string name="failure_advice_missing">कोई और ऐड-ऑन या स्रोत आज़माएँ।</string>
+    <string name="failure_advice_format">कोई और स्रोत आज़माएँ।</string>
+    <string name="failure_advice_network">इंटरनेट कनेक्शन जाँचें, फिर से कोशिश करें।</string>
+    <string name="failure_advice_web_page">ऐड-ऑन शायद चला गया या बंद हो गया है: Stremio में इसे अपडेट करें या हटाएँ।</string>
+    <string name="failure_advice_other">फिर से कोशिश करें। अगर ऐसा होता रहे, तो सेटिंग › जानकारी से रिपोर्ट भेजें।</string>
+    <string name="filmography_failed">इस व्यक्ति के शीर्षक नहीं मिल सके</string>
+    <string name="trailer_no_app">इस टीवी पर कोई ऐप ट्रेलर नहीं चला सकता। इसे देखने के लिए YouTube इंस्टॉल करें।</string>
     <string name="catalog_incomplete">कुछ कैटलॉग लोड नहीं हो सके</string>
     <string name="progress_saved_on_tv">प्रगति इस टीवी पर सेव है। Alder इसे फिर से सिंक करने की कोशिश करेगा।</string>
     <string name="library_load_failed">आपकी Stremio लाइब्रेरी लोड नहीं हो सकी</string>
+    <string name="filmography_loading">शीर्षक खोजे जा रहे हैं…</string>
+    <string name="filmography_empty">आपके कैटलॉग में कोई अन्य शीर्षक नहीं मिला।</string>
+    <string name="streams_no_preferred_audio">कोई भी स्रोत अपने आप चलाने के लिए चुनी गई भाषाओं से मेल नहीं खाता। जारी रखने के लिए कोई स्रोत चुनें।</string>
+    <string name="audio_fallback">वैकल्पिक ऑडियो भाषा</string>
+    <string name="audio_fallback_hint">पहले मेरी भाषा में Alder पहले आपकी चुनी हुई भाषा, फिर यह वैकल्पिक भाषा और फिर अंग्रेज़ी आज़माता है। केवल अपनी चुनी हुई भाषा के लिए बंद चुनें।</string>
+    <string name="failure_preferred_audio">आपकी पसंदीदा भाषा में कोई समर्थित ऑडियो ट्रैक नहीं है</string>
+    <string name="failure_advice_preferred_audio">अपनी ऑडियो भाषा वाला स्रोत चुनें।</string>
+    <string name="list_added_on">%1$s को जोड़ा गया</string>
 
-    <!-- Profile and avatar features (v1.1.0) -->
+    <!-- Alder Fork additions -->
+    <string name="player_still_prompt_description">अगला एपिसोड तैयार है, जब आप चाहें।</string>
+    <string name="player_still_episode">S%1$d E%2$d</string>
+    <string name="player_still_keep_watching">देखना जारी रखें</string>
+    <string name="player_still_dont_ask">दोबारा न पूछें</string>
+    <string name="player_still_stop">देखना बंद करें</string>
     <string name="profiles_avatar">प्रोफ़ाइल फ़ोटो बदलें</string>
     <string name="profiles_avatar_setup">प्रोफ़ाइल फ़ोटो चुनें</string>
     <string name="profiles_avatar_choose">पहले से उपलब्ध अवतार देखें</string>

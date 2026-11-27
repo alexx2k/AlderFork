@@ -18,3 +18,4 @@ SPEC.md
 hs_err_pid*.log
 replay_pid*.log
 .superpowers/
+.wrangler/

@@ -1,6 +1,7 @@
 package dev.alder
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.app.ActivityManager
 import android.content.Intent
 import android.content.res.ColorStateList
@@ -84,36 +85,45 @@ object Settings {
     fun featuredHome(c: Context) = prefs(c).getBoolean(profileKey(c, "featuredHome"), false)
     /** "imdb", "letterboxd" or "both"; Letterboxd needs [mdblistKey] and covers films only. */
     fun ratings(c: Context) = prefs(c).getString("ratings", "imdb").orEmpty().ifEmpty { "imdb" }
+    /** Series badge rule for [Library.newEpisodeCount]: "aired", "season" or "off". */
+    fun episodeBadges(c: Context) = prefs(c).getString("episodeBadges", "aired").orEmpty().ifEmpty { "aired" }
     fun mdblistKey(c: Context) = prefs(c).getString("mdblistKey", "").orEmpty()
     fun setMdblistKey(c: Context, key: String) = prefs(c).edit().putString("mdblistKey", key.trim()).apply()
     /** Letterboxd is asked for only when it can show: a film, a key, and a pick that includes it. */
     fun wantsLetterboxd(c: Context, type: String, id: String) =
         type == "movie" && id.startsWith("tt") && ratings(c) != "imdb" && mdblistKey(c).isNotEmpty()
     /** A removed profile's taste goes with it, so a new profile in its place starts with none. */
-    fun forget(c: Context, profileId: String) = prefs(c).edit().apply {
-        listOf("release", "dub", "audioLang", "subLang", "hidden", "blurThumbnails", "hiddenRows", "startTab", "showMovies", "showShows", "showLive", "showLibrary", "tabOrder", "featuredHome", "recentSubLangs", "recentAudioLangs").forEach { remove("$it@$profileId") }
-        prefs(c).all.keys.filter { (it.startsWith("title:") || it.startsWith("showTab:")) && it.endsWith("@$profileId") }.forEach(::remove)
+    fun forget(c: Context, profileId: String) = forgetPrefs(prefs(c), profileId)
+
+    internal fun forgetPrefs(prefs: SharedPreferences, profileId: String) = prefs.edit().apply {
+        listOf(
+            "release", "dub", "audioLang", "audioFallback", "subLang", "subPref", "hidden", "blurThumbnails",
+            "hiddenRows", "startTab", "showMovies", "showShows", "showLive", "showLibrary",
+            "tabOrder", "featuredHome", "recentSubLangs", "recentAudioLangs",
+        ).forEach { remove("$it@$profileId") }
+        prefs.all.keys.filter { (it.startsWith("title:") || it.startsWith("showTab:")) && it.endsWith("@$profileId") }.forEach(::remove)
     }.apply()
 
     /**
-     * What the viewer picked in the player's Audio & subtitles for one title (a series' episodes share it), so the next
+     * What the viewer picked in the player's Audio & subtitles and speed for one title (a series' episodes share it), so the next
      * episode and a resume start the same way. Language codes; subtitles "" is Off; null where nothing was picked.
      * [subtitle]: the exact subtitle picked for video [subtitleVideo] ("addon:<url>" or "file:<track id>"), as Stremio
-     * keeps it per video.
+     * keeps it per video. [speed] is the playback speed, 1 when never changed.
      */
-    class TitleChoice(val audio: String?, val subtitles: String?, val subtitleVideo: String? = null, val subtitle: String? = null)
+    class TitleChoice(val audio: String?, val subtitles: String?, val subtitleVideo: String? = null, val subtitle: String? = null, val speed: Float = 1f)
 
     fun titleChoice(c: Context, metaId: String): TitleChoice? = prefs(c).getString(profileKey(c, "title:$metaId"), null)
         ?.let { runCatching { org.json.JSONObject(it) }.getOrNull() }
         ?.let { TitleChoice(it.text("audio"), if (it.has("subtitles")) it.optString("subtitles") else null,
-            it.text("subtitleVideo"), it.text("subtitle")) }
+            it.text("subtitleVideo"), it.text("subtitle"), it.optDouble("speed", 1.0).toFloat()) }
 
     fun pickedInPlayer(c: Context, metaId: String, audio: String? = null, subtitles: String? = null,
-                       video: String? = null, subtitle: String? = null) {
+                       video: String? = null, subtitle: String? = null, speed: Float? = null) {
         val key = profileKey(c, "title:$metaId")
         val json = prefs(c).getString(key, null)?.let { runCatching { org.json.JSONObject(it) }.getOrNull() } ?: org.json.JSONObject()
         audio?.let { json.put("audio", it) }
         subtitles?.let { json.put("subtitles", it) }
+        speed?.let { json.put("speed", it.toDouble()) }
         video?.let { json.put("subtitleVideo", it).put("subtitle", subtitle.orEmpty()) }
         prefs(c).edit().putString(key, json.toString()).apply()
     }
@@ -148,6 +158,8 @@ object Settings {
     /** Two-letter code of the dub to start with: the TV's language unless one is picked. */
     fun audioLanguage(c: Context): String = prefs(c).getString(profileKey(c, "audioLang"), prefs(c).getString("audioLang", ""))
         .orEmpty().ifEmpty { Languages.code(Locale.getDefault().toLanguageTag()) ?: "en" }
+    fun preferredAudio(c: Context, metaId: String?): String = metaId?.let { titleChoice(c, it)?.audio } ?: audioLanguage(c)
+    fun fallbackAudio(c: Context): String = prefs(c).getString(profileKey(c, "audioFallback"), "en").orEmpty()
     /** Two-letter code of the subtitles to start with: the TV's language unless one is picked. */
     fun subtitleLanguage(c: Context): String = prefs(c).getString(profileKey(c, "subLang"), "")
         .orEmpty().ifEmpty { Languages.code(Locale.getDefault().toLanguageTag()) ?: "en" }
@@ -254,14 +266,14 @@ class SettingsActivity : Screen() {
     private class Choice(val key: String, val label: String, val hint: String, val values: List<Pair<Any, String>>, val perProfile: Boolean = false) {
         init { require(values.isNotEmpty() && values.all { it.first.javaClass == values[0].first.javaClass }) }
     }
-    private enum class Group(val words: Int, val icon: Int = 0, val glyph: String = "") {
+    private enum class Group(val words: Int, val icon: Int) {
         STREAMS(R.string.group_streams, R.drawable.ic_play),
         PICTURE(R.string.group_picture, R.drawable.ic_tv),
         SUBTITLES(R.string.group_subtitles, R.drawable.ic_subtitles),
         ADDONS(R.string.group_addons, R.drawable.ic_layers),
-        PROFILE(R.string.group_profile, glyph = "♙"),
-        LANGUAGE(R.string.group_language, glyph = "◎"),
-        STORAGE(R.string.group_storage, glyph = "▤"),
+        PROFILE(R.string.group_profile, R.drawable.ic_person),
+        LANGUAGE(R.string.group_language, R.drawable.ic_language),
+        STORAGE(R.string.group_storage, R.drawable.ic_storage),
         ABOUT(R.string.group_about, R.drawable.ic_info),
     }
 
@@ -471,10 +483,10 @@ class SettingsActivity : Screen() {
 
     private fun addGroup(group: Group) {
         val dot = text("•", SMALL, color = TUNGSTEN).apply { gravity = Gravity.CENTER; visibility = View.INVISIBLE }
-        val icon = if (group.icon != 0) ImageView(this).apply {
+        val icon = ImageView(this).apply {
             setImageResource(group.icon)
             imageTintList = ColorStateList.valueOf(TEXT_3)
-        } else text(group.glyph, BODY, color = TEXT_3).apply { gravity = Gravity.CENTER }
+        }
         val label = text(group.words, BODY, bold = true, color = TEXT_2)
         val badge = View(this).apply {
             background = rounded(TUNGSTEN, 3)
@@ -552,6 +564,7 @@ class SettingsActivity : Screen() {
             Group.PICTURE -> {
                 pictureAndSound.forEach(::choiceRow)
                 languageRow("audioLang", getString(R.string.audio_language), getString(R.string.audio_language_hint))
+                languageRow("audioFallback", getString(R.string.audio_fallback), getString(R.string.audio_fallback_hint), R.string.state_off)
                 dubbed.forEach(::choiceRow)
             }
             Group.SUBTITLES -> {
@@ -610,6 +623,8 @@ class SettingsActivity : Screen() {
                     listOf(false to off, true to on), perProfile = true))
                 choiceRow(Choice("ratings", getString(R.string.ratings_source), getString(R.string.ratings_source_hint),
                     listOf("imdb" to "IMDb", "letterboxd" to LETTERBOXD, "both" to getString(R.string.ratings_both))))
+                choiceRow(Choice("episodeBadges", getString(R.string.episode_badges), getString(R.string.episode_badges_hint),
+                    listOf("aired" to getString(R.string.episode_badges_aired), "season" to getString(R.string.episode_badges_season), "off" to off)))
                 lateinit var keyValue: TextView
                 fun keyState() = getString(if (Settings.mdblistKey(this).isEmpty()) R.string.key_not_set else R.string.key_set)
                 keyValue = actionRow(getString(R.string.mdblist_key), keyState(), getString(R.string.mdblist_key_hint)) {
@@ -624,7 +639,9 @@ class SettingsActivity : Screen() {
             Group.STORAGE -> actionRow(getString(R.string.clear_storage), "", getString(R.string.clear_storage_hint)) {
                 choose(getString(R.string.clear_storage_title), listOf(getString(R.string.action_cancel), getString(R.string.action_clear)),
                     getString(R.string.clear_storage_desc)) { choice ->
-                    if (choice == 1) (getSystemService(ACTIVITY_SERVICE) as ActivityManager).clearApplicationUserData()
+                    if (choice != 1) return@choose
+                    // Clearing removes every profile, so a PIN-locked one asks for its PIN first, as removing it does.
+                    if (Profiles.all(this).none { it.pin != null }) clearStorage() else askPinToClear()
                 }
             }
             Group.ABOUT -> {
@@ -632,7 +649,7 @@ class SettingsActivity : Screen() {
                     marginStart = dp(12); bottomMargin = dp(14)
                 })
                 actionRow("Alder", getString(R.string.version, Updates.mine(this)), getString(R.string.about_hint)) {
-                    choose("Alder", listOf(getString(R.string.action_ok)), getString(R.string.about_desc)) {}
+                    choose("Alder", listOf(getString(R.string.action_ok)), getString(R.string.about_desc) + "\n\n" + getString(R.string.tmdb_notice)) {}
                 }
                 actionRow(getString(R.string.whats_new), getString(R.string.version, Updates.mine(this)), getString(R.string.whats_new_hint)) { whatsNew() }
                 // Only while a crash waits to be sent: answered "No" on Home, or the send failed.
@@ -721,6 +738,7 @@ class SettingsActivity : Screen() {
     private fun tabsSummary(tabs: List<String>) = getString(R.string.tabs_count, tabs.count { Settings.tabShown(this, it) }, tabs.size)
 
     private fun tabName(id: String) = when (id) {
+        "discover" -> getString(R.string.tab_discover)
         "shows" -> getString(R.string.tab_shows)
         "movies" -> getString(R.string.tab_movies)
         "live" -> getString(R.string.tab_live)
@@ -833,11 +851,12 @@ class SettingsActivity : Screen() {
     }
 
     /** A language for this profile, picked from a list (too many to step through with Left and Right). */
-    private fun languageRow(key: String, label: String, help: String) {
+    private fun languageRow(key: String, label: String, help: String, emptyLabel: Int = R.string.tv_language) {
         val codes = listOf("") + Languages.all
         // Audio language was once shared by every profile: that pick stands until this profile makes its own.
-        fun current() = prefs.getString(Settings.profileKey(this, key), if (key == "audioLang") prefs.getString(key, "") else "").orEmpty()
-        fun name(code: String) = if (code.isEmpty()) getString(R.string.tv_language) else Languages.name(code)
+        fun current() = if (key == "audioFallback") Settings.fallbackAudio(this)
+            else prefs.getString(Settings.profileKey(this, key), if (key == "audioLang") prefs.getString(key, "") else "").orEmpty()
+        fun name(code: String) = if (code.isEmpty()) getString(emptyLabel) else Languages.name(code)
         val value = text("", BODY, color = TEXT_2)
         fun draw() { value.text = name(current()) + "  ›" }
         settingRow(label, value, help, perProfile = true, focus = { value.setTextColor(if (it) TUNGSTEN else TEXT_2) }) {
@@ -902,6 +921,7 @@ class SettingsActivity : Screen() {
     }
 
     private companion object {
+        const val UNLOCK_TO_CLEAR = 7
         /** The languages Alder has words for, besides English; res/xml/locales_config.xml lists the same. */
         val APP_LANGUAGES = listOf("en", "es", "pt-BR", "fr", "de", "it", "hi", "ar")
         val PRESETS = listOf(
@@ -911,4 +931,18 @@ class SettingsActivity : Screen() {
             R.string.preset_fast_start to mapOf("release" to "web", "hdrPref" to "", "maxHeight" to 1080, "maxSizeGb" to 10),
         )
     }
+
+    @Suppress("DEPRECATION")
+    private fun askPinToClear() =
+        startActivityForResult(Intent(this, ProfilesActivity::class.java).putExtra(ProfilesActivity.UNLOCK, true), UNLOCK_TO_CLEAR)
+
+    private fun clearStorage() = (getSystemService(ACTIVITY_SERVICE) as ActivityManager).clearApplicationUserData()
+
+    @Deprecated("Activity result callback")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        @Suppress("DEPRECATION")
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == UNLOCK_TO_CLEAR && resultCode == RESULT_OK) clearStorage()
+    }
+
 }

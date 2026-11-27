@@ -39,17 +39,22 @@ object Http {
         val text = String(body, Charsets.UTF_8)
         // Stremio's API answers errors as JSON (read by the caller); anything else failed is an error page: say the code.
         if (code >= 400 && (strict || !text.trimStart().startsWith("{"))) throw HttpError(code)
+        // A closed or moved add-on often sends its host's web page (a redirect followed to docs or a parking page).
+        if (strict && text.trimStart().startsWith("<")) throw WebPageAnswer()
         return text.also { if (keep && code < 400) keep(url, json, it) }
     }
 
     /** The last answer kept for this request, or null. Never touches the network. */
-    fun savedAnswer(url: String, json: String? = null): String? =
-        file(url, json)?.takeIf { it.exists() }?.let { runCatching { it.readText() }.getOrNull() }
+    fun savedAnswer(url: String, json: String? = null, maxAgeMs: Long? = null): String? =
+        file(url, json)?.takeIf {
+            it.exists() && (maxAgeMs == null || System.currentTimeMillis() - it.lastModified() <= maxAgeMs)
+        }?.let { runCatching { it.readText() }.getOrNull() }
 
     /** Keeps [body] as the answer to this request, for [savedAnswer] next time. */
     fun keep(url: String, json: String?, body: String) {
         val f = file(url, json) ?: return
-        runCatching { File(f.path + ".tmp").apply { writeText(body) }.renameTo(f) }
+        // Each write has its own temporary file: two threads keeping the same answer must not mix their bytes.
+        runCatching { File.createTempFile(f.name, ".tmp", f.parentFile).apply { writeText(body); if (!renameTo(f)) delete() } }
     }
 
     /**
@@ -99,9 +104,26 @@ object Http {
         // Stremio's API puts its JSON error in the body of a failed response too, so read it either way.
         val code = c.responseCode
         val stream = (if (code < 400) c.inputStream else c.errorStream) ?: throw HttpError(code)
-        return code to stream.use { it.readBytes() }
+        return code to stream.use { it.readLimited(MAX_ANSWER) }
     }
+
+    private const val MAX_ANSWER = 64 * 1024 * 1024 // more than any catalog; a bigger answer is a fault, not data
 }
+
+/** An add-on answered with a web page, not JSON: it has usually moved or closed. */
+class WebPageAnswer : IOException("web page, not JSON")
 
 /** A failed answer, with its status code: 401 and 403 from an add-on usually mean an expired key or account. */
 class HttpError(val code: Int) : IOException("HTTP $code")
+
+/** Reads to the end, or fails past [max] bytes: a broken or hostile server can't fill the TV's memory. */
+internal fun java.io.InputStream.readLimited(max: Int): ByteArray {
+    val out = java.io.ByteArrayOutputStream()
+    val buf = ByteArray(8192)
+    while (true) {
+        val n = read(buf)
+        if (n < 0) return out.toByteArray()
+        if (out.size() + n > max) throw IOException("answer larger than $max bytes")
+        out.write(buf, 0, n)
+    }
+}
