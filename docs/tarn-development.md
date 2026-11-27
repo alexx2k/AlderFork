@@ -21,10 +21,10 @@ $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 & $adb devices
 & $adb connect FIRE_TV_IP:5555
 & $adb install -r .\app\build\outputs\apk\debug\app-debug.apk
-& $adb shell am start -n dev.alderfork.dev/dev.alder.ProfilesActivity
+& $adb shell am start -n dev.tarn.dev/dev.tarn.ProfilesActivity
 ```
 
-Replace FIRE_TV_IP with the address displayed on your TV and accept the device's debugging prompt. If the branch exists locally, use a different worktree name or switch to the existing branch with a clean working tree. If Android SDK is elsewhere, change the adb path. Debug uses dev.alderfork.dev, separate from production. The release build with -PdebugKey still uses dev.alderfork and should not be installed over the production-signed build. Never uninstall the production app to resolve a signing mismatch. A true upgrade test requires a production-signed candidate with the same app ID and compatible version on a disposable test install; do not test that on family profiles until backups and recovery are agreed.
+Replace FIRE_TV_IP with the address displayed on your TV and accept the device's debugging prompt. If the branch exists locally, use a different worktree name or switch to the existing branch with a clean working tree. If Android SDK is elsewhere, change the adb path. Debug uses dev.tarn.dev, separate from production. The release build with -PdebugKey uses dev.tarn and is CI-only; never publish it. Do not uninstall an existing production app merely to resolve a signing mismatch. The new Tarn package is intentionally a fresh install; no Alder Fork migration is required. For baseline measurements, pass `-Package dev.alderfork.dev` and `-ActivityClass dev.alder.ProfilesActivity`.
 
 ## Physical checklist
 

@@ -255,7 +255,7 @@
     <string name="ui_size_normal">عادي</string>
     <string name="video_player">مشغّل الفيديو</string>
     <string name="video_player_hint">اختر التطبيق الذي يشغّل الفيديو. حتى مع تطبيق آخر، يختار Tarn المصدر ويحفظ موضع التوقّف.</string>
-    <string name="video_player_alder">Tarn</string>
+    <string name="video_player_tarn">Tarn</string>
     <string name="player_other_app">يُفتح الفيديو في تطبيق آخر. اضغط على رجوع فيه للعودة.</string>
     <string name="player_no_other_app">لا يوجد مشغّل فيديو آخر على هذا التلفزيون. يشغّل Tarn الفيديو.</string>
     <string name="clear_dialogue_setting_hint">يرفع صوت الحوار فوق الموسيقى والمؤثرات العالية عند استخدام مكبّرات التلفزيون.</string>
@@ -545,7 +545,7 @@
     <string name="profiles_other_account">استخدام حساب آخر</string>
     <string name="profiles_continue_anyway">متابعة على أي حال</string>
     <string name="profiles_same_account_desc">وافق على الرمز باستخدام حساب %1$s نفسه، من هاتف %1$s أو في نافذة تصفّح خاصة. قد يؤدي تسجيل الخروج من Stremio على الهاتف إلى تسجيل خروج %2$s من هذا التلفزيون.</string>
-    <string name="profiles_continue_to_alder">متابعة إلى Tarn</string>
+    <string name="profiles_continue_to_tarn">متابعة إلى Tarn</string>
     <string name="profiles_recommendations">توصيات لـ %1$s</string>
     <string name="profiles_watchly_steps">"1.  امسح الرمز بهاتف %1$s لفتح Watchly\n2.  اربط حساب Stremio الخاص بـ %1$s هناك\n3.  ثبّت الإضافة في حساب Stremio الخاص بـ %1$s\n\nتظهر بعدها أفضل الاختيارات الخاصة بـ %1$s في الرئيسية. يمكنك إكمال هذه الخطوات لاحقًا."</string>
     <string name="profiles_all_set">أصبح كل شيء جاهزًا</string>

@@ -1,4 +1,4 @@
-name: Android
+name: Tarn Android
 
 # Builds the app and runs the unit tests on every pull request, so a change that breaks either is seen before merge.
 on:
@@ -21,4 +21,9 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleRelease -PdebugKey
+      - run: ./gradlew --no-daemon testDebugUnitTest lintDebug packageTarnDebug packageTarnRelease -PdebugKey
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tarn-debug-and-ci-apks
+          path: app/build/outputs/tarn/*.apk
+          if-no-files-found: error

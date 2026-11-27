@@ -250,7 +250,7 @@
     <string name="ui_size_normal">Normal</string>
     <string name="video_player">Videoplayer</string>
     <string name="video_player_hint">Wähle die App, die deine Videos abspielt. Mit einer anderen App wählt Tarn weiterhin die Quelle und speichert, wo du aufhörst.</string>
-    <string name="video_player_alder">Tarn</string>
+    <string name="video_player_tarn">Tarn</string>
     <string name="player_other_app">Läuft in einer anderen App. Drücke dort Zurück, um zurückzukehren.</string>
     <string name="player_no_other_app">Auf diesem Fernseher ist kein anderer Videoplayer. Tarn spielt das Video ab.</string>
     <string name="clear_dialogue_setting_hint">Hebt Stimmen über Musik und laute Effekte, wenn die TV-Lautsprecher genutzt werden.</string>
@@ -528,7 +528,7 @@
     <string name="profiles_other_account">Anderes Konto verwenden</string>
     <string name="profiles_continue_anyway">Trotzdem fortfahren</string>
     <string name="profiles_same_account_desc">Bestätige den Code mit dem eigenen Konto von %1$s: auf dem Handy von %1$s oder in einem privaten Browserfenster. Eine Abmeldung bei Stremio auf dem Handy kann %2$s von diesem Fernseher abmelden.</string>
-    <string name="profiles_continue_to_alder">Weiter zu Tarn</string>
+    <string name="profiles_continue_to_tarn">Weiter zu Tarn</string>
     <string name="profiles_recommendations">Empfehlungen für %1$s</string>
     <string name="profiles_watchly_steps">"1.  Mit dem Handy von %1$s scannen, um Watchly zu öffnen\n2.  Dort das Stremio-Konto von %1$s verbinden\n3.  Im Stremio-Konto von %1$s installieren\n\nDanach erscheinen die eigenen Top-Tipps von %1$s auf Start. Du kannst das später abschließen."</string>
     <string name="profiles_all_set">Alles bereit</string>

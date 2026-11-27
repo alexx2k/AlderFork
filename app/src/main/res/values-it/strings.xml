@@ -251,7 +251,7 @@
     <string name="ui_size_normal">Normale</string>
     <string name="video_player">Lettore video</string>
     <string name="video_player_hint">Scegli l’app che riproduce i tuoi video. Con un’altra app, Tarn sceglie comunque la fonte e salva dove ti fermi.</string>
-    <string name="video_player_alder">Tarn</string>
+    <string name="video_player_tarn">Tarn</string>
     <string name="player_other_app">In riproduzione in un’altra app. Premi Indietro lì per tornare.</string>
     <string name="player_no_other_app">Su questa TV non c’è un altro lettore video. Tarn riproduce il video.</string>
     <string name="clear_dialogue_setting_hint">Mette in risalto le voci sopra musica ed effetti forti con gli altoparlanti della TV.</string>
@@ -532,7 +532,7 @@
     <string name="profiles_other_account">Usa un altro account</string>
     <string name="profiles_continue_anyway">Continua comunque</string>
     <string name="profiles_same_account_desc">Approva il codice con l’account di %1$s: sul telefono di %1$s o in una finestra di navigazione privata. Uscire da Stremio sul telefono può disconnettere %2$s da questa TV.</string>
-    <string name="profiles_continue_to_alder">Continua in Tarn</string>
+    <string name="profiles_continue_to_tarn">Continua in Tarn</string>
     <string name="profiles_recommendations">Consigli per %1$s</string>
     <string name="profiles_watchly_steps">"1.  Inquadra con il telefono di %1$s per aprire Watchly\n2.  Collega lì l’account Stremio di %1$s\n3.  Installalo sull’account Stremio di %1$s\n\nPoi i consigli di %1$s appariranno nella Home. Puoi finire più tardi."</string>
     <string name="profiles_all_set">Tutto pronto</string>

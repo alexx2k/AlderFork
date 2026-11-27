@@ -30,7 +30,7 @@
         android:banner="@drawable/tarn_launcher_banner"
         android:icon="@drawable/tarn_launcher_icon"
         android:roundIcon="@drawable/tarn_launcher_icon"
-        android:theme="@style/Alder"
+        android:theme="@style/Tarn"
         android:localeConfig="@xml/locales_config"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -46,7 +46,7 @@
             android:label="@string/app_name"
             android:icon="@drawable/tarn_launcher_icon"
             android:banner="@drawable/tarn_launcher_banner"
-            android:theme="@style/Alder.Start"
+            android:theme="@style/Tarn.Start"
             android:exported="true"
             android:screenOrientation="landscape">
             <intent-filter>
@@ -62,10 +62,10 @@
         <activity android:name=".DetailsActivity" android:screenOrientation="landscape" />
         <!-- See-through so the player under it (Change stream) is only paused, not stopped: a stopped player loses its
              picture until Play. No fixed orientation: Android 8.0 refuses one on a see-through screen. -->
-        <activity android:name=".StreamsActivity" android:theme="@style/Alder.Over" />
+        <activity android:name=".StreamsActivity" android:theme="@style/Tarn.Over" />
         <activity
             android:name=".PlayerActivity"
-            android:theme="@style/Alder.Player"
+            android:theme="@style/Tarn.Player"
             android:screenOrientation="landscape"
             android:configChanges="keyboard|keyboardHidden|navigation|screenSize|smallestScreenSize|screenLayout" />
         <receiver android:name=".Updates$Status" android:exported="false" />

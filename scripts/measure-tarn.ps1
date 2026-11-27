@@ -1,7 +1,8 @@
 param(
     [Parameter(Mandatory=$true)][string]$Label,
     [string]$Serial = "",
-    [string]$Package = "dev.alderfork.dev",
+    [string]$Package = "dev.tarn.dev",
+    [string]$ActivityClass = "dev.tarn.ProfilesActivity",
     [int]$Runs = 5,
     [string]$Adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 )
@@ -12,7 +13,7 @@ if ($Package -notmatch '^[a-zA-Z0-9_.]+$') { throw "Invalid package." }
 if (-not (Test-Path $Adb)) { $Adb = (Get-Command adb -ErrorAction Stop).Source }
 $deviceArgs = @()
 if ($Serial) { $deviceArgs = @("-s", $Serial) }
-$activity = "$Package/dev.alder.ProfilesActivity"
+$activity = "$Package/$ActivityClass"
 $folder = Join-Path (Get-Location) ("benchmarks/" + $Label + "-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
 New-Item -ItemType Directory -Path $folder -Force | Out-Null
 

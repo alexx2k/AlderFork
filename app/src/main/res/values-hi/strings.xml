@@ -250,7 +250,7 @@
     <string name="ui_size_normal">सामान्य</string>
     <string name="video_player">वीडियो प्लेयर</string>
     <string name="video_player_hint">चुनें कि कौन-सा ऐप आपके वीडियो चलाए। दूसरे ऐप के साथ भी Tarn स्रोत चुनता है और जहाँ आप रुकते हैं वह सहेजता है।</string>
-    <string name="video_player_alder">Tarn</string>
+    <string name="video_player_tarn">Tarn</string>
     <string name="player_other_app">दूसरे ऐप में चल रहा है। लौटने के लिए वहाँ Back दबाएँ।</string>
     <string name="player_no_other_app">इस टीवी पर कोई दूसरा वीडियो प्लेयर नहीं है। Tarn वीडियो चलाता है।</string>
     <string name="clear_dialogue_setting_hint">टीवी स्पीकर पर संगीत और तेज़ इफ़ेक्ट के ऊपर आवाज़ें उभारता है।</string>
@@ -528,7 +528,7 @@
     <string name="profiles_other_account">दूसरा खाता इस्तेमाल करें</string>
     <string name="profiles_continue_anyway">फिर भी जारी रखें</string>
     <string name="profiles_same_account_desc">कोड को %1$s के अपने खाते से मंज़ूर करें: %1$s के फ़ोन पर, या प्राइवेट ब्राउज़र विंडो में। फ़ोन पर Stremio से साइन आउट करने पर %2$s इस टीवी से साइन आउट हो सकते हैं।</string>
-    <string name="profiles_continue_to_alder">Tarn पर जारी रखें</string>
+    <string name="profiles_continue_to_tarn">Tarn पर जारी रखें</string>
     <string name="profiles_recommendations">%1$s के लिए सुझाव</string>
     <string name="profiles_watchly_steps">"1.  Watchly खोलने के लिए %1$s के फ़ोन से स्कैन करें\n2.  वहाँ %1$s का Stremio खाता कनेक्ट करें\n3.  इसे %1$s के Stremio खाते में इंस्टॉल करें\n\nइसके बाद %1$s के अपने टॉप पिक्स होम पर दिखेंगे। आप इसे बाद में भी पूरा कर सकते हैं।"</string>
     <string name="profiles_all_set">सब तैयार है</string>

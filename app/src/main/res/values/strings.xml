@@ -253,7 +253,7 @@
     <string name="ui_size_normal">Normal</string>
     <string name="video_player">Video player</string>
     <string name="video_player_hint">Choose the app that plays your videos. With another app, Tarn still picks the source and saves where you stop.</string>
-    <string name="video_player_alder">Tarn</string>
+    <string name="video_player_tarn">Tarn</string>
     <string name="player_other_app">Plays in another app. Press Back there to return.</string>
     <string name="player_no_other_app">No other video player is on this TV. Tarn plays the video.</string>
     <string name="clear_dialogue_setting_hint">Lifts voices above music and loud effects when using TV speakers.</string>
@@ -536,7 +536,7 @@
     <string name="profiles_other_account">Use another account</string>
     <string name="profiles_continue_anyway">Continue anyway</string>
     <string name="profiles_same_account_desc">Approve the code with %1$s\'s own account: on %1$s\'s phone, or in a private browser window. Signing out of Stremio on the phone can sign %2$s out of this TV.</string>
-    <string name="profiles_continue_to_alder">Continue to Tarn</string>
+    <string name="profiles_continue_to_tarn">Continue to Tarn</string>
     <string name="profiles_recommendations">Recommendations for %1$s</string>
     <string name="profiles_watchly_steps">"1.  Scan with %1$s's phone to open Watchly\n2.  Connect %1$s's Stremio account there\n3.  Install it to %1$s's Stremio account\n\n%1$s's own \"Top Picks\" then show up on Home. You can finish this later."</string>
     <string name="profiles_all_set">You\'re all set</string>

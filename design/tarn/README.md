@@ -20,7 +20,7 @@ Opaque panels replace frost rendering. An explicit 2 dp outline and/or scaling i
 ## Asset locations
 
 - Editable SVGs in this directory: horizontal, stacked, symbol, wordmark, light-background, monochrome-light, monochrome-dark.
-- Native vectors: `app/src/main/res/drawable/ic_alder_mark.xml` and `tarn_lockup.xml`.
+- Native vectors: `app/src/main/res/drawable/ic_tarn_mark.xml` and `tarn_lockup.xml`.
 - Android 8+ adaptive source asset: `drawable-anydpi-v26/logo.xml` (retained for internal compatibility).
 - Manifest launcher icon: `drawable-nodpi/tarn_launcher_icon.png`, a transparent symbol-only raster, intentionally without an adaptive background or square frame. Fire OS sideloaded app tiles can ignore the Leanback banner and add their own side padding; this fallback avoids a second opaque tile inside the launcher plate. `tarn_launcher_banner.png` remains the full-bleed 320×180 Android TV banner. Fire OS controls the final tile shape; verify on device.
 - PNG launchers: `drawable-nodpi/banner.png` (320×180), `logo.png`, `logo_foreground.png`, `logo_transparent.png` (144×144). Legacy resource names deliberately retained for compatibility, including the Watch Next URI. Bitmaps are rasterised from the same paths.
@@ -28,4 +28,4 @@ Opaque panels replace frost rendering. An explicit 2 dp outline and/or scaling i
 
 ## Release gates
 
-Compare the reconstructed paths against the original approved board before final adoption. Verify launcher crop on Fire TV and Google TV, lockup readability, and contrast over real art. Complete UKIPO/EUIPO/other relevant market trademark searches, domain and app-store naming checks, and confirm all upstream and bundled asset rights. Preserve the GPL-3.0 license, original copyright, Nuvio/Just Player/stremio-core/AndroidX acknowledgements, font licenses and Nuvio Engine notices. Existing avatar artwork may require separate rights review before public distribution. No repository rename, application ID change, production signing change or release has been made.
+Compare the reconstructed paths against the original approved board before final adoption. Verify launcher crop on Fire TV and Google TV, lockup readability, and contrast over real art. Complete UKIPO/EUIPO/other relevant market trademark searches, domain and app-store naming checks, and confirm all upstream and bundled asset rights. Preserve the GPL-3.0 license, original copyright, Nuvio/Just Player/stremio-core/AndroidX acknowledgements, font licenses and Nuvio Engine notices. Existing avatar artwork may require separate rights review before public distribution. The candidate application ID is now dev.tarn (debug: dev.tarn.dev). Repository rename, production signing and public release remain separate release steps.

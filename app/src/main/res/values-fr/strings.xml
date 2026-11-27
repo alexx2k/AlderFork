@@ -251,7 +251,7 @@
     <string name="ui_size_normal">Normale</string>
     <string name="video_player">Lecteur vidéo</string>
     <string name="video_player_hint">Choisissez l’app qui lit vos vidéos. Avec une autre app, Tarn choisit toujours la source et enregistre l’endroit où vous vous arrêtez.</string>
-    <string name="video_player_alder">Tarn</string>
+    <string name="video_player_tarn">Tarn</string>
     <string name="player_other_app">Lecture dans une autre app. Appuyez sur Retour dans celle-ci pour revenir.</string>
     <string name="player_no_other_app">Aucun autre lecteur vidéo sur ce téléviseur. Tarn lit la vidéo.</string>
     <string name="clear_dialogue_setting_hint">Fait ressortir les voix par-dessus la musique et les effets forts sur les haut-parleurs du téléviseur.</string>
@@ -532,7 +532,7 @@
     <string name="profiles_other_account">Utiliser un autre compte</string>
     <string name="profiles_continue_anyway">Continuer quand même</string>
     <string name="profiles_same_account_desc">Validez le code avec le compte de %1$s : sur le téléphone de %1$s ou dans une fenêtre de navigation privée. Se déconnecter de Stremio sur le téléphone peut déconnecter %2$s de ce téléviseur.</string>
-    <string name="profiles_continue_to_alder">Continuer vers Tarn</string>
+    <string name="profiles_continue_to_tarn">Continuer vers Tarn</string>
     <string name="profiles_recommendations">Recommandations pour %1$s</string>
     <string name="profiles_watchly_steps">"1.  Scannez avec le téléphone de %1$s pour ouvrir Watchly\n2.  Connectez-y le compte Stremio de %1$s\n3.  Installez-la sur le compte Stremio de %1$s\n\nLes sélections de %1$s apparaîtront ensuite sur l’Accueil. Vous pouvez terminer plus tard."</string>
     <string name="profiles_all_set">Tout est prêt</string>

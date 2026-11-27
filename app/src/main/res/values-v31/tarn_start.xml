@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Alder.Start" parent="Alder">
+    <style name="Tarn.Start" parent="Tarn">
         <item name="android:windowSplashScreenBackground">@color/tarn_black</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_alder_mark</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_tarn_mark</item>
         <item name="android:windowBackground">@color/tarn_black</item>
     </style>
 </resources>

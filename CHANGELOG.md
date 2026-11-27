@@ -1,3 +1,12 @@
+# Tarn 2.0.0 — unreleased
+
+- Introduce the Tarn identity and television-first visual redesign.
+- Use distinct Android packages (`dev.tarn` and `dev.tarn.dev`); fresh installation required.
+- Update launcher artwork, app names, development tooling and release asset naming.
+- Restrict automatic updates to Tarn production APKs; disable remote crash submission until a Tarn-owned endpoint is available.
+
+Previous Alder Fork and upstream release history follows unchanged.
+
 # Changelog
 
 Write each entry the way you would advertise it to a viewer on the sofa:
