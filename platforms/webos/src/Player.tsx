@@ -38,6 +38,7 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
  const last=useRef({position:resumeFor(account,intent),duration:0});
  const lastSaved=useRef(0);
  const resume=useRef(last.current.position);
+ const pendingSeek=useRef<number|null>(null);
  const tries=useRef(0);
  const serial=useRef(0);
  const current=useRef<Attempt|null>(null);
@@ -55,12 +56,13 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
   cancelTimers();
   if(manual){tries.current=0;attempted.current.clear();}
   const v=video.current;
-  if(v&&started.current&&Number.isFinite(v.duration)&&v.duration>0){last.current={position:v.currentTime,duration:v.duration};resume.current=v.currentTime;persist();}
+  if(v&&started.current&&pendingSeek.current===null&&Number.isFinite(v.duration)&&v.duration>0){last.current={position:v.currentTime,duration:v.duration};resume.current=v.currentTime;persist();}
   else resume.current=last.current.position;
-  attempted.current.add(index);tries.current++;failed.current=false;started.current=false;
+  attempted.current.add(index);tries.current++;failed.current=false;started.current=false;pendingSeek.current=null;
   const next={index,serial:++serial.current};current.current=next;
   setAttempt(next);setPanel(null);setPaused(true);setStatus('Opening '+activeSources.current[index].name+'…');
   setSubtitle(null);setSubtitleStatus('');setAudio([]);
+  requestAnimationFrame(()=>{if(current.current?.serial===next.serial&&document.activeElement===document.body)document.getElementById('player-toggle')?.focus();});
  };
  const fallback=(id:number,reason:string)=>{
   if(current.current?.serial!==id||failed.current)return;
@@ -98,7 +100,7 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
    if(!valid())return;
    if(Number.isFinite(v.duration)&&v.duration>0){
     const target=resume.current<v.duration-10?resume.current:0;
-    if(target>0)try{v.currentTime=target;}catch{}
+    if(target>0)try{pendingSeek.current=target;v.currentTime=target;}catch{pendingSeek.current=null;}
     setDuration(v.duration);setPosition(target);
    }
    refreshAudio();
@@ -109,9 +111,10 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
    setAudio(list?Array.from({length:list.length},(_,index)=>({index,name:list[index].label||list[index].language||'Audio '+(index+1),enabled:list[index].enabled})):[]);
   };
   const playing=()=>{if(!valid())return;started.current=true;cancelTimers();setPaused(false);setStatus('Playing');refreshAudio();};
-  const pausedEvent=()=>{if(valid()){setPaused(true);cancelTimers();persist();}};
+  const pausedEvent=()=>{if(valid()){setPaused(true);if(started.current){cancelTimers();persist();}}};
   const tick=()=>{
    if(!valid()||!started.current||!Number.isFinite(v.duration)||v.duration<=0)return;
+   if(pendingSeek.current!==null){if(v.seeking||Math.abs(v.currentTime-pendingSeek.current)>3)return;pendingSeek.current=null;}
    last.current={position:v.currentTime,duration:v.duration};setPosition(v.currentTime);setDuration(v.duration);
    if(Date.now()-lastSaved.current>=5000){lastSaved.current=Date.now();persist();}
   };
@@ -122,7 +125,8 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
   };
   const ended=()=>{if(!valid())return;cancelTimers();if(Number.isFinite(v.duration)){last.current={position:v.duration,duration:v.duration};setPosition(v.duration);persist();}setPaused(true);setStatus('Playback finished.');};
   const error=()=>{if(valid())fallback(id,'Media playback error '+(v.error?.code||'unknown')+'.');};
-  const listeners:[string,()=>void][]=[['loadedmetadata',metadata],['playing',playing],['pause',pausedEvent],['timeupdate',tick],['waiting',waiting],['stalled',waiting],['ended',ended],['error',error]];
+  const seeked=()=>{if(valid())pendingSeek.current=null;};
+  const listeners:[string,()=>void][]=[['seeked',seeked],['loadedmetadata',metadata],['playing',playing],['pause',pausedEvent],['timeupdate',tick],['waiting',waiting],['stalled',waiting],['ended',ended],['error',error]];
   listeners.forEach(([event,fn])=>v.addEventListener(event,fn));
   v.audioTracks?.addEventListener?.('change',refreshAudio);v.audioTracks?.addEventListener?.('addtrack',refreshAudio);
   startClock();v.src=activeSources.current[attempt.index].url;v.load();play();
@@ -132,7 +136,7 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
  useEffect(()=>{
   setSubtitleUrl('');
   if(!subtitle)return;
-  const c=new AbortController();let objectUrl='';const timeout=window.setTimeout(()=>c.abort(),15000);
+  const c=new AbortController();let objectUrl='',active=true;const timeout=window.setTimeout(()=>{c.abort();if(active)setSubtitleStatus('Subtitle request timed out.');},15000);
   setSubtitleStatus('Loading subtitles…');
   (async()=>{
    try{
@@ -147,7 +151,7 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
    }catch{if(!c.signal.aborted)setSubtitleStatus('Subtitle unavailable or unsupported. Try another track.');}
    finally{window.clearTimeout(timeout);}
   })();
-  return()=>{c.abort();window.clearTimeout(timeout);if(objectUrl)URL.revokeObjectURL(objectUrl);};
+  return()=>{active=false;c.abort();window.clearTimeout(timeout);if(objectUrl)URL.revokeObjectURL(objectUrl);};
  },[subtitle]);
  useEffect(()=>{const v=video.current;if(!v)return;for(let i=0;i<v.textTracks.length;i++)v.textTracks[i].mode=subtitleUrl?'showing':'disabled';},[subtitleUrl,attempt?.serial]);
  const toggle=()=>{
@@ -157,13 +161,14 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
   if(!started.current){cancelTimers();clock.current=window.setTimeout(()=>fallback(attempt.serial,'Source did not start in time.'),25000);}
   v.play()?.catch(error=>{if(error?.name==='NotAllowedError'){cancelTimers();setStatus('Playback blocked by this device. Press Play again.');}else fallback(attempt.serial,'Could not play this source.');});
  };
- const seek=(delta:number)=>{const v=video.current;if(v&&Number.isFinite(v.duration)&&v.duration>0){v.currentTime=seekPosition(v.currentTime,v.duration,delta);setPosition(v.currentTime);}};
+ const seek=(delta:number)=>{const v=video.current;if(v&&Number.isFinite(v.duration)&&v.duration>0){pendingSeek.current=null;try{v.currentTime=seekPosition(v.currentTime,v.duration,delta);setPosition(v.currentTime);}catch{setStatus('Seeking is not available for this source.');}}};
  const tracks=uniqueSubtitles((source?.subtitles||[]).concat(addonSubs));
  const selectAudio=(index:number)=>{
   const list=video.current?.audioTracks;if(!list)return;
   try{for(let i=0;i<list.length;i++)list[i].enabled=i===index;setAudio(previous=>previous.map(a=>({...a,enabled:a.index===index})));}catch{setStatus('Audio track selection is not supported by this device.');}
  };
  const retry=()=>{persist();cancelTimers();setRevision(x=>x+1);};
+ const closePanel=()=>{const target=panel==='sources'?'player-sources':panel==='subtitles'?'player-subs':'player-audio';setPanel(null);requestAnimationFrame(()=>document.getElementById(target)?.focus());};
  const exit=()=>{persist();onExit();};
  return <main className="player-page">
   <div className="player-video">{attempt&&source?<video key={attempt.serial} ref={video} playsInline preload="auto">{subtitleUrl&&<track key={subtitleUrl} kind="subtitles" src={subtitleUrl} srcLang={subtitle?.lang||'und'} label={subtitle?.label||'Subtitles'} default onError={()=>setSubtitleStatus('Device could not render this subtitle track.')}/>}</video>:<div className="player-empty"><h1>{intent.name}</h1><p>{status}</p></div>}</div>
@@ -171,7 +176,7 @@ export function Player({intent,addons,account,onExit}:{intent:PlaybackIntent;add
    <div className="player-progress"><span>{time(position)}</span><div className="progress-rail"><div style={{width:(duration>0?Math.max(0,Math.min(100,100*position/duration)):0)+'%'}}/></div><span>{time(duration)}</span></div>
    <div className="controls">{button('player-back','‹ Back',exit)}{button('player-rewind','−10 sec',()=>seek(-10),!attempt)}{button('player-toggle',paused?'▶ Play':'Ⅱ Pause',toggle,!attempt)}{button('player-forward','+10 sec',()=>seek(10),!attempt)}{button('player-sources','Sources ('+sources.length+')',()=>setPanel(panel==='sources'?null:'sources'))}{button('player-subs','Subtitles',()=>setPanel(panel==='subtitles'?null:'subtitles'),!attempt)}{button('player-audio','Audio',()=>setPanel(panel==='audio'?null:'audio'),!attempt)}{button('player-retry','Retry sources',retry)}</div>
   </section>
-  {panel&&<section className="player-panel"><div className="player-panel-header"><h2>{panel==='sources'?'Sources':panel==='audio'?'Audio tracks':'Subtitles'}</h2>{button('player-close-panel','Close',()=>setPanel(null))}</div>
+  {panel&&<section className="player-panel"><div className="player-panel-header"><h2>{panel==='sources'?'Sources':panel==='audio'?'Audio tracks':'Subtitles'}</h2>{button('player-close-panel','Close',closePanel)}</div>
    {panel==='sources'?<><p className="muted">Direct HTTP(S) sources only. Automatic playback tries up to three candidates.</p>{resolution&&<p className="muted">{resolution.providers} providers · {resolution.failures} failed · {resolution.excluded.torrent} torrent · {resolution.excluded.headers} header-dependent · {resolution.excluded.external} external · {resolution.excluded.other} other excluded</p>}
     <div className="player-list">{sources.map((s,i)=><button key={i} id={'source-'+i} data-focus type="button" className={attempt?.index===i?'filter-active':''} onClick={()=>begin(i,true)}><strong>{s.name}</strong><small>{s.provider}{s.height?' · '+s.height+'p':''}{s.hevc?' · HEVC':''}{s.hdr?' · HDR/DV':''}{s.riskyAudio?' · audio compatibility uncertain':''}</small><small>{s.description}</small></button>)}</div>{!sources.length&&<p>No compatible direct sources to display.</p>}</>:panel==='audio'?<>{audio.length?audio.map(a=><button key={a.index} id={'audio-'+a.index} data-focus type="button" className={a.enabled?'filter-active':''} onClick={()=>selectAudio(a.index)}>{a.name}</button>):<p>This device does not expose selectable native audio tracks.</p>}</>:<><div className="player-list">{button('subtitle-off','Off',()=>{setSubtitle(null);setSubtitleStatus('Subtitles off.');})}{tracks.map((t,i)=><button key={i} id={'subtitle-'+i} data-focus type="button" className={subtitle?.url===t.url?'filter-active':''} onClick={()=>setSubtitle(t)}>{t.label} · {t.provider}</button>)}</div><p aria-live="polite">{subtitleStatus||(!tracks.length?'No external subtitles available.':'External SRT/WebVTT. Embedded tracks depend on the device.')}</p></>}
   </section>}
