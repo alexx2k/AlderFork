@@ -1,5 +1,5 @@
 export type AudioCodec='aac'|'mp3'|'ac3'|'eac3'|'dts'|'truehd'|'opus'|'unknown';
-export type Prefs={autoHide:boolean;autoplay:boolean;creditsFallback:number;quality:number;audioMode:'auto'|'compatible';audioLanguage:string;subtitleLanguage:string;size:number;color:string;background:boolean;delay:number;fit:'fit'|'zoom'|'stretch'};
+export type Prefs={autoHide:boolean;autoplay:boolean;creditsFallback:number;quality:number;releaseType:'auto'|'remux'|'encode'|'web';hdrPreference:'auto'|'sdr'|'hdr10'|'dv';audioFallback:string;audioMode:'auto'|'compatible';audioLanguage:string;subtitleLanguage:string;size:number;color:string;background:boolean;delay:number;fit:'fit'|'zoom'|'stretch'};
 export type TrackChoice={lang:string;label:string;provider:string;key?:string};
 export type Choices={audio?:TrackChoice;subtitle?:TrackChoice|'off'};
 export const colors:Record<string,string>;
@@ -21,3 +21,5 @@ export function objectFit(fit:string):'cover'|'fill'|'contain';
 export function trackFingerprint(value:unknown):string;
 
 export function shouldAutoHide(enabled:boolean,paused:boolean,panel:string|null,preview:number|null,attempt:unknown,status:string):boolean;
+
+export function preferredTrack(tracks:{lang:string;label:string;provider?:string;key?:string}[],wanted:Partial<TrackChoice>|undefined,fallback:string):number;

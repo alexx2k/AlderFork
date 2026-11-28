@@ -1,8 +1,9 @@
+import {validLocalAvatar} from './customisation.mjs';
 export const MAX_PROFILES=5;
 export const COLORS=['#F3D9B1','#C98E6A','#8FA39A','#A6A2BD','#D3A66B'];
 export const cleanName=value=>typeof value==='string'?value.trim().slice(0,24):'';
 export const validPin=value=>value===''||typeof value==='string'&&/^\d{4}$/.test(value);
-export const validAvatar=value=>typeof value==='string'&&value.length<=2048&&/^https:\/\/[^\s]+$/i.test(value);
+export const validAvatar=value=>validLocalAvatar(value)||typeof value==='string'&&value.length<=2048&&/^https:\/\/[^\s]+$/i.test(value);
 export function emptyProfiles(){return {version:1,profiles:[]};}
 export function makeProfile(id,draft,authKey=null,ownerId=null){
  const name=cleanName(draft.name);if(!name||!validPin(draft.pin))throw Error('Enter a name and an optional four-digit PIN.');
@@ -70,6 +71,7 @@ export function deleteHistory(storage,profileId){
  const keys=[];for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key&&prefixes.some(p=>key.startsWith(p)))keys.push(key);}
  for(const key of keys)storage.removeItem(key);
  const preferences='tarn.playerprefs.v1:'+encodeURIComponent(historyNamespace(profileId));const prefKeys=[];for(let i=0;i<storage.length;i++){const k=storage.key(i);if(k&&(k===preferences||k.startsWith(preferences+':')))prefKeys.push(k);}for(const k of prefKeys)storage.removeItem(k);
+ storage.removeItem('tarn.homeprefs.v1:'+encodeURIComponent(historyNamespace(profileId)));
  storage.removeItem('tarn.cataloglayout.v1:'+encodeURIComponent(historyNamespace(profileId)));
  const library='tarn.library.v1:'+encodeURIComponent(historyNamespace(profileId));storage.removeItem(library);storage.removeItem(library+':account');
 }

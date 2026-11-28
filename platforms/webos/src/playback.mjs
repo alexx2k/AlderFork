@@ -1,3 +1,4 @@
+import {releaseScore} from './customisation.mjs';
 import {audioCodec,audioScore,qualityScore} from './playerPrefs.mjs';
 // Platform-independent playback helpers. Source URLs and add-on configuration stay in memory.
 const obj=v=>v&&typeof v==='object'&&!Array.isArray(v)?v:{};
@@ -60,7 +61,7 @@ export function parseStreams(raw,provider,providerId=provider){
 export function rankSources(sources,capabilities,prefs){
  const score=s=>{
   const height=s.height||720;
-  return (s.hevc&&!capabilities.hevc?-100:0)+(s.av1&&!capabilities.av1?-120:0)+(s.hdr&&!capabilities.hdr?-50:0)+(prefs?audioScore(s.audioCodec||'unknown',capabilities.audio,prefs.audioMode):s.riskyAudio?-35:0)+(prefs?qualityScore(s.height,prefs.quality,capabilities.height):(height>capabilities.height?-40:0)+Math.min(height,capabilities.height)/100);
+  return (prefs?releaseScore(s,prefs):0)+(s.hevc&&!capabilities.hevc?-100:0)+(s.av1&&!capabilities.av1?-120:0)+(s.hdr&&!capabilities.hdr?-50:0)+(prefs?audioScore(s.audioCodec||'unknown',capabilities.audio,prefs.audioMode):s.riskyAudio?-35:0)+(prefs?qualityScore(s.height,prefs.quality,capabilities.height):(height>capabilities.height?-40:0)+Math.min(height,capabilities.height)/100);
  };
  const seen=new Set();
  return sources.slice().sort((a,b)=>score(b)-score(a)).filter(s=>{if(seen.has(s.url))return false;seen.add(s.url);return true;});

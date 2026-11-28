@@ -5,7 +5,7 @@ import {rankSources,resolveStreams,resolveSubtitles,uniqueSubtitles,parseCues,ac
 import {saveProgress,readSource,rememberSource} from './progress.ts';
 import {mergeStreamAddons} from './profiles.mjs';
 import {PlayerPreferences} from './PlayerPreferences.tsx';
-import {Prefs,colors,matchTrack,trackFingerprint,scrubTarget,scrubStep,captionTime,objectFit,shouldAutoHide} from './playerPrefs.mjs';
+import {Prefs,colors,matchTrack,preferredTrack,trackFingerprint,scrubTarget,scrubStep,captionTime,objectFit,shouldAutoHide} from './playerPrefs.mjs';
 import {readChoices,saveChoices} from './playerSettings.ts';
 import {directionFor,isBack} from './navigation.ts';
 import {PREPARE_SECONDS,COUNTDOWN_SECONDS,preferredOrder,fallbackIndex,preparedFresh,introQuery,parseSegments,chapterSegments,triggerAt,creditsSkipTarget,skipSegment,segmentKey,countdownTick,Prepared,Segment,Chapter} from './advancedPlayback.mjs';
@@ -187,7 +187,7 @@ export function Player({viewingSession,title,nextIntent,nextEpisode,prepared,onA
    if(list&&list.length&&selectedAudioAttempt.current!==id){
     const wanted=choices.current.audio||{lang:latestPrefs.current.audioLanguage};
     const options=Array.from({length:list.length},(_,i)=>({lang:list[i].language||'',label:list[i].label||''}));
-    const chosen=matchTrack(options,wanted);
+    const chosen=preferredTrack(options,wanted,latestPrefs.current.audioFallback);
     if(chosen>=0){selectedAudioAttempt.current=id;try{for(let i=0;i<list.length;i++)list[i].enabled=i===chosen;}catch{}}
    }
    setAudio(list?Array.from({length:list.length},(_,index)=>({index,name:list[index].label||list[index].language||'Audio '+(index+1),lang:list[index].language||'',enabled:list[index].enabled})):[]);
