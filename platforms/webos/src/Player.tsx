@@ -5,7 +5,7 @@ import {rankSources,resolveStreams,resolveSubtitles,uniqueSubtitles,parseCues,ac
 import {saveProgress,readSource,rememberSource} from './progress.ts';
 import {mergeStreamAddons} from './profiles.mjs';
 import {PlayerPreferences} from './PlayerPreferences.tsx';
-import {Prefs,colors,matchTrack,trackFingerprint,scrubTarget,scrubStep,captionTime,objectFit} from './playerPrefs.mjs';
+import {Prefs,colors,matchTrack,trackFingerprint,scrubTarget,scrubStep,captionTime,objectFit,shouldAutoHide} from './playerPrefs.mjs';
 import {readChoices,saveChoices} from './playerSettings.ts';
 import {directionFor,isBack} from './navigation.ts';
 
@@ -81,7 +81,7 @@ export function Player({intent,addons,lenders,account,startAt,prefs,onPrefs,onPr
   const next={index,serial:++serial.current};current.current=next;
   setAttempt(next);setPanel(null);setPaused(true);setStatus('Opening '+activeSources.current[index].name+'…');
   setSubtitle(null);setCues([]);setCaption('');setEmbedded([]);setEmbeddedChoice(null);setSubtitleLoading(true);setAddonSubs([]);setSubtitleStatus('');setAudio([]);
-  requestAnimationFrame(()=>{if(current.current?.serial===next.serial&&document.activeElement===document.body)document.getElementById('player-toggle')?.focus();});
+  requestAnimationFrame(()=>{if(current.current?.serial===next.serial&&!document.activeElement?.closest('.player-controls'))document.getElementById('player-toggle')?.focus();});
  };
  const fallback=(id:number,reason:string)=>{
   if(current.current?.serial!==id||failed.current)return;
@@ -254,7 +254,7 @@ export function Player({intent,addons,lenders,account,startAt,prefs,onPrefs,onPr
  }
  const reveal=()=>{setControlsShown(true);setActivity(x=>x+1);requestAnimationFrame(()=>document.getElementById('player-toggle')?.focus());};
  const openPanel=(next:NonNullable<typeof panel>)=>{if(panel===next){closePanel();return;}setControlsShown(true);setPanel(next);requestAnimationFrame(()=>document.getElementById('player-close-panel')?.focus());};
- useEffect(()=>{if(!prefs.autoHide||paused||panel||preview!==null||!attempt||status!=='Playing'){setControlsShown(true);return;}
+ useEffect(()=>{if(!shouldAutoHide(prefs.autoHide,paused,panel,preview,attempt,status)){setControlsShown(true);return;}
   if(!controlsShown)return;
   const timer=window.setTimeout(()=>{setControlsShown(false);requestAnimationFrame(()=>document.getElementById('player-reveal')?.focus());},5000);
   return()=>window.clearTimeout(timer);

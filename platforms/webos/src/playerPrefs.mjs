@@ -57,3 +57,5 @@ export function scrubTarget(position,duration,delta){
 export function scrubStep(repeat){return repeat>=30?60:repeat>=10?30:10;}
 export function captionTime(time,delay){return time-delay;}
 export function objectFit(fit){return fit==='zoom'?'cover':fit==='stretch'?'fill':'contain';}
+
+export function shouldAutoHide(enabled,paused,panel,preview,attempt,status){return enabled&&!paused&&!panel&&preview===null&&!!attempt&&status!=='Buffering…'&&status!=='Starting…';}

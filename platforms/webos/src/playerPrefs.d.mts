@@ -19,3 +19,5 @@ export function captionTime(time:number,delay:number):number;
 export function objectFit(fit:string):'cover'|'fill'|'contain';
 
 export function trackFingerprint(value:unknown):string;
+
+export function shouldAutoHide(enabled:boolean,paused:boolean,panel:string|null,preview:number|null,attempt:unknown,status:string):boolean;
