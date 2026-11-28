@@ -17,6 +17,7 @@ import {PlayerPreferences} from './PlayerPreferences.tsx';
 import {readPrefs,savePrefs} from './playerSettings.ts';
 import {Prefs,cleanPrefs} from './playerPrefs.mjs';
 import type {Prepared} from './advancedPlayback.mjs';
+import {newSession,ViewingSession} from './viewingExperience.mjs';
 import './style.css';
 
 function focus(id?:string){
@@ -46,6 +47,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  const [prefs,setPrefs]=useState(()=>readPrefs(namespace));
  const updatePrefs=(patch:Partial<Prefs>)=>setPrefs(old=>{const next=cleanPrefs({...old,...patch});savePrefs(namespace,next);return next;});
  const [confirmSignOut,setConfirmSignOut]=useState(false);
+ const viewingSession=useRef<ViewingSession>(newSession(namespace));
  const [playing,setPlaying]=useState<{intent:PlaybackIntent;account:string;title:Title;startAt:number;prepared?:Prepared;origin?:'manual'|'autoplay'}|null>(null);
  const library=useLibrary(namespace,token,profile.mode==='stremio');
  const [continueMenu,setContinueMenu]=useState<Row|null>(null);
@@ -75,8 +77,8 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  const lastHash=useRef(location.hash);
  const [pending,setPending]=useState<string|null>(null);
  const go=(hash:string)=>{restored.current[location.hash]=(document.activeElement as HTMLElement)?.id||'link-account';location.hash=hash;};
- const closePlayer=()=>{setPlaying(null);setPending(playbackFocus.current);};
- const startPlayer=(intent:PlaybackIntent,title:Title,startOver=false)=>{playbackFocus.current=continueMenu?'continue-'+Math.max(0,continueRows(library.data.rows).findIndex(r=>keyFor(r.title)===keyFor(title))):(document.activeElement as HTMLElement)?.id||'back';setContinueMenu(null);setPlaying({intent,account:namespace,title,startAt:startOver?0:library.position(title,intent)});setPending('player-back');};
+ const closePlayer=()=>{viewingSession.current=newSession(namespace);setPlaying(null);setPending(playbackFocus.current);};
+ const startPlayer=(intent:PlaybackIntent,title:Title,startOver=false)=>{viewingSession.current=newSession(namespace);playbackFocus.current=continueMenu?'continue-'+Math.max(0,continueRows(library.data.rows).findIndex(r=>keyFor(r.title)===keyFor(title))):(document.activeElement as HTMLElement)?.id||'back';setContinueMenu(null);setPlaying({intent,account:namespace,title,startAt:startOver?0:library.position(title,intent)});setPending('player-back');};
  const back=()=>{if(continueMenu){setContinueMenu(null);setPending('continue-'+Math.max(0,continueRows(library.data.rows).findIndex(r=>keyFor(r.title)===keyFor(continueMenu.title))));return;}if(confirmSignOut){setConfirmSignOut(false);return;}if(playing){closePlayer();return;}if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){if(keyboard){setKeyboard(false);setPending('search-keyboard');}else{setShowSearch(false);setPending('search');}}else if(shelf==='Discover'||shelf==='My List'){setShelf('Home');setPending('nav-Home');}};
  useEffect(()=>{
   const handler=()=>{const r=routeFromHash(location.hash);const old=lastHash.current;lastHash.current=location.hash;
@@ -174,7 +176,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  const upcomingEpisode=playing&&playing.title.type==='series'?nextEpisode(playing.title,playing.intent.videoId,(playing.title.episodes||[]).filter(e=>library.watched(playing.title,e.id)).map(e=>e.id)):null;
  const upcomingIntent=playing&&upcomingEpisode?playbackIntent(playing.title,upcomingEpisode):null;
  return <><div className="app" style={playing?{display:"none"}:undefined} onPointerDown={e=>{const b=(e.target as HTMLElement).closest<HTMLElement>('button[data-focus]');if(b)b.focus();}}>
- <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.5.0-dev.1 • Development</span></header>
+ <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.5.0-dev.2 • Development</span></header>
  {route.kind==='home'?<main>
   <nav>{['Home','Discover','Movies','Series','My List'].map(n=><Btn key={n} id={'nav-'+n} className={shelf===n?'selected':''} onClick={()=>{setContinueMenu(null);setShelf(n);setShowSearch(false);setKeyboard(false);setRowLimit(6);}}>{n}</Btn>)}
   {auth&&<Btn id="search" onClick={()=>{setContinueMenu(null);setShowSearch(!showSearch);setKeyboard(false);if(!showSearch)setTimeout(()=>document.getElementById('query')?.focus(),0);}}>Search</Btn>}
@@ -197,7 +199,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  {confirmSignOut&&<section className="playback-preview"><h2>Sign out of this account?</h2><p>Your profile and local history will remain. Local profiles using this account will need it relinked.</p><Btn id="cancel-sign-out" onClick={()=>setConfirmSignOut(false)}>Cancel</Btn><Btn id="confirm-sign-out" onClick={onSignOut}>Sign out</Btn></section>}
  <h2>Playback preferences</h2><PlayerPreferences prefs={prefs} onChange={updatePrefs}/><h2>Local storage</h2><p>{storage}</p><p>Launch count: {state.visits}</p><p className="muted">Playback progress and source memory are separate for each profile. Stremio profiles sync their library; local profiles never send library changes to Stremio.</p></section>:activeDetail?<TitleDetails key={titleKey(activeDetail)} title={activeDetail} loading={detailLoading} onPlay={(intent,startOver)=>startPlayer(intent,activeDetail,startOver)} inList={!!library.row(activeDetail)?.list} onList={()=>library.act({kind:'list',title:activeDetail,on:!library.row(activeDetail)?.list})} isWatched={id=>library.watched(activeDetail,id)} onWatched={(id,on)=>library.act({kind:on?'watched':'unwatch',title:activeDetail,videoId:id})} resumeAt={intent=>library.position(activeDetail,intent)}/>:<p>{loading?'Loading catalogues…':'Title not available. Return to Home and refresh.'}</p>}
  </main>}
- </div>{playing&&<Player key={playing.account+'|'+playing.intent.type+'|'+playing.intent.videoId} title={playing.title} nextIntent={upcomingIntent} nextEpisode={upcomingEpisode} prepared={playing.prepared} onAdvance={(next,prepared,origin)=>{setPlaying(p=>p&&p.intent.videoId===playing.intent.videoId?{intent:next,account:p.account,title:p.title,startAt:0,prepared,origin}:p);setPending('player-back');}} intent={playing.intent} addons={addons} lenders={lenders} account={playing.account} startAt={playing.startAt} prefs={prefs} onPrefs={updatePrefs} onProgress={(position,duration,played,ended)=>library.act({kind:'progress',title:playing.title,videoId:playing.intent.videoId,position,duration,played,ended})} onExit={closePlayer}/>}</>;
+ </div>{playing&&<Player viewingSession={viewingSession} key={playing.account+'|'+playing.intent.type+'|'+playing.intent.videoId} title={playing.title} nextIntent={upcomingIntent} nextEpisode={upcomingEpisode} prepared={playing.prepared} onAdvance={(next,prepared,origin)=>{setPlaying(p=>p&&p.intent.videoId===playing.intent.videoId?{intent:next,account:p.account,title:p.title,startAt:0,prepared,origin}:p);setPending('player-back');}} intent={playing.intent} addons={addons} lenders={lenders} account={playing.account} startAt={playing.startAt} prefs={prefs} onPrefs={updatePrefs} onProgress={(position,duration,played,ended)=>library.act({kind:'progress',title:playing.title,videoId:playing.intent.videoId,position,duration,played,ended})} onExit={closePlayer}/>}</>;
 }
 function Diagnostics(){
  const video=useRef<HTMLVideoElement>(null);
