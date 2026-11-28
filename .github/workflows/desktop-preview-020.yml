@@ -25,6 +25,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
+      # Rebuild after thumbnail type correction.
       - run: npm run dist:win
       - name: Publish audited desktop preview
         shell: pwsh
