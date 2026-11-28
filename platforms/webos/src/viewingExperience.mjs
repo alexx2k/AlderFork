@@ -11,10 +11,10 @@ export function seasonStats(episodes,watched,now=Date.now()){
  const result=[];for(const e of episodes){let row=result.find(r=>r.season===e.season);if(!row){row={season:e.season,total:0,unwatched:0};result.push(row);}if(episodeAired(e,now)){row.total++;if(!watched(e.id))row.unwatched++;}}
  return result;
 }
-export function episodeTarget(episodes,watched,resume,now=Date.now()){
+export function episodeTarget(episodes,watched,resume,now=Date.now(),preferredId){
  const available=episodes.filter(e=>episodeAired(e,now)),regular=available.filter(e=>e.season!==0);
  const eligible=regular.length?regular:available;
- return available.find(e=>!watched(e.id)&&resume(e.id)>0)||eligible.find(e=>!watched(e.id))||eligible[0]||null;
+ return available.find(e=>e.id===preferredId&&!watched(e.id))||available.find(e=>!watched(e.id)&&resume(e.id)>0)||eligible.find(e=>!watched(e.id))||eligible[0]||null;
 }
 export function thumbnailCue(text,start,end,base,resolve){
  if(typeof text!=='string'||!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start)return null;

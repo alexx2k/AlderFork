@@ -102,11 +102,14 @@ export function useLibrary(namespace:string,token:string,cloud:boolean){
   if(JSON.stringify(next)!==JSON.stringify(current))save(next);
  };
  const row=(title:Title):Row|undefined=>data.rows[keyFor(title)];
- const watched=(title:Title,videoId:string)=>{const r=row(title);return r?seenIds({...r,title:mergeTitle(r.title,title)},inflateWatched).includes(videoId):false;};
+ // One decoded set per title/row snapshot, rather than inflate the cloud bitfield for every episode badge.
+ const watchedCache=new WeakMap<Title,{row:Row;ids:Set<string>}>();
+ const watchedSet=(title:Title,r:Row)=>{const cached=watchedCache.get(title);if(cached?.row===r)return cached.ids;const ids=new Set(seenIds({...r,title:mergeTitle(r.title,title)},inflateWatched));watchedCache.set(title,{row:r,ids});return ids;};
+ const watched=(title:Title,videoId:string)=>{const r=row(title);return r?watchedSet(title,r).has(videoId):false;};
  const position=(title:Title,intent:PlaybackIntent)=>{
   const r=model.current.rows[keyFor(title)];
   if(r?.videoId===intent.videoId)return r.next||r.hidden?0:r.position;
-  if(r&&seenIds(r,inflateWatched).includes(intent.videoId))return 0;
+  if(r&&watchedSet(title,r).has(intent.videoId))return 0;
   return resumeFor(namespace,intent);
  };
  return {data,status,act,enrich,row,watched,position,retry:()=>schedule(0)};

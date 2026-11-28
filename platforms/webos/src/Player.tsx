@@ -179,7 +179,7 @@ export function Player({viewingSession,title,nextIntent,nextEpisode,prepared,onA
     if(target>0)try{pendingSeek.current=target;v.currentTime=target;}catch{pendingSeek.current=null;}
     setDuration(v.duration);setPosition(target);
    }
-   refreshAudio();refreshEmbedded();setChapterMarkers(chapterSegments(nativeChapters(v),v.duration));
+   refreshAudio();refreshEmbedded();setChapterMarkers(chapterSegments(nativeChapters(v),v.duration));setThumbnailFrames(readThumbnails(v));
   };
   const refreshAudio=()=>{
    if(!valid())return;
@@ -196,7 +196,7 @@ export function Player({viewingSession,title,nextIntent,nextEpisode,prepared,onA
    if(!valid())return;
    setEmbedded(Array.from({length:v.textTracks.length},(_,index)=>({track:v.textTracks[index],index})).filter(x=>x.track.kind==='subtitles'||x.track.kind==='captions').map(x=>({index:x.index,label:x.track.label||x.track.language||'Embedded '+(x.index+1),lang:x.track.language||''})));
   };
-  const playing=()=>{if(!valid())return;started.current=true;if(viewingSession.current.pendingFrame&&!framePending){framePending=true;frameStart=v.currentTime;if(typeof frameVideo.requestVideoFrameCallback==='function')try{frameHandle=frameVideo.requestVideoFrameCallback(()=>{frameHandle=undefined;if(valid()&&v.videoWidth>0)countFrame();else frameCallbackSupported=false;});frameCallbackSupported=true;}catch{frameHandle=undefined;}}const successful=activeSources.current[attempt.index];if(successful){rememberSource(account,intent,successful);if(intent.type==='series'&&manualAttempt.current===id){manualAttempt.current=-1;saveProvider(account,intent.titleId,successful.providerId);preferred.current=successful.providerId;setPreferredProvider(successful.providerId);}}cancelTimers();setPaused(false);setStatus('Playing');refreshAudio();refreshEmbedded();};
+  const playing=()=>{if(!valid())return;started.current=true;if(viewingSession.current.pendingFrame&&!framePending){framePending=true;frameStart=v.currentTime;if(typeof frameVideo.requestVideoFrameCallback==='function')try{frameHandle=frameVideo.requestVideoFrameCallback(()=>{frameHandle=undefined;if(valid()&&v.videoWidth>0)countFrame();else frameCallbackSupported=false;});frameCallbackSupported=true;}catch{frameHandle=undefined;}}const successful=activeSources.current[attempt.index];if(successful){rememberSource(account,intent,successful);if(intent.type==='series'&&manualAttempt.current===id){manualAttempt.current=-1;saveProvider(account,intent.titleId,successful.providerId);preferred.current=successful.providerId;setPreferredProvider(successful.providerId);}}cancelTimers();setPaused(false);setStatus('Playing');refreshAudio();refreshEmbedded();setThumbnailFrames(readThumbnails(v));};
   const pausedEvent=()=>{if(valid()){lastTick.current=null;setPaused(true);if(started.current){cancelTimers();persist();}}};
   const tick=()=>{
    if(!valid()||!started.current||!Number.isFinite(v.duration)||v.duration<=0)return;

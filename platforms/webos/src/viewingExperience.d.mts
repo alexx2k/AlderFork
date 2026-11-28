@@ -10,6 +10,6 @@ export function confirmWatching(session:ViewingSession,suppress:boolean):Viewing
 export function shouldAsk(session:ViewingSession):boolean;
 export function episodeAired(e:Episode,now?:number):boolean;
 export function seasonStats(episodes:Episode[],watched:(id:string)=>boolean,now?:number):{season:number|null;total:number;unwatched:number}[];
-export function episodeTarget(episodes:Episode[],watched:(id:string)=>boolean,resume:(id:string)=>number,now?:number):Episode|null;
+export function episodeTarget(episodes:Episode[],watched:(id:string)=>boolean,resume:(id:string)=>number,now?:number,preferredId?:string):Episode|null;
 export function thumbnailCue(text:unknown,start:number,end:number,base:string,resolve:(url:string,base:string)=>string):Thumbnail|null;
 export function thumbnailAt(cues:Thumbnail[],seconds:number):Thumbnail|null;
