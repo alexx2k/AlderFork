@@ -1,7 +1,8 @@
+import type {AudioCodec,Prefs} from './playerPrefs.mjs';
 import type {PlaybackIntent} from './liveCatalogue.ts';
-export type Source={url:string;provider:string;providerId:string;filename:string;size:number;name:string;description:string;height:number;hevc:boolean;av1:boolean;hdr:boolean;riskyAudio:boolean;subtitles:Subtitle[]};
+export type Source={url:string;provider:string;providerId:string;filename:string;size:number;name:string;description:string;height:number;hevc:boolean;av1:boolean;hdr:boolean;riskyAudio:boolean;audioCodec?:AudioCodec;subtitles:Subtitle[]};
 export type Subtitle={url:string;lang:string;label:string;provider:string};
-export type DeviceCapabilities={height:number;hevc:boolean;av1:boolean;hdr:boolean};
+export type DeviceCapabilities={height:number;hevc:boolean;av1:boolean;hdr:boolean;audio?:Partial<Record<AudioCodec,boolean>>};
 export type Excluded={torrent:number;headers:number;external:number;other:number};
 export type Resolution={sources:Source[];excluded:Excluded;failures:number;providers:number};
 export type ResourceAddon={base:string;name:string;id:string};
@@ -12,7 +13,7 @@ export function resourceAddons(descriptors:unknown[],resource:string,intent:Play
 export function resourceUrl(addon:ResourceAddon,resource:string,intent:PlaybackIntent):string;
 export function parseSubtitles(raw:unknown,provider:string):Subtitle[];
 export function parseStreams(raw:unknown,provider:string,providerId?:string):{sources:Source[];excluded:Excluded};
-export function rankSources(sources:Source[],capabilities:DeviceCapabilities):Source[];
+export function rankSources(sources:Source[],capabilities:DeviceCapabilities,prefs?:Prefs):Source[];
 export function resolveStreams(descriptors:unknown[],intent:PlaybackIntent,signal:AbortSignal,request:Requester):Promise<Resolution>;
 export function resolveSubtitles(descriptors:unknown[],intent:PlaybackIntent,signal:AbortSignal,request:Requester,source?:Source):Promise<Subtitle[]>;
 export function uniqueSubtitles(tracks:Subtitle[]):Subtitle[];

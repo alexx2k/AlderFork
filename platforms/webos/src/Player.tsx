@@ -4,6 +4,10 @@ import {jsonRequest,installedAddons} from './stremio.ts';
 import {rankSources,resolveStreams,resolveSubtitles,uniqueSubtitles,parseCues,activeSubtitle,decodeSubtitle,preferResumeSource,seekPosition,Source,Subtitle,Resolution,SubtitleCue} from './playback.mjs';
 import {saveProgress,readSource,rememberSource} from './progress.ts';
 import {mergeStreamAddons} from './profiles.mjs';
+import {PlayerPreferences} from './PlayerPreferences.tsx';
+import {Prefs,colors,matchTrack,scrubTarget,scrubStep,captionTime,objectFit} from './playerPrefs.mjs';
+import {readChoices,saveChoices} from './playerSettings.ts';
+import {directionFor,isBack} from './navigation.ts';
 
 type AudioTrack={enabled:boolean;label?:string;language?:string};
 type AudioList={length:number;[index:number]:AudioTrack;addEventListener?:(type:string,fn:()=>void)=>void;removeEventListener?:(type:string,fn:()=>void)=>void};
@@ -11,7 +15,8 @@ type NativeVideo=HTMLVideoElement&{audioTracks?:AudioList};
 type Attempt={index:number;serial:number};
 function capabilities(){
  const v=document.createElement('video');
- return {height:Math.min(2160,Math.max(720,screen.height||1080)),hevc:!!v.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"'),av1:!!v.canPlayType('video/mp4; codecs="av01.0.08M.08"'),hdr:typeof matchMedia==='function'&&matchMedia('(dynamic-range: high)').matches};
+ const audio={aac:!!v.canPlayType('audio/mp4; codecs="mp4a.40.2"'),mp3:!!v.canPlayType('audio/mpeg'),ac3:!!v.canPlayType('audio/mp4; codecs="ac-3"'),eac3:!!v.canPlayType('audio/mp4; codecs="ec-3"'),opus:!!v.canPlayType('audio/webm; codecs="opus"')};
+ return {audio,height:Math.min(2160,Math.max(720,screen.height||1080)),hevc:!!v.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"'),av1:!!v.canPlayType('video/mp4; codecs="av01.0.08M.08"'),hdr:typeof matchMedia==='function'&&matchMedia('(dynamic-range: high)').matches};
 }
 function time(seconds:number){
  const n=Math.max(0,Math.floor(Number.isFinite(seconds)?seconds:0));
@@ -20,23 +25,31 @@ function time(seconds:number){
 function button(id:string,label:string,action:()=>void,disabled=false){
  return <button type="button" data-focus id={id} onClick={action} disabled={disabled}>{label}</button>;
 }
-export function Player({intent,addons,lenders,account,startAt,onProgress,onExit}:{intent:PlaybackIntent;addons:unknown[];lenders:string[];account:string;startAt:number;onProgress:(position:number,duration:number,played:number,ended:boolean)=>void;onExit:()=>void}){
+export function Player({intent,addons,lenders,account,startAt,prefs,onPrefs,onProgress,onExit}:{intent:PlaybackIntent;addons:unknown[];lenders:string[];account:string;startAt:number;prefs:Prefs;onPrefs:(patch:Partial<Prefs>)=>void;onProgress:(position:number,duration:number,played:number,ended:boolean)=>void;onExit:()=>void}){
  const [resolution,setResolution]=useState<Resolution|null>(null);
  const [sources,setSources]=useState<Source[]>([]);
  const [addonSubs,setAddonSubs]=useState<Subtitle[]>([]);
  const [attempt,setAttempt]=useState<Attempt|null>(null);
  const [revision,setRevision]=useState(0);
- const [panel,setPanel]=useState<'sources'|'subtitles'|'audio'|null>(null);
+ const [panel,setPanel]=useState<'sources'|'subtitles'|'audio'|'settings'|null>(null);
+ const [controlsShown,setControlsShown]=useState(true);
+ const [activity,setActivity]=useState(0);
+ const [preview,setPreview]=useState<number|null>(null);
+ const scrubValue=useRef<number|null>(null),scrubTimer=useRef<number|undefined>(undefined),repeatCount=useRef(0);
+ const titleChoiceKey=intent.type+'|'+intent.titleId;
+ const choices=useRef(readChoices(account,titleChoiceKey));
+ const latestPrefs=useRef(prefs);latestPrefs.current=prefs;
+ const selectedAudioAttempt=useRef(-1),subtitleChosen=useRef(false);
  const [status,setStatus]=useState('Finding compatible sources…');
  const [position,setPosition]=useState(()=>startAt);
  const [duration,setDuration]=useState(0);
  const [paused,setPaused]=useState(true);
  const [subtitle,setSubtitle]=useState<Subtitle|null>(null);
  const [subtitleStatus,setSubtitleStatus]=useState('');
- const [audio,setAudio]=useState<{index:number;name:string;enabled:boolean}[]>([]);
+ const [audio,setAudio]=useState<{index:number;name:string;lang:string;enabled:boolean}[]>([]);
  const [cues,setCues]=useState<SubtitleCue[]>([]);
  const [caption,setCaption]=useState('');
- const [embedded,setEmbedded]=useState<{index:number;label:string}[]>([]);
+ const [embedded,setEmbedded]=useState<{index:number;label:string;lang:string}[]>([]);
  const [embeddedChoice,setEmbeddedChoice]=useState<number|null>(null);
  const [subtitleLoading,setSubtitleLoading]=useState(false);
  const video=useRef<NativeVideo|null>(null);
@@ -64,7 +77,7 @@ export function Player({intent,addons,lenders,account,startAt,onProgress,onExit}
   const v=video.current;
   if(v&&started.current&&pendingSeek.current===null&&Number.isFinite(v.duration)&&v.duration>0){last.current={position:v.currentTime,duration:v.duration};resume.current=v.currentTime;persist();}
   else resume.current=last.current.position;
-  lastTick.current=null;attempted.current.add(index);tries.current++;failed.current=false;started.current=false;pendingSeek.current=null;
+  lastTick.current=null;selectedAudioAttempt.current=-1;subtitleChosen.current=false;clearScrub();setControlsShown(true);setActivity(x=>x+1);attempted.current.add(index);tries.current++;failed.current=false;started.current=false;pendingSeek.current=null;
   const next={index,serial:++serial.current};current.current=next;
   setAttempt(next);setPanel(null);setPaused(true);setStatus('Opening '+activeSources.current[index].name+'…');
   setSubtitle(null);setCues([]);setCaption('');setEmbedded([]);setEmbeddedChoice(null);setAddonSubs([]);setSubtitleStatus('');setAudio([]);
@@ -89,7 +102,7 @@ export function Player({intent,addons,lenders,account,startAt,onProgress,onExit}
   };
   resolve().then(result=>{
    if(signal.aborted)return;
-   const ranked=preferResumeSource(rankSources(result.sources,capabilities()),readSource(account,intent));activeSources.current=ranked;setSources(ranked);setResolution(result);
+   const ranked=preferResumeSource(rankSources(result.sources,capabilities(),latestPrefs.current),readSource(account,intent));activeSources.current=ranked;setSources(ranked);setResolution(result);
    if(ranked.length)begin(0,true);else setStatus(result.providers?'No directly playable sources found.':'No installed add-on advertises streams for this title.');
   }).catch(()=>{if(!signal.aborted)setStatus('Could not resolve sources. Retry or return to details.');});
   return()=>c.abort();
@@ -117,11 +130,17 @@ export function Player({intent,addons,lenders,account,startAt,onProgress,onExit}
   const refreshAudio=()=>{
    if(!valid())return;
    const list=v.audioTracks;
-   setAudio(list?Array.from({length:list.length},(_,index)=>({index,name:list[index].label||list[index].language||'Audio '+(index+1),enabled:list[index].enabled})):[]);
+   if(list&&list.length&&selectedAudioAttempt.current!==id){
+    const wanted=choices.current.audio||{lang:latestPrefs.current.audioLanguage};
+    const options=Array.from({length:list.length},(_,i)=>({lang:list[i].language||'',label:list[i].label||''}));
+    const chosen=matchTrack(options,wanted);
+    if(chosen>=0){selectedAudioAttempt.current=id;try{for(let i=0;i<list.length;i++)list[i].enabled=i===chosen;}catch{}}
+   }
+   setAudio(list?Array.from({length:list.length},(_,index)=>({index,name:list[index].label||list[index].language||'Audio '+(index+1),lang:list[index].language||'',enabled:list[index].enabled})):[]);
   };
   const refreshEmbedded=()=>{
    if(!valid())return;
-   setEmbedded(Array.from({length:v.textTracks.length},(_,index)=>({track:v.textTracks[index],index})).filter(x=>x.track.kind==='subtitles'||x.track.kind==='captions').map(x=>({index:x.index,label:x.track.label||x.track.language||'Embedded '+(x.index+1)})));
+   setEmbedded(Array.from({length:v.textTracks.length},(_,index)=>({track:v.textTracks[index],index})).filter(x=>x.track.kind==='subtitles'||x.track.kind==='captions').map(x=>({index:x.index,label:x.track.label||x.track.language||'Embedded '+(x.index+1),lang:x.track.language||''})));
   };
   const playing=()=>{if(!valid())return;started.current=true;const successful=activeSources.current[attempt.index];if(successful)rememberSource(account,intent,successful);cancelTimers();setPaused(false);setStatus('Playing');refreshAudio();refreshEmbedded();};
   const pausedEvent=()=>{if(valid()){lastTick.current=null;setPaused(true);if(started.current){cancelTimers();persist();}}};
@@ -179,11 +198,11 @@ export function Player({intent,addons,lenders,account,startAt,onProgress,onExit}
  },[subtitle,attempt?.serial]);
  useEffect(()=>{
   const v=video.current;if(!v||!cues.length){setCaption('');return;}
-  const update=()=>setCaption(activeSubtitle(cues,v.currentTime));
+  const update=()=>setCaption(activeSubtitle(cues,captionTime(v.currentTime,prefs.delay)));
   update();const timer=window.setInterval(update,150);
   v.addEventListener('timeupdate',update);v.addEventListener('seeked',update);
   return()=>{window.clearInterval(timer);v.removeEventListener('timeupdate',update);v.removeEventListener('seeked',update);};
- },[cues,attempt?.serial]);
+ },[cues,attempt?.serial,prefs.delay]);
  useEffect(()=>{
   const v=video.current;if(!v)return;
   for(let i=0;i<v.textTracks.length;i++){const t=v.textTracks[i];if(t.kind==='subtitles'||t.kind==='captions')t.mode=embeddedChoice===i?'showing':'disabled';}
@@ -197,23 +216,79 @@ export function Player({intent,addons,lenders,account,startAt,onProgress,onExit}
  };
  const seek=(delta:number)=>{const v=video.current;if(v&&Number.isFinite(v.duration)&&v.duration>0){pendingSeek.current=null;lastTick.current=null;try{v.currentTime=seekPosition(v.currentTime,v.duration,delta);setPosition(v.currentTime);}catch{setStatus('Seeking is not available for this source.');}}};
  const tracks=uniqueSubtitles((source?.subtitles||[]).concat(addonSubs));
+ const trackSignature=JSON.stringify(tracks.map(t=>[t.url,t.lang,t.label,t.provider]));
+ useEffect(()=>{
+  if(!attempt||subtitleChosen.current||subtitleLoading)return;
+  const wanted=choices.current.subtitle;
+  if(wanted==='off'||!wanted&&prefs.subtitleLanguage==='off')return;
+  const choice=wanted||{lang:prefs.subtitleLanguage};
+  const combined=[...tracks.map(t=>({lang:t.lang,label:t.label,provider:t.provider})),...embedded.map(t=>({lang:t.lang,label:t.label,provider:'embedded'}))];
+  const index=matchTrack(combined,choice);
+  if(index<0)return;
+  subtitleChosen.current=true;
+  if(index<tracks.length){setEmbeddedChoice(null);setSubtitle(tracks[index]);}
+  else{setSubtitle(null);setEmbeddedChoice(embedded[index-tracks.length].index);}
+ },[attempt?.serial,trackSignature,embedded,subtitleLoading,prefs.subtitleLanguage]);
+ const rememberSubtitle=(choice:typeof choices.current.subtitle)=>{
+  subtitleChosen.current=true;choices.current={...choices.current,subtitle:choice};saveChoices(account,titleChoiceKey,choices.current);
+ };
  const selectAudio=(index:number)=>{
   const list=video.current?.audioTracks;if(!list)return;
-  try{for(let i=0;i<list.length;i++)list[i].enabled=i===index;setAudio(previous=>previous.map(a=>({...a,enabled:a.index===index})));}catch{setStatus('Audio track selection is not supported by this device.');}
+  try{selectedAudioAttempt.current=attempt?.serial??-1;for(let i=0;i<list.length;i++)list[i].enabled=i===index;
+  choices.current={...choices.current,audio:{lang:list[index].language||'',label:list[index].label||'',provider:''}};saveChoices(account,titleChoiceKey,choices.current);setAudio(previous=>previous.map(a=>({...a,enabled:a.index===index})));}catch{setStatus('Audio track selection is not supported by this device.');}
  };
  const retry=()=>{persist();cancelTimers();setRevision(x=>x+1);};
- const closePanel=()=>{const target=panel==='sources'?'player-sources':panel==='subtitles'?'player-subs':'player-audio';setPanel(null);requestAnimationFrame(()=>document.getElementById(target)?.focus());};
- const exit=()=>{persist(true);onExit();};
- return <main className="player-page">
-  <div className="player-video">{attempt&&source?<video key={attempt.serial} ref={video} playsInline preload="auto"/>:<div className="player-empty"><h1>{intent.name}</h1><p>{status}</p></div>}</div>
-  {caption&&!panel&&<div className="player-caption" aria-hidden="true"><span>{caption}</span></div>}
-  <section className="player-controls"><div className="player-top"><h2>{intent.name}</h2><p aria-live="polite">{status}{source?' · '+source.provider:''}</p></div>
-   <div className="player-progress"><span>{time(position)}</span><div className="progress-rail"><div style={{width:(duration>0?Math.max(0,Math.min(100,100*position/duration)):0)+'%'}}/></div><span>{time(duration)}</span></div>
-   <div className="controls">{button('player-back','‹ Back',exit)}{button('player-rewind','−10 sec',()=>seek(-10),!attempt)}{button('player-toggle',paused?'▶ Play':'Ⅱ Pause',toggle,!attempt)}{button('player-forward','+10 sec',()=>seek(10),!attempt)}{button('player-sources','Sources ('+sources.length+')',()=>setPanel(panel==='sources'?null:'sources'))}{button('player-subs','Subtitles',()=>setPanel(panel==='subtitles'?null:'subtitles'),!attempt)}{button('player-audio','Audio',()=>setPanel(panel==='audio'?null:'audio'),!attempt)}{button('player-retry','Retry sources',retry)}</div>
+ const closePanel=()=>{const target=panel==='sources'?'player-sources':panel==='subtitles'?'player-subs':panel==='settings'?'player-settings':'player-audio';setPanel(null);requestAnimationFrame(()=>document.getElementById(target)?.focus());};
+ const exit=()=>{clearScrub();persist(true);onExit();};
+ function clearScrub(){if(scrubTimer.current!==undefined)window.clearTimeout(scrubTimer.current);scrubTimer.current=undefined;scrubValue.current=null;repeatCount.current=0;setPreview(null);}
+ function commitScrub(){
+  const value=scrubValue.current,v=video.current;clearScrub();
+  if(value===null||!v||!Number.isFinite(v.duration)||v.duration<=0)return;
+  pendingSeek.current=null;lastTick.current=null;
+  try{v.currentTime=scrubTarget(value,v.duration,0);setPosition(v.currentTime);}catch{setStatus('Seeking is not available for this source.');}
+ }
+ function queueScrub(value:number){
+  scrubValue.current=value;setPreview(value);setActivity(x=>x+1);
+  if(scrubTimer.current!==undefined)window.clearTimeout(scrubTimer.current);
+  scrubTimer.current=window.setTimeout(commitScrub,600);
+ }
+ const reveal=()=>{setControlsShown(true);setActivity(x=>x+1);requestAnimationFrame(()=>document.getElementById('player-toggle')?.focus());};
+ const openPanel=(next:NonNullable<typeof panel>)=>{if(panel===next){closePanel();return;}setControlsShown(true);setPanel(next);requestAnimationFrame(()=>document.getElementById('player-close-panel')?.focus());};
+ useEffect(()=>{if(!prefs.autoHide||paused||panel||preview!==null||!attempt||status!=='Playing'){setControlsShown(true);return;}
+  if(!controlsShown)return;
+  const timer=window.setTimeout(()=>{setControlsShown(false);requestAnimationFrame(()=>document.getElementById('player-reveal')?.focus());},5000);
+  return()=>window.clearTimeout(timer);
+ },[prefs.autoHide,paused,panel,preview,attempt?.serial,status,activity,controlsShown]);
+ useEffect(()=>()=>{if(scrubTimer.current!==undefined)window.clearTimeout(scrubTimer.current);},[]);
+ useEffect(()=>{
+  const handler=(e:KeyboardEvent)=>{
+   const dir=directionFor(e.key,e.keyCode),ok=e.key==='Enter'||e.keyCode===13;
+   if(isBack(e.key,e.keyCode)&&panel){e.preventDefault();e.stopImmediatePropagation();closePanel();return;}
+   if(panel&&dir){const items=Array.from(document.querySelectorAll<HTMLElement>('.player-panel [data-focus]:not([disabled])'));if(!items.includes(document.activeElement as HTMLElement)){e.preventDefault();e.stopImmediatePropagation();items[0]?.focus();return;}}
+   if(!controlsShown&&(dir||ok)){e.preventDefault();e.stopImmediatePropagation();reveal();return;}
+   if(dir||ok)setActivity(x=>x+1);
+   if(document.activeElement?.id==='player-timeline'&&(dir==='left'||dir==='right'||ok)){
+    e.preventDefault();e.stopImmediatePropagation();
+    if(ok){commitScrub();return;}
+    const v=video.current;if(!v||!Number.isFinite(v.duration)||v.duration<=0)return;
+    repeatCount.current=e.repeat?repeatCount.current+1:0;
+    queueScrub(scrubTarget(scrubValue.current??v.currentTime,v.duration,(dir==='left'?-1:1)*scrubStep(repeatCount.current)));
+   }
+  };
+  document.addEventListener('keydown',handler,true);return()=>document.removeEventListener('keydown',handler,true);
+ },[panel,controlsShown,attempt?.serial]);
+ const shownPosition=preview??position;
+ return <main className="player-page" onPointerMove={()=>{if(!controlsShown)reveal();else setActivity(x=>x+1);}} onPointerDown={()=>setActivity(x=>x+1)}>
+  <div className="player-video">{attempt&&source?<video key={attempt.serial} ref={video} playsInline preload="auto" style={{objectFit:objectFit(prefs.fit)}}/>:<div className="player-empty"><h1>{intent.name}</h1><p>{status}</p></div>}</div>
+  {caption&&!panel&&<div className="player-caption" aria-hidden="true" style={{bottom:controlsShown?'25vh':'6vh',fontSize:(2.2*prefs.size/100)+'vw',color:colors[prefs.color]}}><span style={{background:prefs.background?'rgba(0,0,0,.7)':'transparent'}}>{caption}</span></div>}
+  {!controlsShown&&<button id="player-reveal" data-focus type="button" className="player-reveal" aria-label="Show playback controls" onClick={reveal}/>}
+  <section className="player-controls" style={{display:controlsShown?undefined:'none'}}><div className="player-top"><h2>{intent.name}</h2><p aria-live="polite">{status}{source?' · '+source.provider:''}</p></div>
+   <div className="player-progress"><span>{time(shownPosition)}</span><button type="button" data-focus id="player-timeline" className="progress-rail" role="slider" aria-label="Playback timeline" aria-valuemin={0} aria-valuemax={Math.max(0,Math.floor(duration))} aria-valuenow={Math.max(0,Math.floor(shownPosition))} aria-valuetext={time(shownPosition)} disabled={!attempt||duration<=0} onClick={e=>{if(e.detail===0)return;const r=e.currentTarget.getBoundingClientRect();queueScrub(scrubTarget((e.clientX-r.left)/Math.max(1,r.width)*duration,duration,0));commitScrub();}}><span style={{width:(duration>0?Math.max(0,Math.min(100,100*shownPosition/duration)):0)+'%'}}/></button><span>{time(duration)}</span></div>
+   <div className="controls">{button('player-back','‹ Back',exit)}{button('player-rewind','−10 sec',()=>seek(-10),!attempt)}{button('player-toggle',paused?'▶ Play':'Ⅱ Pause',toggle,!attempt)}{button('player-forward','+10 sec',()=>seek(10),!attempt)}{button('player-sources','Sources ('+sources.length+')',()=>openPanel('sources'))}{button('player-subs','Subtitles',()=>openPanel('subtitles'),!attempt)}{button('player-audio','Audio',()=>openPanel('audio'),!attempt)}{button('player-settings','Settings',()=>openPanel('settings'))}{button('player-no-audio','No audio · Next source',()=>{if(attempt){const next=activeSources.current.findIndex((_,i)=>i!==attempt.index&&!attempted.current.has(i));if(next>=0)begin(next);else openPanel('sources');}},!attempt)}{button('player-retry','Retry sources',retry)}</div>
   </section>
-  {panel&&<section className="player-panel"><div className="player-panel-header"><h2>{panel==='sources'?'Sources':panel==='audio'?'Audio tracks':'Subtitles'}</h2>{button('player-close-panel','Close',closePanel)}</div>
-   {panel==='sources'?<><p className="muted">Direct HTTP(S) sources only. Automatic playback tries up to three candidates.</p>{resolution&&<p className="muted">{resolution.providers} providers · {resolution.failures} failed · {resolution.excluded.torrent} torrent · {resolution.excluded.headers} header-dependent · {resolution.excluded.external} external · {resolution.excluded.other} other excluded</p>}
-    <div className="player-list">{sources.map((s,i)=><button key={i} id={'source-'+i} data-focus type="button" className={attempt?.index===i?'filter-active':''} onClick={()=>begin(i,true)}><strong>{s.name}</strong><small>{s.provider}{s.height?' · '+s.height+'p':''}{s.hevc?' · HEVC':''}{s.hdr?' · HDR/DV':''}{s.riskyAudio?' · audio compatibility uncertain':''}</small><small>{s.description}</small></button>)}</div>{!sources.length&&<p>No compatible direct sources to display.</p>}</>:panel==='audio'?<>{audio.length?audio.map(a=><button key={a.index} id={'audio-'+a.index} data-focus type="button" className={a.enabled?'filter-active':''} onClick={()=>selectAudio(a.index)}>{a.name}</button>):<p>This device does not expose selectable native audio tracks.</p>}</>:<><div className="player-list">{button('subtitle-off','Off',()=>{setSubtitle(null);setCues([]);setCaption('');setEmbeddedChoice(null);setSubtitleStatus('Subtitles off.');})}{embedded.map(t=><button key={'embedded-'+t.index} id={'embedded-'+t.index} data-focus type="button" className={embeddedChoice===t.index?'filter-active':''} onClick={()=>{setSubtitle(null);setCues([]);setCaption('');setEmbeddedChoice(t.index);setSubtitleStatus('Native embedded subtitle selected.');}}>{t.label} · Embedded</button>)}{tracks.map((t,i)=><button key={i} id={'subtitle-'+i} data-focus type="button" className={subtitle?.url===t.url?'filter-active':''} onClick={()=>{setEmbeddedChoice(null);setCues([]);setCaption('');setSubtitle(previous=>previous?.url===t.url?{...t}:t);}}>{t.label} · {t.provider}</button>)}</div><p aria-live="polite">{subtitleStatus||(subtitleLoading?'Finding subtitles for this source…':!tracks.length&&!embedded.length?'No subtitle tracks available.':'External SRT/WebVTT rendered by Tarn. Embedded tracks depend on the device.')}</p></>}
+  {panel&&<section className="player-panel"><div className="player-panel-header"><h2>{panel==='sources'?'Sources':panel==='audio'?'Audio tracks':panel==='settings'?'Playback settings':'Subtitles'}</h2>{button('player-close-panel','Close',closePanel)}</div>
+   {panel==='settings'?<PlayerPreferences prefs={prefs} onChange={onPrefs} inPlayer/>:panel==='sources'?<><p className="muted">Direct HTTP(S) sources only. Automatic playback tries up to three candidates.</p>{resolution&&<p className="muted">{resolution.providers} providers · {resolution.failures} failed · {resolution.excluded.torrent} torrent · {resolution.excluded.headers} header-dependent · {resolution.excluded.external} external · {resolution.excluded.other} other excluded</p>}
+    <div className="player-list">{sources.map((s,i)=><button key={i} id={'source-'+i} data-focus type="button" className={attempt?.index===i?'filter-active':''} onClick={()=>begin(i,true)}><strong>{s.name}</strong><small>{s.provider}{s.height?' · '+s.height+'p':''}{s.hevc?' · HEVC':''}{s.hdr?' · HDR/DV':''}{s.audioCodec&&s.audioCodec!=='unknown'?' · '+s.audioCodec.toUpperCase()+' (label)':''}{s.riskyAudio?' · audio compatibility uncertain':''}</small><small>{s.description}</small></button>)}</div>{!sources.length&&<p>No compatible direct sources to display.</p>}</>:panel==='audio'?<>{audio.length?audio.map(a=><button key={a.index} id={'audio-'+a.index} data-focus type="button" className={a.enabled?'filter-active':''} onClick={()=>selectAudio(a.index)}>{a.name}</button>):<p>This device does not expose selectable native audio tracks.</p>}</>:<><div className="player-list">{button('subtitle-off','Off',()=>{rememberSubtitle('off');setSubtitle(null);setCues([]);setCaption('');setEmbeddedChoice(null);setSubtitleStatus('Subtitles off.');})}{embedded.map(t=><button key={'embedded-'+t.index} id={'embedded-'+t.index} data-focus type="button" className={embeddedChoice===t.index?'filter-active':''} onClick={()=>{rememberSubtitle({lang:t.lang,label:t.label,provider:'embedded'});setSubtitle(null);setCues([]);setCaption('');setEmbeddedChoice(t.index);setSubtitleStatus('Native embedded subtitle selected.');}}>{t.label} · Embedded</button>)}{tracks.map((t,i)=><button key={i} id={'subtitle-'+i} data-focus type="button" className={subtitle?.url===t.url?'filter-active':''} onClick={()=>{rememberSubtitle({lang:t.lang,label:t.label,provider:t.provider});setEmbeddedChoice(null);setCues([]);setCaption('');setSubtitle(previous=>previous?.url===t.url?{...t}:t);}}>{t.label} · {t.provider}</button>)}</div><p aria-live="polite">{subtitleStatus||(subtitleLoading?'Finding subtitles for this source…':!tracks.length&&!embedded.length?'No subtitle tracks available.':'External SRT/WebVTT rendered by Tarn. Embedded tracks depend on the device.')}</p></>}
   </section>}
  </main>;
 }

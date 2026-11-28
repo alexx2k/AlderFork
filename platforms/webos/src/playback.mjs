@@ -1,3 +1,4 @@
+import {audioCodec,audioScore,qualityScore} from './playerPrefs.mjs';
 // Platform-independent playback helpers. Source URLs and add-on configuration stay in memory.
 const obj=v=>v&&typeof v==='object'&&!Array.isArray(v)?v:{};
 const str=v=>typeof v==='string'?v:'';
@@ -49,17 +50,17 @@ export function parseStreams(raw,provider,providerId=provider){
   const words=[name,description,str(h.filename)].join(' ').toLowerCase();
   const height=/2160|\b4k\b|\buhd\b/.test(words)?2160:/1080/.test(words)?1080:/720/.test(words)?720:/480/.test(words)?480:0;
   const hevc=/hevc|[xh][ .-]?265/.test(words),av1=/\bav1\b/.test(words),hdr=/\bhdr|\bdv\b|dolby.?vision|\bdovi\b/.test(words);
-  const riskyAudio=/truehd|\bdts(?:[ .-]?hd)?\b/.test(words);
+  const codec=audioCodec(words),riskyAudio=['truehd','dts'].includes(codec);
   const cam=/\b(camrip|hdcam|hdts|telesync|telecine|screener|dvdscr)\b/.test(words);
   if(cam){excluded.other++;continue;}
-  sources.push({url,provider,providerId,name,description,height,hevc,av1,hdr,riskyAudio,filename:str(h.filename),size,subtitles:parseSubtitles(s.subtitles,provider)});
+  sources.push({url,provider,providerId,name,description,height,hevc,av1,hdr,riskyAudio,audioCodec:codec,filename:str(h.filename),size,subtitles:parseSubtitles(s.subtitles,provider)});
  }
  return {sources,excluded};
 }
-export function rankSources(sources,capabilities){
+export function rankSources(sources,capabilities,prefs){
  const score=s=>{
   const height=s.height||720;
-  return (s.hevc&&!capabilities.hevc?-100:0)+(s.av1&&!capabilities.av1?-120:0)+(s.hdr&&!capabilities.hdr?-50:0)+(s.riskyAudio?-35:0)+(height>capabilities.height?-40:0)+Math.min(height,capabilities.height)/100;
+  return (s.hevc&&!capabilities.hevc?-100:0)+(s.av1&&!capabilities.av1?-120:0)+(s.hdr&&!capabilities.hdr?-50:0)+(prefs?audioScore(s.audioCodec||'unknown',capabilities.audio,prefs.audioMode):s.riskyAudio?-35:0)+(prefs?qualityScore(s.height,prefs.quality,capabilities.height):(height>capabilities.height?-40:0)+Math.min(height,capabilities.height)/100);
  };
  const seen=new Set();
  return sources.slice().sort((a,b)=>score(b)-score(a)).filter(s=>{if(seen.has(s.url))return false;seen.add(s.url);return true;});
