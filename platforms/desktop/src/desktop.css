@@ -1,0 +1,20 @@
+/* Desktop-specific presentation: shared profile and playback components remain unchanged. */
+body{font-size:15px;min-width:0}
+.app{max-width:none;padding:22px 30px 32px}
+header{height:52px;margin-bottom:15px}.brand{width:142px;min-width:0;max-height:48px}
+button:focus-visible,a:focus-visible{outline:2px solid var(--silver);outline-offset:2px}
+a{color:var(--lake)}
+@media(min-width:1000px){
+ .app:not(.profile-app):has(>main>nav){padding-left:220px}
+ .app>main>nav{position:fixed;top:0;left:0;bottom:0;width:190px;box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:5px;background:var(--midnight);padding:92px 14px 16px;overflow-y:auto;z-index:6}
+ .app:has(>main>nav)>header .brand{position:fixed;top:28px;left:23px;z-index:7;width:142px}
+ .app>main>nav button{margin:0;min-height:40px;text-align:left}
+ .app>main>nav .selected{background:var(--deep);border-bottom-color:transparent;border-left-color:var(--lake)}
+ .app>main>nav .profile-switch{margin-top:auto;max-width:100%;width:100%}
+ .app>main>nav .profile-switch img{max-width:36px;max-height:36px}
+}
+.live-cards{--art-width:clamp(116px,12vw,188px);--art-height:calc(var(--art-width)*1.5)}
+.hero{height:clamp(250px,38vh,420px)}.hero-copy{padding:20px 24px}
+.player-controls{padding:28px 28px 22px}.player-panel{width:min(600px,85vw)}
+@media(max-width:999px){.app{padding:14px 18px}.brand{width:116px}.hero-copy{width:85%}}
+@media(max-width:700px){.live-cards{--art-width:120px;--art-height:180px}.hero-copy{width:95%}h1{font-size:1.7em}}

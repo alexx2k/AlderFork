@@ -1,0 +1,60 @@
+{
+  "name": "tarn-desktop",
+  "version": "0.1.0-dev.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "dev": "npm start",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test tests/foundation.test.mjs tests/content.test.mjs tests/playback.test.mjs tests/profiles.test.mjs tests/library.test.mjs tests/playerPrefs.test.mjs tests/advancedPlayback.test.mjs tests/viewingExperience.test.mjs tests/addonManagement.test.mjs tests/customisation.test.mjs tests/auditPolicy.test.mjs tests/auditNative.test.mjs tests/desktop.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "audit": "npm run typecheck && npm test && npm run build",
+    "start": "npm run build && electron .",
+    "dist:win": "npm run audit && electron-builder --win nsis --x64 --publish never"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "qrcode": "1.5.4",
+    "fflate": "0.8.2"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.5",
+    "esbuild": "0.25.5",
+    "pngjs": "7.0.0",
+    "typescript": "5.8.3",
+    "@types/qrcode": "1.5.5",
+    "electron": "45.5.0",
+    "electron-builder": "26.18.0"
+  },
+  "description": "Tarn Desktop Windows development client",
+  "author": "Tarn contributors",
+  "license": "GPL-3.0-only",
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "dev.tarn.desktop",
+    "productName": "Tarn Desktop",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "dist/assets/desktopIcon.png",
+      "artifactName": "Tarn-Desktop-${version}-win-${arch}.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
