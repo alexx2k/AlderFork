@@ -1,12 +1,13 @@
 import React,{useEffect,useState,useRef} from 'react';
 import {Episode,PlaybackIntent,playbackIntent,seasonsFor,Title} from './liveCatalogue.ts';
 
+import {LazyArtwork} from './LazyArtwork.tsx';
 import {episodeAired,seasonStats,episodeTarget} from './viewingExperience.mjs';
 
 function SafeImage({url,className}:{url?:string;className:string}){
  const [failed,setFailed]=useState(false);
  useEffect(()=>setFailed(false),[url]);
- return url&&!failed?<img className={className} src={url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={()=>setFailed(true)}/>:<div className={className+' artwork-placeholder'} aria-hidden="true"/>;
+ return url&&!failed?<LazyArtwork className={className} src={url} alt="" referrerPolicy="no-referrer" onError={()=>setFailed(true)}/>:<div className={className+' artwork-placeholder'} aria-hidden="true"/>;
 }
 export function TitleDetails({title,loading,onPlay,inList,onList,isWatched,onWatched,resumeAt,preferredEpisodeId,blurThumbnails=false}:{title:Title;loading:boolean;onPlay:(intent:PlaybackIntent,startOver?:boolean)=>void;inList:boolean;onList:()=>void;isWatched:(videoId:string)=>boolean;onWatched:(videoId:string,on:boolean)=>void;resumeAt:(intent:PlaybackIntent)=>number;preferredEpisodeId?:string;blurThumbnails?:boolean}){
  const episodes=title.episodes||[];

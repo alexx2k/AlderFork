@@ -76,7 +76,7 @@ export function parseEpisodes(raw:unknown):Episode[]{
   const season=numberOrNull(v.season),number=numberOrNull(v.episode??v.number);
   out.push({id,season,number,name:string(v.title)||string(v.name)||(number!==null?'Episode '+number:'Untitled episode'),description:string(v.overview)||string(v.description),released:string(v.released),thumbnail:image(v.thumbnail)});
  }
- return out.sort((a,b)=>(a.season??Number.MAX_SAFE_INTEGER)-(b.season??Number.MAX_SAFE_INTEGER)||(a.number??Number.MAX_SAFE_INTEGER)-(b.number??Number.MAX_SAFE_INTEGER));
+ return out.map((e,i)=>({e,i})).sort((a,b)=>(a.e.season??Number.MAX_SAFE_INTEGER)-(b.e.season??Number.MAX_SAFE_INTEGER)||(a.e.number??Number.MAX_SAFE_INTEGER)-(b.e.number??Number.MAX_SAFE_INTEGER)||a.i-b.i).map(x=>x.e);
 }
 export function seasonsFor(episodes:Episode[]):(number|null)[]{return Array.from(new Set(episodes.map(e=>e.season)));}
 export type PlaybackIntent={type:ContentType;titleId:string;videoId:string;name:string};
@@ -167,17 +167,20 @@ export function appendPage(existing:Title[],page:CatalogPage):CatalogPage{
 }
 // One cache per linked session, never persisted, bounded by entry count and age.
 export class ContentCache{
- private entries=new Map<string,{value:unknown;expires:number}>();
+ private entries=new Map<string,{value:unknown;expires:number;size:number}>();
+ private bytes=0;
+ private budget:number;
  private ttl:number;
  private limit:number;
- constructor(ttl=300000,limit=80){this.ttl=ttl;this.limit=limit;}
- clear(){this.entries.clear();}
+ constructor(ttl=300000,limit=80,budget=8*1024*1024){this.ttl=ttl;this.limit=limit;this.budget=budget;}
+ clear(){this.entries.clear();this.bytes=0;}
+ private drop(key:string){const old=this.entries.get(key);if(old){this.bytes-=old.size;this.entries.delete(key);}}
  async request(url:string,init:RequestInit={},signal?:AbortSignal,fetcher=jsonRequest):Promise<unknown>{
   if(signal?.aborted)throw Error('Cancelled');
   const hit=this.entries.get(url);
   if(hit&&hit.expires>Date.now()){this.entries.delete(url);this.entries.set(url,hit);return hit.value;}
   const value=await fetcher(url,init,signal);
-  if(!signal?.aborted){this.entries.delete(url);this.entries.set(url,{value,expires:Date.now()+this.ttl});while(this.entries.size>this.limit){const key=this.entries.keys().next().value;if(key===undefined)break;this.entries.delete(key);}}
+  if(!signal?.aborted){this.drop(url);let size=Infinity;try{size=(JSON.stringify(value)||'').length*2;}catch{}if(size<=this.budget){this.entries.set(url,{value,expires:Date.now()+this.ttl,size});this.bytes+=size;while(this.entries.size>this.limit||this.bytes>this.budget){const key=this.entries.keys().next().value;if(key===undefined)break;this.drop(key);}}}
   return value;
  }
 }

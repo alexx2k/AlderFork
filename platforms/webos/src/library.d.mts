@@ -25,3 +25,5 @@ export function reduceLibrary(data:LibraryData,action:Action,cloud:boolean,infla
 export function importRemote(data:LibraryData,items:Record<string,unknown>[],inflate:Inflate):LibraryData;
 
 export function applyQueue(raw:Record<string,unknown>|undefined,queue:Action[],inflate:Inflate,deflate:Deflate):Record<string,unknown>|undefined;
+
+export function recoverLibrary(raw:unknown):{data:LibraryData;damaged:boolean};

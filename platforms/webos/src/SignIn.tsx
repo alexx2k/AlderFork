@@ -6,13 +6,13 @@ export function SignIn({onLinked,onCancel}:{onLinked:(token:string)=>Promise<voi
  const [qr,setQr]=useState('');
  const [status,setStatus]=useState('Requesting a sign-in code…');
  const [retry,setRetry]=useState(0);
- const [busy,setBusy]=useState(true);
+ const [busy,setBusy]=useState(true),[linking,setLinking]=useState(false);
  const callback=useRef(onLinked);callback.current=onLinked;
  useEffect(()=>{
   const controller=new AbortController(),signal=controller.signal;
   let timer:ReturnType<typeof setTimeout>|undefined;
   const stop=()=>{controller.abort();if(timer!==undefined)clearTimeout(timer);};
-  setLink(null);setQr('');setBusy(true);setStatus('Requesting a sign-in code…');
+  setLink(null);setQr('');setBusy(true);setLinking(false);setStatus('Requesting a sign-in code…');
   (async()=>{
    try{
     const data=await createLink(signal);
@@ -28,8 +28,8 @@ export function SignIn({onLinked,onCancel}:{onLinked:(token:string)=>Promise<voi
       const token=await readLink(data.code,signal);
       if(signal.aborted)return;
       if(token){
-       setStatus('Account linked. Opening Tarn…');
-       await callback.current(token);
+       setStatus('Account linked. Opening Tarn…');setLinking(true);
+       try{await callback.current(token);}catch{if(!signal.aborted){setStatus('Account linked, but profile could not be saved. Request a new code to retry.');setBusy(false);setLinking(false);}}
        return;
       }
       setStatus('Waiting for you to approve sign-in…');
@@ -43,6 +43,6 @@ export function SignIn({onLinked,onCancel}:{onLinked:(token:string)=>Promise<voi
  },[retry]);
  return <section className="sign-in"><p className="eyebrow">LINK YOUR ACCOUNT</p><h1>Welcome to Tarn</h1><p>Sign in to Stremio on your phone or computer. Tarn never asks for your password.</p>
  <div className="link-panel">{qr&&<img className="qr" src={qr} alt="Scan to link your Stremio account"/>}<div><p className="muted">Scan the QR code or visit</p><p className="link-url">https://link.stremio.com</p>{link&&<div className="device-code" aria-label={'Sign-in code '+link.code}>{link.code}</div>}</div></div>
- <p aria-live="polite">{status}</p><div className="controls"><button data-focus id="retry-link" onClick={()=>setRetry(x=>x+1)}>{busy?'New code':'Retry'}</button><button data-focus id="cancel-link" onClick={onCancel}>Cancel</button></div>
+ <p aria-live="polite">{status}</p><div className="controls"><button data-focus id="retry-link" disabled={linking} onClick={()=>setRetry(x=>x+1)}>{busy?'New code':'Retry'}</button><button data-focus id="cancel-link" disabled={linking} onClick={onCancel}>Cancel</button></div>
  </section>;
 }

@@ -136,7 +136,7 @@ export function Player({viewingSession,title,nextIntent,nextEpisode,prepared,onA
   else resume.current=last.current.position;
   lastTick.current=null;selectedAudioAttempt.current=-1;subtitleChosen.current=false;clearScrub();setControlsShown(true);setActivity(x=>x+1);attempted.current.add(index);tries.current++;failed.current=false;started.current=false;pendingSeek.current=null;
   const next={index,serial:++serial.current};current.current=next;manualAttempt.current=explicit?next.serial:-1;setEndedPlayback(false);setChapterMarkers([]);setThumbnailFrames([]);
-  setAttempt(next);setPanel(null);setPaused(true);setCountdown(null);setStatus('Opening '+activeSources.current[index].name+'…');
+  setAttempt(next);setPanel(null);setPaused(true);setDuration(0);setPosition(resume.current);setCountdown(null);setStatus('Opening '+activeSources.current[index].name+'…');
   setSubtitle(null);setCues([]);setCaption('');setEmbedded([]);setEmbeddedChoice(null);setSubtitleLoading(true);setAddonSubs([]);setSubtitleStatus('');setAudio([]);
   requestAnimationFrame(()=>{if(current.current?.serial===next.serial&&!document.activeElement?.closest('.player-controls'))document.getElementById('player-toggle')?.focus();});
  };
@@ -269,7 +269,7 @@ export function Player({viewingSession,title,nextIntent,nextEpisode,prepared,onA
   if(!v.paused){v.pause();return;}
   setStatus('Starting…');
   if(!started.current){cancelTimers();clock.current=window.setTimeout(()=>fallback(attempt.serial,'Source did not start in time.'),25000);}
-  v.play()?.catch(error=>{if(error?.name==='NotAllowedError'){cancelTimers();setStatus('Playback blocked by this device. Press Play again.');}else fallback(attempt.serial,'Could not play this source.');});
+  v.play()?.catch(error=>{if(current.current?.serial!==attempt.serial||failed.current||error?.name==='AbortError')return;if(error?.name==='NotAllowedError'){cancelTimers();setStatus('Playback blocked by this device. Press Play again.');}else fallback(attempt.serial,'Could not play this source.');});
  };
  const seek=(delta:number)=>{const v=video.current;if(v&&Number.isFinite(v.duration)&&v.duration>0){lastTick.current=null;const target=seekPosition(v.currentTime,v.duration,delta);try{if(!withinSeekRange(v.seekable,target))throw Error('Not seekable');pendingSeek.current=target;seekDeadline.current=Date.now()+10000;v.currentTime=target;setPosition(target);}catch{pendingSeek.current=null;setStatus('Seeking is not available for this source.');}}};
  const tracks=uniqueSubtitles((source?.subtitles||[]).concat(addonSubs));
@@ -385,13 +385,13 @@ export function Player({viewingSession,title,nextIntent,nextEpisode,prepared,onA
   try{
    const target=candidate.end;
    if(!withinSeekRange(v.seekable,target))throw Error('Not seekable');
-   lastTick.current=null;pendingSeek.current=target;v.currentTime=target;setPosition(target);
+   lastTick.current=null;pendingSeek.current=target;seekDeadline.current=Date.now()+10000;v.currentTime=target;setPosition(target);
    setDismissedSegments(old=>old.concat(segmentKey(candidate)));requestAnimationFrame(()=>document.getElementById(controlsShown?'player-toggle':'player-reveal')?.focus());
   }catch{pendingSeek.current=null;setStatus('This source does not allow skipping here.');}
  };
  const skipFinalCredits=()=>{
   const v=video.current;if(!v||creditsTarget===null)return;
-  try{const target=creditsTarget;if(!Array.from({length:v.seekable.length},(_,i)=>target>=v.seekable.start(i)&&target<=v.seekable.end(i)).some(Boolean))throw Error('Not seekable');lastTick.current=null;pendingSeek.current=target;v.currentTime=target;setPosition(target);requestAnimationFrame(()=>document.getElementById(controlsShown?'player-toggle':'player-reveal')?.focus());}catch{pendingSeek.current=null;setStatus('This source does not allow skipping credits.');}
+  try{const target=creditsTarget;if(!Array.from({length:v.seekable.length},(_,i)=>target>=v.seekable.start(i)&&target<=v.seekable.end(i)).some(Boolean))throw Error('Not seekable');lastTick.current=null;pendingSeek.current=target;seekDeadline.current=Date.now()+10000;v.currentTime=target;setPosition(target);requestAnimationFrame(()=>document.getElementById(controlsShown?'player-toggle':'player-reveal')?.focus());}catch{pendingSeek.current=null;setStatus('This source does not allow skipping credits.');}
  };
  function clearScrub(){if(scrubTimer.current!==undefined)window.clearTimeout(scrubTimer.current);scrubTimer.current=undefined;scrubValue.current=null;repeatCount.current=0;setPreview(null);}
  function commitScrub(){

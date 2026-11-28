@@ -23,6 +23,7 @@ import {newSession,ViewingSession} from './viewingExperience.mjs';
 import {HomePrefs,cleanHome,homeKey,visibleTabs} from './customisation.mjs';
 import {HomePreferences,UpdatePanel} from './CustomisationSettings.tsx';
 import {useReleaseUpdates} from './useReleaseUpdates.ts';
+import {LazyArtwork} from './LazyArtwork.tsx';
 import './style.css';
 
 function focus(id?:string){
@@ -41,7 +42,7 @@ function Artwork({title,wide=false}:{title:Title;wide?:boolean}){
  const url=wide?(title.background||title.poster):title.poster;
  const [failed,setFailed]=useState(false);
  useEffect(()=>{setFailed(false);},[url]);
- return <div className={'art '+title.theme} aria-hidden="true">{url&&!failed?<img src={url} alt="" referrerPolicy="no-referrer" loading="lazy" onError={()=>setFailed(true)}/>:<><span/><i/><b/></>}</div>;
+ return <div className={'art '+title.theme} aria-hidden="true">{url&&!failed?<LazyArtwork src={url} alt="" referrerPolicy="no-referrer" onError={()=>setFailed(true)}/>:<><span/><i/><b/></>}</div>;
 }
 function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{profile:Profile;token:string;namespace:string;onSwitch:()=>void;onSignOut:()=>void;onExpired:()=>void;lenders:string[]}){
  const [route,setRoute]=useState<Route>(()=>routeFromHash(location.hash));

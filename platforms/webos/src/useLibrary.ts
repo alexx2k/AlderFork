@@ -1,14 +1,14 @@
 import {useEffect,useRef,useState} from 'react';
 import type {Title,PlaybackIntent} from './liveCatalogue.ts';
-import {Action,LibraryData,Row,emptyLibrary,libraryKey,keyFor,makeRow,mergeTitle,reduceLibrary,importRemote,applyQueue,titleSnapshot,isComplete,seenIds,nextEpisode} from './library.mjs';
+import {Action,LibraryData,Row,emptyLibrary,libraryKey,keyFor,makeRow,mergeTitle,reduceLibrary,importRemote,applyQueue,titleSnapshot,isComplete,seenIds,nextEpisode,recoverLibrary} from './library.mjs';
 import {inflateWatched,deflateWatched} from './watchedCodec.ts';
 import {readLibraryItems,writeLibraryItems,getUserId} from './stremio.ts';
 import {historyPrefix} from './profiles.mjs';
 import {cloudWriteAllowed} from './auditPolicy.mjs';
 import {resumeFor} from './progress.ts';
-function read(namespace:string):LibraryData{
- try{const d=JSON.parse(localStorage.getItem(libraryKey(namespace))||'null');if(d?.version===1&&d.rows&&d.pending)return d;}catch{}
- return emptyLibrary();
+function read(namespace:string):{data:LibraryData;warning:string}{
+ const key=libraryKey(namespace);let raw:string|null=null;
+ try{raw=localStorage.getItem(key);if(raw===null)return {data:emptyLibrary(),warning:''};const result=recoverLibrary(JSON.parse(raw));if(!result.damaged)return {data:result.data,warning:''};if(localStorage.getItem(key+':recovery')===null)localStorage.setItem(key+':recovery',raw);return {data:result.data,warning:'Some invalid local library records were skipped; a recovery copy was retained.'};}catch{try{if(raw!==null&&localStorage.getItem(key+':recovery')===null)localStorage.setItem(key+':recovery',raw);}catch{}return {data:emptyLibrary(),warning:'Local library data could not be read. Check storage before relying on local history.'};}
 }
 function oldHistory(data:LibraryData,namespace:string,titles:Title[]):LibraryData{
  const rows={...data.rows},prefix=historyPrefix('progress',namespace);
@@ -34,9 +34,11 @@ function oldHistory(data:LibraryData,namespace:string,titles:Title[]):LibraryDat
  return {...data,rows};
 }
 export function useLibrary(namespace:string,token:string,cloud:boolean){
- const [data,setData]=useState(()=>oldHistory(read(namespace),namespace,[]));
+ const [initial]=useState(()=>read(namespace));
+ const [data,setData]=useState(()=>oldHistory(initial.data,namespace,[]));
  const model=useRef(data),alive=useRef(true),working=useRef(false),timer=useRef<number|undefined>(undefined),seq=useRef(0);
- const [status,setStatus]=useState(cloud?'Waiting to sync library…':'Local library');
+ const [status,setStatus]=useState(initial.warning||(cloud?'Waiting to sync library…':'Local library'));
+ const recoveryWarning=initial.warning;
  const [revision,setRevision]=useState(0);
  const controller=useRef<AbortController|null>(null);
  const identity=useRef('');
@@ -113,6 +115,6 @@ export function useLibrary(namespace:string,token:string,cloud:boolean){
   if(r&&watchedSet(title,r).has(intent.videoId))return 0;
   return resumeFor(namespace,intent);
  };
- return {data,status,act,enrich,row,watched,position,retry:()=>schedule(0)};
+ return {data,status:recoveryWarning?recoveryWarning+' '+status:status,act,enrich,row,watched,position,retry:()=>schedule(0)};
 }
 export type LibraryModel=ReturnType<typeof useLibrary>;

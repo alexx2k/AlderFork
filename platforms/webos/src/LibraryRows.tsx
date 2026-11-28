@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {LazyArtwork} from './LazyArtwork.tsx';
 import {Row,keyFor} from './library.mjs';
 import {Title,PlaybackIntent} from './liveCatalogue.ts';
 export function rowIntent(row:Row):PlaybackIntent{
@@ -8,7 +9,7 @@ export function rowIntent(row:Row):PlaybackIntent{
 function CardImage({row,landscape}:{row:Row;landscape:boolean}){
  const e=row.title.episodes?.find(e=>e.id===row.videoId),url=landscape?(e?.thumbnail||row.title.background||row.title.poster):row.title.poster;
  const [failed,setFailed]=useState(false);useEffect(()=>setFailed(false),[url]);
- return <div className="library-art">{url&&!failed?<img src={url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={()=>setFailed(true)}/>:<span>{row.title.name.slice(0,1)}</span>}</div>;
+ return <div className="library-art">{url&&!failed?<LazyArtwork src={url} alt="" referrerPolicy="no-referrer" onError={()=>setFailed(true)}/>:<span>{row.title.name.slice(0,1)}</span>}</div>;
 }
 export function ContinueWatching({rows,onResume,onOptions}:{rows:Row[];onResume:(row:Row)=>void;onOptions:(row:Row)=>void}){
  if(!rows.length)return null;

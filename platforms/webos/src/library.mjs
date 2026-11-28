@@ -150,3 +150,13 @@ export function importRemote(data,items,inflate){
  }
  return {...data,rows};
 }
+
+export function recoverLibrary(raw){
+ const record=x=>!!x&&typeof x==='object'&&!Array.isArray(x),text=x=>typeof x==='string',nonnegative=x=>typeof x==='number'&&Number.isFinite(x)&&x>=0;
+ const validTitle=t=>record(t)&&['movie','series'].includes(t.type)&&text(t.id)&&!!t.id&&text(t.name)&&(!t.episodes||Array.isArray(t.episodes)&&t.episodes.every(e=>record(e)&&text(e.id)&&text(e.name)));
+ const ids=x=>Array.isArray(x)&&x.every(text);
+ const data=emptyLibrary();if(!record(raw)||raw.version!==1||!record(raw.rows)||!record(raw.pending))return {data,damaged:true};let damaged=false;
+ for(const key of Object.keys(raw.rows)){const r=raw.rows[key];if(!record(r)||!validTitle(r.title)||keyFor(r.title)!==key||!text(r.videoId)||!nonnegative(r.position)||!nonnegative(r.duration)||!nonnegative(r.updatedAt)||!ids(r.watched)||!text(r.remoteWatched)||(r.unwatched!==undefined&&!ids(r.unwatched))||!['next','list','hidden'].every(k=>typeof r[k]==='boolean')){damaged=true;continue;}data.rows[key]=r;}
+ for(const key of Object.keys(raw.pending)){const q=raw.pending[key];if(!Array.isArray(q)){damaged=true;continue;}const safe=q.filter(a=>record(a)&&text(a.id)&&validTitle(a.title)&&keyFor(a.title)===key&&nonnegative(a.at)&&a.at<=8640000000000000&&['list','hide','watched','unwatch','progress'].includes(a.kind)&&(a.kind!=='list'||typeof a.on==='boolean')&&(a.kind!=='progress'||text(a.videoId)&&nonnegative(a.position)&&nonnegative(a.duration)));if(safe.length!==q.length)damaged=true;if(safe.length)data.pending[key]=safe;}
+ return {data,damaged};
+}

@@ -8,6 +8,7 @@ import {clearPlayerSettings} from './playerSettings.ts';
 import {clearSessionProgress} from './progress.ts';
 import {directionFor,isBack,nextFocus} from './navigation.ts';
 import {avatars,services} from './avatarCatalog.ts';
+import {LazyArtwork} from './LazyArtwork.tsx';
 import {prepareAvatar} from './avatarUpload.ts';
 import {validAvatar} from './profiles.mjs';
 import {SignIn} from './SignIn.tsx';
@@ -46,7 +47,7 @@ function ProfileEditor({initial,existing,owners,onSave,onDelete,onCancel,busy}:{
  <div className="controls">{btn('avatar-upload','Upload image',()=>{setUploadNote('Choose an image if your device supports a file picker. Otherwise use a hosted HTTPS image.');try{fileInput.current?.click();}catch{setUploadNote('File selection is not available on this device. Use an HTTPS image address.');}},busy||uploading)}{btn('avatar-url',urlOpen?'Close image address':'Use image URL',()=>setUrlOpen(!urlOpen),busy||uploading)}{btn('avatar-gallery',gallery?'Hide avatars':'Browse pre-loaded avatars',()=>{setGallery(!gallery);if(!gallery)jump('avatar-service-0');},busy||uploading)}{btn('avatar-initials','Use initials instead',()=>{change({avatar:''});setGallery(false);},busy||uploading)}</div>
  <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" style={{display:'none'}} onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)void loadImage(file);}}/>
  <p className="muted">Upload a JPEG, PNG or WebP image (up to 8 MB) from a supported file picker. Images are cropped and stored on this device only. LG televisions may not expose a file picker.</p>{urlOpen&&<div className="avatar-url-entry"><label htmlFor="avatar-image-url">HTTPS image address</label><input id="avatar-image-url" data-focus value={imageUrl} maxLength={2048} onChange={e=>setImageUrl(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();useImageUrl();}}}/>{btn('avatar-url-apply','Use this image',useImageUrl,busy||uploading||!imageUrl.trim())}</div>}{uploadNote&&<p role="status">{uploadNote}</p>}
- {gallery&&<section className="avatar-browser"><h2>Avatar gallery</h2><div className="filter-strip">{services.map((s,i)=><button key={s} id={'avatar-service-'+i} data-focus type="button" className={s===service?'filter-active':''} onClick={()=>{setService(s);setGroup('');setLimit(36);}}>{s}</button>)}</div><div className="filter-strip">{btn('avatar-group-all','All collections',()=>{setGroup('');setLimit(36);},false,!group?'filter-active':'')}{groups.map((g,i)=><button key={g} id={'avatar-group-'+i} data-focus type="button" className={g===group?'filter-active':''} onClick={()=>{setGroup(g);setLimit(36);}}>{g}</button>)}</div><div className="avatar-grid">{icons.slice(0,limit).map((a,i)=><button type="button" data-focus id={'avatar-icon-'+i} key={a.url+'-'+i} className={draft.avatar===a.url?'filter-active':''} aria-label={a.name} disabled={uploading} onClick={()=>{change({avatar:a.url});setGallery(false);jump('avatar-gallery');}}><img src={a.url} alt="" loading="lazy" referrerPolicy="no-referrer"/><small>{a.name}</small></button>)}</div>{icons.length>limit&&btn('avatar-more','More avatars',()=>setLimit(n=>n+36))}</section>}
+ {gallery&&<section className="avatar-browser"><h2>Avatar gallery</h2><div className="filter-strip">{services.map((s,i)=><button key={s} id={'avatar-service-'+i} data-focus type="button" className={s===service?'filter-active':''} onClick={()=>{setService(s);setGroup('');setLimit(36);}}>{s}</button>)}</div><div className="filter-strip">{btn('avatar-group-all','All collections',()=>{setGroup('');setLimit(36);},false,!group?'filter-active':'')}{groups.map((g,i)=><button key={g} id={'avatar-group-'+i} data-focus type="button" className={g===group?'filter-active':''} onClick={()=>{setGroup(g);setLimit(36);}}>{g}</button>)}</div><div className="avatar-grid">{icons.slice(0,limit).map((a,i)=><button type="button" data-focus id={'avatar-icon-'+i} key={a.url+'-'+i} className={draft.avatar===a.url?'filter-active':''} aria-label={a.name} disabled={uploading} onClick={()=>{change({avatar:a.url});setGallery(false);jump('avatar-gallery');}}><LazyArtwork src={a.url} alt="" referrerPolicy="no-referrer"/><small>{a.name}</small></button>)}</div>{icons.length>limit&&btn('avatar-more','More avatars',()=>setLimit(n=>n+36))}</section>}
  <h2>Profile colour</h2><div className="controls">{COLORS.map((c,i)=><button key={c} id={'profile-color-'+i} data-focus type="button" className={draft.color===c?'filter-active profile-swatch':'profile-swatch'} style={{background:c}} aria-label={'Colour '+(i+1)} onClick={()=>change({color:c})}>{draft.color===c?'✓':' '}</button>)}</div>
  <h2>Optional profile PIN</h2><p className="muted">A four-digit household lock, not an account password.</p><input id="profile-pin" data-focus type="password" inputMode="numeric" maxLength={4} value={draft.pin} onChange={e=>change({pin:e.target.value.replace(/\D/g,'').slice(0,4)})}/><div className="pin-keys">{'1234567890'.split('').map(n=><button key={n} id={'edit-pin-'+n} data-focus type="button" onClick={()=>setDraft(d=>({...d,pin:(d.pin+n).slice(0,4)}))}>{n}</button>)}{btn('edit-pin-clear','Clear PIN',()=>change({pin:''}))}</div>
  {!existing&&<><h2>Streaming account</h2><p className="muted">Local profiles share a linked owner's sources but have independent local playback history.</p><div className="filter-strip">{owners.map((p,i)=><button key={p.id} id={'profile-owner-'+i} data-focus type="button" className={owner===p.id?'filter-active':''} onClick={()=>setOwner(p.id)}>Share {p.name}'s account</button>)}{btn('profile-own-account','Link a separate Stremio account',()=>setOwner(null),false,owner===null?'filter-active':'')}</div></>}
@@ -73,13 +74,14 @@ export function ProfileGate({renderApp,renderDiagnostics}:Props){
  const resetRoute=()=>{history.replaceState(null,'',location.pathname+location.search);};
  useEffect(()=>{let alive=true;setError('');setData(null);(async()=>{
   try{
-   let name='Viewer';try{name=(await createStore(indexedDB).load()).name;}catch{}
-   const s=createProfileStore(indexedDB);const d=await s.load(name);
-   if(alive){store.current=s;model.current=d;setData(d);}
+   let name='Viewer';try{const foundation=createStore(indexedDB);try{name=(await foundation.load()).name;}finally{foundation.close();}}catch{}
+   if(!alive)return;
+   const s=createProfileStore(indexedDB);store.current=s;const d=await s.load(name);
+   if(alive){model.current=d;setData(d);}
   }catch{if(alive)setError('Could not open profile storage. No stored account was replaced. Retry or check browser storage.');}
- })();return()=>{alive=false;};},[boot]);
+ })();return()=>{alive=false;store.current?.close();store.current=null;};},[boot]);
  const commit=async(next:Profiles)=>{if(!store.current)throw Error('Profile storage unavailable.');await store.current.save(next);model.current=next;setData(next);};
- const run=async(fn:()=>Promise<void>)=>{if(lock.current)return;lock.current=true;setBusy(true);setError('');try{await fn();}catch(e){setError(e instanceof Error?e.message:'Profile operation failed.');}finally{lock.current=false;setBusy(false);}};
+ const run=async(fn:()=>Promise<void>)=>{if(lock.current)return false;lock.current=true;setBusy(true);setError('');try{await fn();return true;}catch(e){setError(e instanceof Error?e.message:'Profile operation failed.');return false;}finally{lock.current=false;setBusy(false);}};
  const pick=()=>{if(lock.current)return;setStep({kind:'pick'});setError('');};
  const activate=async(id:string)=>{
   let d=model.current;if(!d)return;const p=d.profiles.find(x=>x.id===id),owner=ownerFor(d,id);if(!p||!owner)return;
@@ -105,11 +107,11 @@ export function ProfileGate({renderApp,renderDiagnostics}:Props){
  };
  const linked=async(token:string)=>{
   const target=currentStep.current;if(target.kind!=='link')return;
-  await run(async()=>{let d=model.current!;let id=target.id;
+  const saved=await run(async()=>{let d=model.current!;let id=target.id;
    if(id)d=setCredential(d,id,token);
    else{const p=makeProfile(newProfileId(),target.draft!,token);id=p.id;d=addProfile(d,p);}
    await commit(d);await activate(id!);
-  });
+  });if(!saved)throw Error('Profile could not be saved.');
  };
  const remove=(id:string)=>{void run(async()=>{const d=model.current!;const p=d.profiles.find(x=>x.id===id);await commit(removeProfile(d,id));clearPlayerSettings(historyNamespace(id));forgetProviderMemory(historyNamespace(id));try{deleteHistory(localStorage,id);}catch{setError('Profile removed, but local history cleanup failed.');}if(p?.mode==='stremio'&&p.authKey&&!model.current!.profiles.some(x=>x.authKey===p.authKey))revokeSession(p.authKey).catch(()=>{});setStep({kind:'pick'});});};
  useLayoutEffect(()=>{if(active||busy)return;const id=step.kind==='diagnostics'?'diagnostics-back':step.kind==='pin'?'unlock-1':step.kind==='edit'?'profile-name':step.kind==='link'?'retry-link':step.kind==='delete'?'delete-cancel':data?.profiles.length?'pick-'+data.profiles[0].id:'add-profile';jump(id);},[active,step,data,busy]);

@@ -64,7 +64,7 @@ export function rankSources(sources,capabilities,prefs){
   return (prefs?releaseScore(s,prefs):0)+(s.hevc&&!capabilities.hevc?-100:0)+(s.av1&&!capabilities.av1?-120:0)+(s.hdr&&!capabilities.hdr?-50:0)+(prefs?audioScore(s.audioCodec||'unknown',capabilities.audio,prefs.audioMode):s.riskyAudio?-35:0)+(prefs?qualityScore(s.height,prefs.quality,capabilities.height):(height>capabilities.height?-40:0)+Math.min(height,capabilities.height)/100);
  };
  const seen=new Set();
- return sources.slice().sort((a,b)=>score(b)-score(a)).filter(s=>{if(seen.has(s.url))return false;seen.add(s.url);return true;});
+ return sources.map((s,i)=>({s,i,score:score(s)})).sort((a,b)=>b.score-a.score||a.i-b.i).map(x=>x.s).filter(s=>{if(seen.has(s.url))return false;seen.add(s.url);return true;});
 }
 export async function resolveStreams(descriptors,intent,signal,request){
  const addons=resourceAddons(descriptors,'stream',intent),results=new Array(addons.length);
