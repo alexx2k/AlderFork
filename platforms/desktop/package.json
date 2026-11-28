@@ -55,6 +55,18 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "alexx2k",
+        "repo": "Tarn",
+        "channel": "dev"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexx2k/Tarn.git"
   }
 }

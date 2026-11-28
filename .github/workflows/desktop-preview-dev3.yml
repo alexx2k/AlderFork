@@ -3,6 +3,7 @@ on:
   push:
     branches: [feature/desktop-client]
     paths: ['.github/workflows/desktop-preview-dev3.yml']
+  # Rebuild with explicit electron-builder publishing metadata.
   workflow_dispatch:
 permissions:
   contents: write
