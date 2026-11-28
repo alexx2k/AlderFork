@@ -1,4 +1,4 @@
-const {app,BrowserWindow,Menu,protocol,net,session,shell,dialog}=require('electron');
+const {app,BrowserWindow,Menu,protocol,net,session,shell,dialog,ipcMain}=require('electron');
 const path=require('node:path');
 const {pathToFileURL}=require('node:url');
 const {ORIGIN,assetPath,externalAllowed,isAppPage}=require('./policy.cjs');
@@ -17,13 +17,21 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
   });
   session.defaultSession.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
   session.defaultSession.setPermissionCheckHandler(()=>false);
-  win=new BrowserWindow({title:'Tarn Desktop',width:1440,height:900,minWidth:720,minHeight:500,show:false,backgroundColor:'#0b1624',icon:path.join(root,'assets','desktopIcon.png'),webPreferences:{nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,allowRunningInsecureContent:false,webviewTag:false,spellcheck:false}});
+  win=new BrowserWindow({title:'Tarn Desktop',width:1440,height:900,minWidth:720,minHeight:500,show:false,backgroundColor:'#0b1624',icon:path.join(root,'assets','desktopIcon.png'),webPreferences:{nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,allowRunningInsecureContent:false,webviewTag:false,spellcheck:false,enableBlinkFeatures:'AudioVideoTracks',preload:path.join(__dirname,'preload.cjs')}});
   const wc=win.webContents;
   wc.setWindowOpenHandler(({url})=>{if(externalAllowed(url))void shell.openExternal(url).catch(()=>{});return {action:'deny'};});
   wc.on('will-navigate',(event,url)=>{if(!isAppPage(url))event.preventDefault();});
   wc.on('will-redirect',(event,url)=>{if(!isAppPage(url))event.preventDefault();});
   wc.on('will-attach-webview',event=>event.preventDefault());
   wc.on('render-process-gone',(_e,details)=>{if(details.reason!=='clean-exit'&&win&&!win.isDestroyed())dialog.showMessageBox(win,{type:'error',message:'Tarn renderer stopped. Restart the application.'}).catch(()=>{});});
+  const validSender=event=>win&&!win.isDestroyed()&&event.sender===win.webContents&&event.senderFrame===win.webContents.mainFrame&&isAppPage(event.senderFrame.url);
+  ipcMain.handle('tarn:fullscreen:get',event=>validSender(event)?win.isFullScreen():false);
+  ipcMain.handle('tarn:fullscreen:set',(event,value)=>{
+   if(!validSender(event)||typeof value!=='boolean')return false;
+   win.setFullScreen(value);return win.isFullScreen();
+  });
+  const notifyFullscreen=()=>{if(win&&!win.isDestroyed())win.webContents.send('tarn:fullscreen:changed',win.isFullScreen());};
+  win.on('enter-full-screen',notifyFullscreen);win.on('leave-full-screen',notifyFullscreen);
   const fullscreen=()=>{if(win&&!win.isDestroyed())win.setFullScreen(!win.isFullScreen());};
   Menu.setApplicationMenu(Menu.buildFromTemplate([
    {label:'Tarn',submenu:[{label:'GitHub releases',click:()=>void shell.openExternal('https://github.com/alexx2k/Tarn/releases').catch(()=>{})},{role:'quit'}]},

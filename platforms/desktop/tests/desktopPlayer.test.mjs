@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {clampVolume,seekAt,clockTime,trackLanguage,chooseTrack} from '../src/desktopPlayer.mjs';
+test('timeline clamps and rejects invalid duration',()=>{assert.equal(seekAt(50,0,100,200),100);assert.equal(seekAt(110,0,100,200),199);assert.equal(seekAt(-10,0,100,200),0);assert.equal(seekAt(10,0,0,200),null);});
+test('volume and time',()=>{assert.equal(clampVolume(2),1);assert.equal(clampVolume(-1),0);assert.equal(clockTime(65),'1:05');assert.equal(clockTime(3661),'1:01:01');});
+test('embedded audio metadata and track switching',()=>{assert.equal(trackLanguage('eng',''), 'en');assert.equal(trackLanguage('und','English 5.1'),'en');assert.equal(trackLanguage('spa','English subtitles'),'es');assert.equal(trackLanguage('','Spanish'),'es');const list=[{enabled:true},{enabled:false}];assert.equal(chooseTrack(list,1),true);assert.deepEqual(list,[{enabled:false},{enabled:true}]);assert.equal(chooseTrack(undefined,0),false);assert.equal(chooseTrack(list,5),false);});

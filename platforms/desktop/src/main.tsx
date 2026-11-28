@@ -200,7 +200,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
   <span className="search-shortcut" aria-hidden="true">Ctrl + K</span>
  </form>;
  return <><div className="app" style={playing?{display:"none"}:undefined} onPointerDown={e=>{const b=(e.target as HTMLElement).closest<HTMLElement>('button[data-focus]');if(b)b.focus();}}>
- <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">Desktop • 0.1.0-dev.1</span></header>
+ <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">Desktop • 0.1.0-dev.2</span></header>
  {route.kind==='home'?<main>
   <nav aria-label="Main navigation">{auth&&<button id="search" type="button" data-focus className={'search-nav'+(showSearch?' selected':'')} aria-current={showSearch?'page':undefined} onClick={openSearch}><SearchGlyph/><span>Search</span></button>}
   {tabs.map(n=><Btn key={n} id={'nav-'+n} className={!showSearch&&shelf===n?'selected':''} onClick={()=>{setContinueMenu(null);setShelf(n);setShowSearch(false);setKeyboard(false);setRowLimit(6);}}>{n}</Btn>)}

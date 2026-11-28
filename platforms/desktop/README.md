@@ -1,3 +1,7 @@
+## Desktop player — 0.1.0-dev.2
+
+Mouse-first controls, draggable seekbar, hover time/available thumbnails, volume, mute, fullscreen via a restricted native window bridge, double-click video, F/F11, Esc, Space/K, J/L and M. AudioVideoTracks is enabled explicitly in the sandboxed Chromium renderer. Embedded tracks are listed when exposed; English is preferred in Automatic mode, and Prefer English saves an explicit choice. A zero-track or single-track result does not establish that the file lacks other languages. Chromium may still need replacement by a native engine (MPV/libmpv) for full multilingual MKV support; no fake track labels or guaranteed decoding. Test with actual multilingual media. Existing subtitle/episode/progress logic retained. Windows installer and physical playback validation required.
+
 ## Search navigation refresh
 
 Search is now the first fixed navigation action, independently of configurable Home tabs. The browse screen has a persistent search field and Ctrl+K (or Cmd+K) opens Search while not playing or in a modal. Search continues to query the existing installed add-ons and retains poster results and pagination. Search input is submitted explicitly; no per-keystroke network calls. Clear resets the submitted query and results. Physical keyboard/mouse or LG remote testing, typechecking and a full build are required before release.
