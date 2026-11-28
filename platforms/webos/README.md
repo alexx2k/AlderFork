@@ -1,3 +1,7 @@
+## Search navigation refresh
+
+Search is now the first fixed navigation action, independently of configurable Home tabs. The LG search screen has a large labelled search field, high-contrast submit control, optional on-screen keyboard and explicit return to the previous tab. Search continues to query the existing installed add-ons and retains poster results and pagination. Search input is submitted explicitly; no per-keystroke network calls. Clear resets the submitted query and results. Physical keyboard/mouse or LG remote testing, typechecking and a full build are required before release.
+
 # Pre-release audit — 0.6.0-dev.2
 
 See [Physical LG TV test checklist](TV_TEST_CHECKLIST.md) and [Audit notes](AUDIT.md). Run `npm run audit` (Node 22.13+) before packaging. No new dependencies; application ID and package version unchanged. The audit hardens account-bound writes, corrupt library recovery, response limits, source retries/seeking, decoder disposal, modal focus, account-link failure handling, older-engine artwork loading, cache budget and stable source ordering. Native hardware and full local npm validation are release gates, not assumed passing.
