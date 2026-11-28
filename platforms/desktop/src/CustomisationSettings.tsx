@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import QRCode from 'qrcode';
+import {UpdateAction} from './UpdateAction.tsx';
 import {HomePrefs,changeTab,visibleTabs,homeDefaults,APP_VERSION,APP_ID,RELEASES_URL} from './customisation.mjs';
 import type {useReleaseUpdates} from './useReleaseUpdates.ts';
 const btn=(id:string,label:string,click:()=>void,disabled=false,active=false)=><button type="button" data-focus id={id} disabled={disabled} aria-pressed={active} className={active?'filter-active':''} onClick={click}>{label}</button>;
@@ -20,8 +21,8 @@ export function UpdatePanel({model}:{model:ReturnType<typeof useReleaseUpdates>}
  const link=model.release?.page||RELEASES_URL;
  useEffect(()=>{if(!qrOpen)return;let active=true;setQr('');QRCode.toDataURL(link,{width:280,margin:3,errorCorrectionLevel:'M'}).then(data=>{if(active)setQr(data);}).catch(()=>{});return()=>{active=false;};},[qrOpen,link]);
  return <section><p>Tarn Desktop {APP_VERSION} · Development build</p><p className="muted">Installed package: {APP_ID}</p><p role="status">{model.status}</p>
- {model.release&&<p>A newer Windows installer is available: {model.release.version}. Download it from GitHub and run the installer.</p>}
- <a href={link} target="_blank" rel="noreferrer">Open GitHub releases</a><div className="controls">{btn('update-check',model.busy?'Checking…':'Check for updates',()=>void model.check(),model.busy)}{btn('update-qr',qrOpen?'Hide release QR':'View releases on phone',()=>setQrOpen(!qrOpen))}</div>
+ {model.release&&<p>A newer Windows installer is available: {model.release.version}. Install directly or view the GitHub release.</p>}
+ <UpdateAction model={model}/><a href={link} target="_blank" rel="noreferrer">Open GitHub releases</a><div className="controls">{btn('update-check',model.busy?'Checking…':'Check for updates',()=>void model.check(),model.busy)}{btn('update-qr',qrOpen?'Hide release QR':'View releases on phone',()=>setQrOpen(!qrOpen))}</div>
  {qrOpen&&<div className="update-qr">{qr&&<img src={qr} alt="GitHub release page QR code"/>}<p>{link}</p></div>}
- <p className="muted">Desktop preview builds check newer Windows previews and stable desktop releases. Stable builds ignore previews. Android APKs and LG IPKs are ignored. Updates are installed manually.</p></section>;
+ <p className="muted">Desktop preview builds check newer Windows previews and stable desktop releases. Stable builds ignore previews. Android APKs and LG IPKs are ignored. Installation requires confirmation and opens the standard installer. No silent updates.</p></section>;
 }

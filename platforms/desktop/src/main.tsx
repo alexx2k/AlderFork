@@ -23,6 +23,7 @@ import {newSession,ViewingSession} from './viewingExperience.mjs';
 import {HomePrefs,cleanHome,homeKey,visibleTabs} from './customisation.mjs';
 import {HomePreferences,UpdatePanel} from './CustomisationSettings.tsx';
 import {useReleaseUpdates} from './useReleaseUpdates.ts';
+import {UpdateAction} from './UpdateAction.tsx';
 import {LazyArtwork} from './LazyArtwork.tsx';
 import './style.css';
 import './desktop.css';
@@ -200,13 +201,13 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
   <span className="search-shortcut" aria-hidden="true">Ctrl + K</span>
  </form>;
  return <><div className="app" style={playing?{display:"none"}:undefined} onPointerDown={e=>{const b=(e.target as HTMLElement).closest<HTMLElement>('button[data-focus]');if(b)b.focus();}}>
- <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">Desktop • 0.1.0-dev.3</span></header>
+ <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">Desktop • 0.2.0-dev.1</span></header>
  {route.kind==='home'?<main>
   <nav aria-label="Main navigation">{auth&&<button id="search" type="button" data-focus className={'search-nav'+(showSearch?' selected':'')} aria-current={showSearch?'page':undefined} onClick={openSearch}><SearchGlyph/><span>Search</span></button>}
   {tabs.map(n=><Btn key={n} id={'nav-'+n} className={!showSearch&&shelf===n?'selected':''} onClick={()=>{setContinueMenu(null);setShelf(n);setShowSearch(false);setKeyboard(false);setRowLimit(6);}}>{n}</Btn>)}
   <Btn id="settings" onClick={()=>go('#settings')}>{home.updates&&updates.release?'Settings · Update available':'Settings'}</Btn><Btn id="diagnostics" onClick={()=>go('#diagnostics')}>Diagnostics</Btn>
   <button id="switch-profile" type="button" data-focus className="profile profile-switch" onClick={onSwitch}><Portrait profile={profile}/><span>{profile.name}</span></button></nav>
-  {home.updates&&updates.release&&<section className="desktop-update-alert" role="status"><div><strong>New Tarn Desktop update available</strong><p>Version {updates.release.version} is ready to download.</p></div><a href={updates.release.page} target="_blank" rel="noreferrer">Download update ↗</a></section>}
+  {!playing&&home.updates&&updates.release&&<section className="desktop-update-alert" role="status"><div><strong>New Tarn Desktop update available</strong><p>Version {updates.release.version} is ready to download.</p></div><UpdateAction model={updates}/></section>}
   {auth&&<div className="desktop-search-bar">{searchForm}</div>}
   {!showSearch&&shelf==='Home'&&<ContinueWatching rows={continueRows(library.data.rows)} onResume={r=>startPlayer(rowIntent(r),r.title)} onOptions={r=>{setContinueMenu(r);setPending('continue-resume');}}/>}
   {continueMenu&&<section className="continue-menu" role="dialog" aria-label="Continue Watching options"><h2>{continueMenu.title.name}</h2><div className="controls"><Btn id="continue-resume" onClick={()=>startPlayer(rowIntent(continueMenu),continueMenu.title)}>Resume</Btn><Btn id="continue-restart" onClick={()=>startPlayer(rowIntent(continueMenu),continueMenu.title,true)}>Start over</Btn><Btn id="continue-details" onClick={()=>{openTitle(continueMenu.title);setContinueMenu(null);}}>View details</Btn><Btn id="continue-watched" onClick={()=>{library.act({kind:'watched',title:continueMenu.title,videoId:continueMenu.videoId});setContinueMenu(null);setPending('nav-Home');}}>Mark as watched</Btn><Btn id="continue-remove" onClick={()=>{library.act({kind:'hide',title:continueMenu.title,videoId:continueMenu.videoId});setContinueMenu(null);setPending('nav-Home');}}>Remove from Continue Watching</Btn><Btn id="continue-cancel" onClick={back}>Cancel</Btn></div></section>}

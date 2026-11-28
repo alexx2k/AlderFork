@@ -30,7 +30,7 @@ export function compareVersions(a,b){const x=versionParts(a),y=versionParts(b);i
 export const RELEASES_URL='https://github.com/alexx2k/Tarn/releases';
 export const RELEASES_API='https://api.github.com/repos/alexx2k/Tarn/releases?per_page=100';
 export const APP_ID='Tarn-Desktop';
-export const APP_VERSION='0.1.0-dev.3';
+export const APP_VERSION='0.2.0-dev.1';
 export function availableUpdate(raw,current=APP_VERSION,appId=APP_ID){
  if(!Array.isArray(raw)||!versionParts(current))return null;
  let best=null;const preview=current.includes('-dev.');

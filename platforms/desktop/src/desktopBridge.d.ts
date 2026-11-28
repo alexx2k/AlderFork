@@ -1,1 +1,1 @@
-interface Window { tarnDesktop?: { getFullscreen():Promise<boolean>; setFullscreen(value:boolean):Promise<boolean>; onFullscreenChanged(listener:(value:boolean)=>void):()=>void; }; }
+interface Window { tarnDesktop?: { installUpdate(version:string):Promise<{ok:boolean;message:string}>; onUpdateProgress(listener:(data:{stage:string;percent:number;message:string})=>void):()=>void; getFullscreen():Promise<boolean>; setFullscreen(value:boolean):Promise<boolean>; onFullscreenChanged(listener:(value:boolean)=>void):()=>void; }; }
