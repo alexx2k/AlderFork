@@ -19,7 +19,7 @@ export function preparedFresh(prepared,namespace,intent,now=Date.now()){
 export function introQuery(title,intent){
  if(intent.type!=='series'||!/^tt\d+$/.test(title.id))return null;
  const episode=title.episodes?.find(e=>e.id===intent.videoId);
- const match=intent.videoId.match(/^tt\d+:(\d+):(\d+)$/);
+ const match=intent.videoId.startsWith(title.id+':')?intent.videoId.match(/^tt\d+:(\d+):(\d+)$/):null;
  const season=episode?.season??(match?Number(match[1]):null),number=episode?.number??(match?Number(match[2]):null);
  if(!Number.isSafeInteger(season)||season<0||!Number.isSafeInteger(number)||number<1)return null;
  return {imdbId:title.id,season,episode:number};

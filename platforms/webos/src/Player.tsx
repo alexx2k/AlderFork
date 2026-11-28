@@ -46,6 +46,7 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
  const [upNextDismissed,setUpNextDismissed]=useState(false);
  const [countdown,setCountdown]=useState<number|null>(null);
  const [endedPlayback,setEndedPlayback]=useState(false);
+ const [pageVisible,setPageVisible]=useState(()=>document.visibilityState!=='hidden');
  const preparedNext=useRef<Prepared|undefined>(undefined),prefetchController=useRef<AbortController|null>(null);
  const advanced=useRef(false),remaining=useRef(COUNTDOWN_SECONDS),manualAttempt=useRef(-1),usedPrepared=useRef(false);
  const latestProgress=useRef(onProgress);latestProgress.current=onProgress;
@@ -105,7 +106,7 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
   else resume.current=last.current.position;
   lastTick.current=null;selectedAudioAttempt.current=-1;subtitleChosen.current=false;clearScrub();setControlsShown(true);setActivity(x=>x+1);attempted.current.add(index);tries.current++;failed.current=false;started.current=false;pendingSeek.current=null;
   const next={index,serial:++serial.current};current.current=next;manualAttempt.current=explicit?next.serial:-1;setEndedPlayback(false);setChapterMarkers([]);
-  setAttempt(next);setPanel(null);setPaused(true);setStatus('Opening '+activeSources.current[index].name+'…');
+  setAttempt(next);setPanel(null);setPaused(true);setCountdown(null);setStatus('Opening '+activeSources.current[index].name+'…');
   setSubtitle(null);setCues([]);setCaption('');setEmbedded([]);setEmbeddedChoice(null);setSubtitleLoading(true);setAddonSubs([]);setSubtitleStatus('');setAudio([]);
   requestAnimationFrame(()=>{if(current.current?.serial===next.serial&&!document.activeElement?.closest('.player-controls'))document.getElementById('player-toggle')?.focus();});
  };
@@ -284,8 +285,9 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
  const credits=creditsStart(duration,remoteSegments,chapterMarkers);
  const trigger=triggerAt(duration,remoteSegments,chapterMarkers,prefs.creditsFallback);
  const hasNext=!!nextIntent&&intent.type==='series';
- const inCredits=hasNext&&trigger!==null&&position>=trigger;
- const shouldPrepare=hasNext&&!upNextDismissed&&prefs.autoplay&&trigger!==null&&position>=Math.max(0,trigger-PREPARE_SECONDS);
+ const playbackReady=!!attempt&&started.current&&!failed.current;
+ const inCredits=hasNext&&playbackReady&&trigger!==null&&position>=trigger;
+ const shouldPrepare=hasNext&&playbackReady&&!upNextDismissed&&prefs.autoplay&&trigger!==null&&position>=Math.max(0,trigger-PREPARE_SECONDS);
  useEffect(()=>{
   if(!shouldPrepare||!nextIntent){preparedNext.current=undefined;return;}
   if(preparedFresh(preparedNext.current,account,nextIntent))return;
@@ -310,7 +312,8 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
   latestAdvance.current(nextIntent,ready,origin);
  };
  const showNext=hasNext&&!upNextDismissed&&(inCredits||endedPlayback&&duration>=120)&&!panel&&preview===null;
- const canCountdown=showNext&&prefs.autoplay;
+ const canCountdown=showNext&&prefs.autoplay&&pageVisible;
+ useEffect(()=>{const visible=()=>setPageVisible(document.visibilityState!=='hidden');document.addEventListener('visibilitychange',visible);return()=>document.removeEventListener('visibilitychange',visible);},[]);
  useEffect(()=>{
   if(!canCountdown){remaining.current=COUNTDOWN_SECONDS;setCountdown(null);return;}
   remaining.current=COUNTDOWN_SECONDS;setCountdown(COUNTDOWN_SECONDS);
@@ -325,18 +328,19 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
   return()=>window.clearInterval(timer);
  },[canCountdown,nextIntent?.videoId,attempt?.serial]);
  useEffect(()=>{
-  if(canCountdown&&(countdown===0||endedPlayback))advance('autoplay');
+  if(canCountdown&&(remaining.current<=0||endedPlayback))advance('autoplay');
  },[canCountdown,countdown,endedPlayback,nextIntent?.videoId]);
  useEffect(()=>{
   if(showNext){requestAnimationFrame(()=>document.getElementById('up-next-play')?.focus());}
  },[showNext]);
  const candidate=skipSegment(position,duration,remoteSegments,chapterMarkers,dismissedSegments);
- const showSkip=!!candidate&&!showNext&&!panel&&preview===null&&!endedPlayback;
+ const showSkip=playbackReady&&!!candidate&&!showNext&&!panel&&preview===null&&!endedPlayback;
  useEffect(()=>{
   if(!showSkip||!candidate)return;
-  const id=segmentKey(candidate),timer=window.setTimeout(()=>setDismissedSegments(old=>old.concat(id)),10000);
+  const id=segmentKey(candidate),timer=window.setTimeout(()=>{setDismissedSegments(old=>old.concat(id));if(document.activeElement?.id==='skip-intro')requestAnimationFrame(()=>document.getElementById(controlsShown?'player-toggle':'player-reveal')?.focus());},10000);
   return()=>window.clearTimeout(timer);
  },[showSkip,candidate?segmentKey(candidate):'']);
+ useEffect(()=>{if(showSkip&&!controlsShown)requestAnimationFrame(()=>document.getElementById('skip-intro')?.focus());},[showSkip,controlsShown]);
  const skipCurrent=()=>{
   const v=video.current;if(!v||!candidate)return;
   try{
@@ -348,7 +352,7 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
  };
  const skipMovieCredits=()=>{
   const v=video.current;if(!v||credits===null||position<credits)return;
-  try{const target=v.duration;lastTick.current=null;v.currentTime=target;setPosition(target);}catch{setStatus('This source does not allow skipping credits.');}
+  try{const target=v.duration;if(!Array.from({length:v.seekable.length},(_,i)=>target>=v.seekable.start(i)&&target<=v.seekable.end(i)).some(Boolean))throw Error('Not seekable');lastTick.current=null;v.currentTime=target;setPosition(target);}catch{setStatus('This source does not allow skipping credits.');}
  };
  function clearScrub(){if(scrubTimer.current!==undefined)window.clearTimeout(scrubTimer.current);scrubTimer.current=undefined;scrubValue.current=null;repeatCount.current=0;setPreview(null);}
  function commitScrub(){
@@ -364,11 +368,11 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
  }
  const reveal=()=>{setControlsShown(true);setActivity(x=>x+1);requestAnimationFrame(()=>document.getElementById('player-toggle')?.focus());};
  const openPanel=(next:NonNullable<typeof panel>)=>{if(panel===next){closePanel();return;}setControlsShown(true);setPanel(next);requestAnimationFrame(()=>document.getElementById('player-close-panel')?.focus());};
- useEffect(()=>{if(!shouldAutoHide(prefs.autoHide,paused,panel,preview,attempt,status)){setControlsShown(true);return;}
+ useEffect(()=>{if(showNext){setControlsShown(false);return;}if(!shouldAutoHide(prefs.autoHide,paused,panel,preview,attempt,status)){setControlsShown(true);return;}
   if(!controlsShown)return;
-  const timer=window.setTimeout(()=>{setControlsShown(false);requestAnimationFrame(()=>document.getElementById('player-reveal')?.focus());},5000);
+  const timer=window.setTimeout(()=>{setControlsShown(false);requestAnimationFrame(()=>(document.getElementById('skip-intro')||document.getElementById('skip-credits')||document.getElementById('player-reveal'))?.focus());},5000);
   return()=>window.clearTimeout(timer);
- },[prefs.autoHide,paused,panel,preview,attempt?.serial,status,activity,controlsShown]);
+ },[prefs.autoHide,paused,panel,preview,attempt?.serial,status,activity,controlsShown,showNext]);
  useEffect(()=>()=>{if(scrubTimer.current!==undefined)window.clearTimeout(scrubTimer.current);},[]);
  useEffect(()=>{
   const handler=(e:KeyboardEvent)=>{
@@ -377,6 +381,7 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
    if(showNext&&(dir||ok)&&!document.activeElement?.closest('.player-upnext')){e.preventDefault();e.stopImmediatePropagation();document.getElementById('up-next-play')?.focus();return;}
    if(showNext&&dir){e.preventDefault();e.stopImmediatePropagation();const id=document.activeElement?.id==='up-next-play'?'up-next-dismiss':'up-next-play';document.getElementById(id)?.focus();return;}
    if(showNext&&ok)return;
+   if(ok&&(document.activeElement?.id==='skip-intro'||document.activeElement?.id==='skip-credits'))return;
    if(isBack(e.key,e.keyCode)&&panel){e.preventDefault();e.stopImmediatePropagation();closePanel();return;}
    if(panel&&dir){const items=Array.from(document.querySelectorAll<HTMLElement>('.player-panel [data-focus]:not([disabled])'));if(!items.includes(document.activeElement as HTMLElement)){e.preventDefault();e.stopImmediatePropagation();items[0]?.focus();return;}}
    if(revealKey.current&&e.repeat){e.preventDefault();e.stopImmediatePropagation();return;}
@@ -402,7 +407,7 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
   return()=>{document.removeEventListener('keydown',handler,true);document.removeEventListener('keyup',release,true);};
  },[panel,controlsShown,attempt?.serial,showNext]);
  const shownPosition=preview??position;
- return <main className="player-page" onPointerMove={()=>{if(!controlsShown)reveal();else setActivity(x=>x+1);}} onPointerDown={()=>setActivity(x=>x+1)}>
+ return <main className="player-page" onPointerMove={()=>{if(showNext)return;if(!controlsShown)reveal();else setActivity(x=>x+1);}} onPointerDown={()=>setActivity(x=>x+1)}>
   <div className="player-video">{attempt&&source?<video key={attempt.serial} ref={video} playsInline preload="auto" style={{objectFit:objectFit(prefs.fit)}}/>:<div className="player-empty"><h1>{intent.name}</h1><p>{status}</p></div>}</div>
   {caption&&!panel&&<div className="player-caption" aria-hidden="true" style={{bottom:controlsShown?'25vh':'6vh',fontSize:(2.2*prefs.size/100)+'vw',color:colors[prefs.color]}}><span style={{background:prefs.background?'rgba(0,0,0,.7)':'transparent'}}>{caption}</span></div>}
   {!controlsShown&&<button id="player-reveal" data-focus type="button" className="player-reveal" aria-label="Show playback controls" onClick={reveal}/>}
@@ -411,7 +416,7 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
    <div className="controls">{button('player-back','‹ Back',exit)}{button('player-rewind','−10 sec',()=>seek(-10),!attempt)}{button('player-toggle',paused?'▶ Play':'Ⅱ Pause',toggle,!attempt)}{button('player-forward','+10 sec',()=>seek(10),!attempt)}{button('player-sources','Sources ('+sources.length+')',()=>openPanel('sources'))}{button('player-subs','Subtitles',()=>openPanel('subtitles'),!attempt)}{button('player-audio','Audio',()=>openPanel('audio'),!attempt)}{button('player-settings','Settings',()=>openPanel('settings'))}{button('player-no-audio','No audio · Next source',()=>{if(attempt){const next=activeSources.current.findIndex((_,i)=>i!==attempt.index&&!attempted.current.has(i));if(next>=0)begin(next);else openPanel('sources');}},!attempt)}{button('player-retry','Retry sources',retry)}</div>
   </section>
   {showSkip&&candidate&&<button type="button" data-focus id="skip-intro" className={'player-skip'+(controlsShown?' with-controls':'')} onClick={skipCurrent}>{candidate.kind==='recap'?'Skip recap':'Skip intro'}</button>}
-  {!showNext&&!showSkip&&!panel&&intent.type==='movie'&&credits!==null&&position>=credits&&!endedPlayback&&<button type="button" data-focus id="skip-credits" className={'player-skip'+(controlsShown?' with-controls':'')} onClick={skipMovieCredits}>Skip credits</button>}
+  {playbackReady&&!showNext&&!showSkip&&!panel&&intent.type==='movie'&&credits!==null&&position>=credits&&!endedPlayback&&<button type="button" data-focus id="skip-credits" className={'player-skip'+(controlsShown?' with-controls':'')} onClick={skipMovieCredits}>Skip credits</button>}
   {showNext&&nextEpisode&&<section className={'player-upnext'+(controlsShown?' with-controls':'')} role="region" aria-label="Next episode"><p className="eyebrow">UP NEXT</p><h2>{nextEpisode.name}</h2><p>{nextEpisode.season!==null?'S'+nextEpisode.season+' ':''}{nextEpisode.number!==null?'E'+nextEpisode.number:''}</p>{prefs.autoplay&&<p aria-live="polite">Playing next in {countdown??COUNTDOWN_SECONDS}s</p>}<div className="controls">{button('up-next-play','▶ Play next',()=>advance('manual'))}{button('up-next-dismiss',endedPlayback?'Stay here':'Watch credits',dismissUpNext)}</div></section>}
   {panel&&<section className="player-panel"><div className="player-panel-header"><h2>{panel==='sources'?'Sources':panel==='audio'?'Audio tracks':panel==='settings'?'Playback settings':'Subtitles'}</h2>{button('player-close-panel','Close',closePanel)}</div>
    {panel==='settings'?<><PlayerPreferences prefs={prefs} onChange={onPrefs} inPlayer/>{button('player-reset-track-choices','Forget remembered tracks for this title',()=>{choices.current={};saveChoices(account,titleChoiceKey,{});setSubtitleStatus('Remembered tracks cleared. Defaults apply on next source.');setStatus('Remembered tracks cleared; defaults apply on next source.');})}</>:panel==='sources'?<><p className="muted">Direct HTTP(S) sources only. Automatic playback tries up to three candidates.</p>{intent.type==='series'&&<div className="controls"><p className="muted">{preferredProvider?'Preferred series provider: '+(sources.find(s=>s.providerId===preferredProvider)?.provider||'currently unavailable'):'Choose a source manually to remember its provider for this series.'}</p>{preferredProvider&&button('forget-provider','Forget preferred provider',()=>{forgetProvider(account,intent.titleId);preferred.current=null;setPreferredProvider(null);})}</div>}{resolution&&<p className="muted">{resolution.providers} providers · {resolution.failures} failed · {resolution.excluded.torrent} torrent · {resolution.excluded.headers} header-dependent · {resolution.excluded.external} external · {resolution.excluded.other} other excluded</p>}
