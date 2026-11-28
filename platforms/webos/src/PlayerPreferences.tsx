@@ -5,6 +5,8 @@ export function PlayerPreferences({prefs,onChange,inPlayer=false}:{prefs:Prefs;o
  const row=(name:string,label:string,options:[string|number|boolean,string][],current:string|number|boolean,change:(v:any)=>void)=><div className="pref-row"><h3>{label}</h3><div className="filter-strip">{options.map(([v,t],i)=><button key={String(v)} id={'pref-'+name+'-'+i} data-focus type="button" className={v===current?'filter-active':''} aria-pressed={v===current} onClick={()=>change(v)}>{t}</button>)}</div></div>;
  return <section className="player-preferences">
  {row('hide','Hide controls after 5 seconds',[[true,'On'],[false,'Off']],prefs.autoHide,v=>onChange({autoHide:v}))}
+ {row('autoplay','Automatically play next episode',[[true,'On'],[false,'Off']],prefs.autoplay,v=>onChange({autoplay:v}))}
+ {row('credits','Countdown starts before end if no credits marker',[[5,'5 sec'],[10,'10 sec'],[15,'15 sec'],[20,'20 sec'],[30,'30 sec']],prefs.creditsFallback,v=>onChange({creditsFallback:v}))}
  {row('quality','Preferred maximum quality',[[0,'Auto'],[480,'480p'],[720,'720p'],[1080,'1080p'],[2160,'4K']],prefs.quality,v=>onChange({quality:v}))}
  {row('compat','Audio compatibility',[['auto','Automatic'],['compatible','Prefer AAC / MP3']],prefs.audioMode,v=>onChange({audioMode:v}))}
  <p className="muted">Quality and audio compatibility affect the next source resolution. Resuming a saved source still takes priority.</p>

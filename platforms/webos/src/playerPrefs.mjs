@@ -1,5 +1,5 @@
 export const colors={white:'#ffffff',gray:'#cccccc',yellow:'#ffff00',cyan:'#00ffff',cream:'#fff2cc',warm_white:'#fff8e7'};
-export const defaults={autoHide:true,quality:0,audioMode:'auto',audioLanguage:'auto',subtitleLanguage:'off',size:100,color:'white',background:true,delay:0,fit:'fit'};
+export const defaults={autoHide:true,autoplay:true,creditsFallback:5,quality:0,audioMode:'auto',audioLanguage:'auto',subtitleLanguage:'off',size:100,color:'white',background:true,delay:0,fit:'fit'};
 const options=(value,values,fallback)=>values.includes(value)?value:fallback;
 const lang=value=>typeof value==='string'&&/^[a-z]{2,3}(?:-[a-z0-9]{2,8})?$/i.test(value)?value.toLowerCase():'';
 export function language(value){
@@ -8,7 +8,7 @@ export function language(value){
 }
 export function cleanPrefs(raw){
  const p=raw&&typeof raw==='object'?raw:{};
- return {autoHide:typeof p.autoHide==='boolean'?p.autoHide:true,quality:options(p.quality,[0,480,720,1080,2160],0),audioMode:options(p.audioMode,['auto','compatible'], 'auto'),audioLanguage:language(p.audioLanguage)||'auto',subtitleLanguage:p.subtitleLanguage==='off'?'off':language(p.subtitleLanguage)||'off',size:options(p.size,[80,100,130,160],100),color:options(p.color,Object.keys(colors),'white'),background:typeof p.background==='boolean'?p.background:true,delay:typeof p.delay==='number'&&Number.isFinite(p.delay)?Math.max(-10,Math.min(10,Math.round(p.delay*4)/4)):0,fit:options(p.fit,['fit','zoom','stretch'],'fit')};
+ return {autoHide:typeof p.autoHide==='boolean'?p.autoHide:true,autoplay:typeof p.autoplay==='boolean'?p.autoplay:true,creditsFallback:options(p.creditsFallback,[5,10,15,20,30],5),quality:options(p.quality,[0,480,720,1080,2160],0),audioMode:options(p.audioMode,['auto','compatible'], 'auto'),audioLanguage:language(p.audioLanguage)||'auto',subtitleLanguage:p.subtitleLanguage==='off'?'off':language(p.subtitleLanguage)||'off',size:options(p.size,[80,100,130,160],100),color:options(p.color,Object.keys(colors),'white'),background:typeof p.background==='boolean'?p.background:true,delay:typeof p.delay==='number'&&Number.isFinite(p.delay)?Math.max(-10,Math.min(10,Math.round(p.delay*4)/4)):0,fit:options(p.fit,['fit','zoom','stretch'],'fit')};
 }
 export function prefsKey(namespace){return 'tarn.playerprefs.v1:'+encodeURIComponent(namespace);}
 export function trackKey(namespace,title){return prefsKey(namespace)+':track:'+encodeURIComponent(title);}

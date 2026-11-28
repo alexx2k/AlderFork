@@ -4,7 +4,7 @@ import {directionFor,isBack,nextFocus,routeFromHash,FocusRect,Route} from './nav
 import {createStore,initialState,FoundationState,StateStore} from './storage.ts';
 import {capabilities,endpointForManifest,mediaSamples,probeJson,ProbeResult} from './diagnostics.ts';
 import {ApiError,installedAddons} from './stremio.ts';
-import {catalogues,loadShelves,loadDetails,titleKey,Title,Shelf,ContentCache,PlaybackIntent} from './liveCatalogue.ts';
+import {catalogues,loadShelves,loadDetails,titleKey,Title,Shelf,ContentCache,PlaybackIntent,playbackIntent} from './liveCatalogue.ts';
 import {useDiscovery,DiscoverFilters,useRemoteSearch} from './Discovery.tsx';
 import {TitleDetails} from './TitleDetails.tsx';
 import {Player} from './Player.tsx';
@@ -12,10 +12,11 @@ import {ProfileGate,Portrait} from './ProfileGate.tsx';
 import type {Profile} from './profiles.mjs';
 import {useLibrary} from './useLibrary.ts';
 import {ContinueWatching,MyList,rowIntent} from './LibraryRows.tsx';
-import {continueRows,listRows,keyFor,Row} from './library.mjs';
+import {continueRows,listRows,keyFor,Row,nextEpisode} from './library.mjs';
 import {PlayerPreferences} from './PlayerPreferences.tsx';
 import {readPrefs,savePrefs} from './playerSettings.ts';
 import {Prefs,cleanPrefs} from './playerPrefs.mjs';
+import type {Prepared} from './advancedPlayback.mjs';
 import './style.css';
 
 function focus(id?:string){
@@ -45,7 +46,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  const [prefs,setPrefs]=useState(()=>readPrefs(namespace));
  const updatePrefs=(patch:Partial<Prefs>)=>setPrefs(old=>{const next=cleanPrefs({...old,...patch});savePrefs(namespace,next);return next;});
  const [confirmSignOut,setConfirmSignOut]=useState(false);
- const [playing,setPlaying]=useState<{intent:PlaybackIntent;account:string;title:Title;startAt:number}|null>(null);
+ const [playing,setPlaying]=useState<{intent:PlaybackIntent;account:string;title:Title;startAt:number;prepared?:Prepared;origin?:'manual'|'autoplay'}|null>(null);
  const library=useLibrary(namespace,token,profile.mode==='stremio');
  const [continueMenu,setContinueMenu]=useState<Row|null>(null);
  const playbackFocus=useRef('title-play');
@@ -159,8 +160,21 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  const featured=visible.length?visible[0].titles[0]:null;
  const openTitle=(t:Title)=>{setSelectedTitle(t);go('#details/'+encodeURIComponent(titleKey(t)));};
  const activeDetail=detail&&selected&&titleKey(detail)===titleKey(selected)?detail:selected;
+ // Direct resume cards may carry only a partial metadata snapshot. Enrich playback metadata without restarting the player.
+ const playingTitleKey=playing?titleKey(playing.title):'';
+ useEffect(()=>{
+  if(!playing||playing.title.type!=='series'||!addons.length)return;
+  const c=new AbortController(),title=playing.title,key=playingTitleKey;
+  loadDetails(addons,title,c.signal,(url,init,signal)=>cache.request(url,init,signal)).then(t=>{
+   if(c.signal.aborted)return;library.enrich([t]);
+   setPlaying(p=>p&&titleKey(p.title)===key?{...p,title:t}:p);
+  }).catch(()=>{});
+  return()=>c.abort();
+ },[playingTitleKey,addons,cache]);
+ const upcomingEpisode=playing&&playing.title.type==='series'?nextEpisode(playing.title,playing.intent.videoId,(playing.title.episodes||[]).filter(e=>library.watched(playing.title,e.id)).map(e=>e.id)):null;
+ const upcomingIntent=playing&&upcomingEpisode?playbackIntent(playing.title,upcomingEpisode):null;
  return <><div className="app" style={playing?{display:"none"}:undefined} onPointerDown={e=>{const b=(e.target as HTMLElement).closest<HTMLElement>('button[data-focus]');if(b)b.focus();}}>
- <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.4.0-dev.3 • Development</span></header>
+ <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.5.0-dev.1 • Development</span></header>
  {route.kind==='home'?<main>
   <nav>{['Home','Discover','Movies','Series','My List'].map(n=><Btn key={n} id={'nav-'+n} className={shelf===n?'selected':''} onClick={()=>{setContinueMenu(null);setShelf(n);setShowSearch(false);setKeyboard(false);setRowLimit(6);}}>{n}</Btn>)}
   {auth&&<Btn id="search" onClick={()=>{setContinueMenu(null);setShowSearch(!showSearch);setKeyboard(false);if(!showSearch)setTimeout(()=>document.getElementById('query')?.focus(),0);}}>Search</Btn>}
@@ -183,7 +197,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  {confirmSignOut&&<section className="playback-preview"><h2>Sign out of this account?</h2><p>Your profile and local history will remain. Local profiles using this account will need it relinked.</p><Btn id="cancel-sign-out" onClick={()=>setConfirmSignOut(false)}>Cancel</Btn><Btn id="confirm-sign-out" onClick={onSignOut}>Sign out</Btn></section>}
  <h2>Playback preferences</h2><PlayerPreferences prefs={prefs} onChange={updatePrefs}/><h2>Local storage</h2><p>{storage}</p><p>Launch count: {state.visits}</p><p className="muted">Playback progress and source memory are separate for each profile. Stremio profiles sync their library; local profiles never send library changes to Stremio.</p></section>:activeDetail?<TitleDetails key={titleKey(activeDetail)} title={activeDetail} loading={detailLoading} onPlay={(intent,startOver)=>startPlayer(intent,activeDetail,startOver)} inList={!!library.row(activeDetail)?.list} onList={()=>library.act({kind:'list',title:activeDetail,on:!library.row(activeDetail)?.list})} isWatched={id=>library.watched(activeDetail,id)} onWatched={(id,on)=>library.act({kind:on?'watched':'unwatch',title:activeDetail,videoId:id})} resumeAt={intent=>library.position(activeDetail,intent)}/>:<p>{loading?'Loading catalogues…':'Title not available. Return to Home and refresh.'}</p>}
  </main>}
- </div>{playing&&<Player intent={playing.intent} addons={addons} lenders={lenders} account={playing.account} startAt={playing.startAt} prefs={prefs} onPrefs={updatePrefs} onProgress={(position,duration,played,ended)=>library.act({kind:'progress',title:playing.title,videoId:playing.intent.videoId,position,duration,played,ended})} onExit={closePlayer}/>}</>;
+ </div>{playing&&<Player key={playing.account+'|'+playing.intent.type+'|'+playing.intent.videoId} title={playing.title} nextIntent={upcomingIntent} nextEpisode={upcomingEpisode} prepared={playing.prepared} onAdvance={(next,prepared,origin)=>{setPlaying(p=>p&&p.intent.videoId===playing.intent.videoId?{intent:next,account:p.account,title:p.title,startAt:0,prepared,origin}:p);setPending('player-back');}} intent={playing.intent} addons={addons} lenders={lenders} account={playing.account} startAt={playing.startAt} prefs={prefs} onPrefs={updatePrefs} onProgress={(position,duration,played,ended)=>library.act({kind:'progress',title:playing.title,videoId:playing.intent.videoId,position,duration,played,ended})} onExit={closePlayer}/>}</>;
 }
 function Diagnostics(){
  const video=useRef<HTMLVideoElement>(null);

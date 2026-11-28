@@ -1,5 +1,5 @@
 export type AudioCodec='aac'|'mp3'|'ac3'|'eac3'|'dts'|'truehd'|'opus'|'unknown';
-export type Prefs={autoHide:boolean;quality:number;audioMode:'auto'|'compatible';audioLanguage:string;subtitleLanguage:string;size:number;color:string;background:boolean;delay:number;fit:'fit'|'zoom'|'stretch'};
+export type Prefs={autoHide:boolean;autoplay:boolean;creditsFallback:number;quality:number;audioMode:'auto'|'compatible';audioLanguage:string;subtitleLanguage:string;size:number;color:string;background:boolean;delay:number;fit:'fit'|'zoom'|'stretch'};
 export type TrackChoice={lang:string;label:string;provider:string;key?:string};
 export type Choices={audio?:TrackChoice;subtitle?:TrackChoice|'off'};
 export const colors:Record<string,string>;

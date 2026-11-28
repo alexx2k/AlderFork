@@ -95,3 +95,9 @@ body{font-size:1.35vw}@media(max-width:1185px){body{font-size:16px}}button,input
 .player-preferences .pref-row{margin:.7em 0}.player-preferences h3{font-size:.95em;margin:.3em 0}.player-preferences .filter-strip button{font-size:.86em}.player-preferences .muted{font-size:.8em}
 .player-panel .player-preferences{padding-bottom:1em}.player-panel .player-preferences .filter-strip{flex-wrap:wrap;overflow:visible}.player-panel .player-preferences .filter-strip button{margin-bottom:6px}
 .player-controls .controls{flex-wrap:wrap}.player-controls .controls button{margin-bottom:4px}
+
+/* Advanced playback overlays, independent of the Home catalogue/poster layout. */
+.player-upnext{position:absolute;right:4vw;bottom:7vh;max-width:36vw;z-index:6;padding:1.1em;background:#0b1624;border:1px solid #365369;border-radius:10px;color:var(--silver);box-shadow:0 4px 22px #0008}
+.player-upnext.with-controls{bottom:27vh}.player-upnext h2{margin:.3em 0;font-size:1.25em}.player-upnext p{margin:.4em 0}.player-upnext .eyebrow{font-size:.7em;color:var(--lake)}.player-upnext .controls{flex-wrap:wrap}
+.player-skip{position:absolute;right:4vw;bottom:8vh;z-index:4;background:#0b1624;border:1px solid #365369;border-radius:6px;padding:.65em 1em}.player-skip.with-controls{bottom:27vh}
+@media(max-width:800px){.player-upnext{max-width:70vw}.player-upnext.with-controls,.player-skip.with-controls{bottom:32vh}}

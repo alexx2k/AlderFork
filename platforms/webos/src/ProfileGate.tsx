@@ -3,6 +3,7 @@ import {addProfile,checkPin,cleanName,COLORS,completeMigration,deleteHistory, Dr
 import {createProfileStore,newProfileId,ProfileStore} from './profileStore.ts';
 import {createStore} from './storage.ts';
 import {getUserId,revokeSession} from './stremio.ts';
+import {forgetProviderMemory} from './advancedStore.ts';
 import {clearPlayerSettings} from './playerSettings.ts';
 import {clearSessionProgress} from './progress.ts';
 import {directionFor,isBack,nextFocus} from './navigation.ts';
@@ -101,7 +102,7 @@ export function ProfileGate({renderApp,renderDiagnostics}:Props){
    await commit(d);await activate(id!);
   });
  };
- const remove=(id:string)=>{void run(async()=>{const d=model.current!;const p=d.profiles.find(x=>x.id===id);await commit(removeProfile(d,id));clearPlayerSettings(historyNamespace(id));try{deleteHistory(localStorage,id);}catch{setError('Profile removed, but local history cleanup failed.');}if(p?.mode==='stremio'&&p.authKey&&!model.current!.profiles.some(x=>x.authKey===p.authKey))revokeSession(p.authKey).catch(()=>{});setStep({kind:'pick'});});};
+ const remove=(id:string)=>{void run(async()=>{const d=model.current!;const p=d.profiles.find(x=>x.id===id);await commit(removeProfile(d,id));clearPlayerSettings(historyNamespace(id));forgetProviderMemory(historyNamespace(id));try{deleteHistory(localStorage,id);}catch{setError('Profile removed, but local history cleanup failed.');}if(p?.mode==='stremio'&&p.authKey&&!model.current!.profiles.some(x=>x.authKey===p.authKey))revokeSession(p.authKey).catch(()=>{});setStep({kind:'pick'});});};
  useLayoutEffect(()=>{if(active||busy)return;const id=step.kind==='diagnostics'?'diagnostics-back':step.kind==='pin'?'unlock-1':step.kind==='edit'?'profile-name':step.kind==='link'?'retry-link':step.kind==='delete'?'delete-cancel':data?.profiles.length?'pick-'+data.profiles[0].id:'add-profile';jump(id);},[active,step,data,busy]);
  useEffect(()=>{if(active)return;const handler=(e:KeyboardEvent)=>{
   const target=e.target as HTMLElement,typing=target.tagName==='INPUT';
@@ -115,7 +116,7 @@ export function ProfileGate({renderApp,renderDiagnostics}:Props){
  };document.addEventListener('keydown',handler);return()=>document.removeEventListener('keydown',handler);},[active,step]);
  if(active)return <>{renderApp(active.profile,active.token,historyNamespace(active.profile.id),()=>{if(!lock.current)switchProfile();},()=>disconnect(false),()=>disconnect(true),lenderTokens(model.current!,active.profile.id))}{error&&<div className="profile-alert" role="status">{error}<button type="button" id="profile-dismiss-alert" data-focus onClick={()=>setError('')}>Dismiss</button></div>}</>;
  const p=step.kind==='pin'||step.kind==='edit'||step.kind==='delete'?data?.profiles.find(p=>p.id===step.id):undefined;
- return <div className="app profile-app"><header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.4.0-dev.3 • Development</span></header>{error&&<p className="warn" role="status">{error}</p>}{busy&&<p role="status">Saving profile or migrating history…</p>}
+ return <div className="app profile-app"><header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.5.0-dev.1 • Development</span></header>{error&&<p className="warn" role="status">{error}</p>}{busy&&<p role="status">Saving profile or migrating history…</p>}
  {!data?<section><p>{error?'Profile storage unavailable.':'Opening profiles…'}</p>{error&&btn('profile-retry','Retry',()=>setBoot(x=>x+1))}</section>:
  step.kind==='pick'?<section className="profile-picker"><h1>{manage?'Manage profiles':"Who's watching?"}</h1><div className="profile-grid">{data.profiles.map(p=><button key={p.id} id={'pick-'+p.id} data-focus type="button" className="profile-tile" disabled={busy} onClick={()=>authorize(p,manage?'edit':'enter')}><Portrait profile={p}/><strong>{p.name}{p.pin?' 🔒':''}</strong><small>{p.mode==='local'?'Local profile':'Stremio profile'}{!effectiveAuth(data,p.id)?' · Link required':''}</small></button>)}{data.profiles.length<MAX_PROFILES&&btn('add-profile',<><span className="profile-portrait profile-add">+</span><strong>Add profile</strong></>,()=>setStep({kind:'edit',id:null}),busy,'profile-tile')}</div><div className="controls">{data.profiles.length>0&&btn('manage-profiles',manage?'Done':'Manage profiles',()=>setManage(!manage),busy)}{btn('profile-diagnostics','Diagnostics',()=>setStep({kind:'diagnostics'}),busy)}</div></section>:
  step.kind==='diagnostics'?<section>{btn('diagnostics-back','‹ Back',pick)}{renderDiagnostics()}</section>:
