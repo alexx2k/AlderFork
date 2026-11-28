@@ -39,6 +39,9 @@ function rect(e:HTMLElement):FocusRect{const r=e.getBoundingClientRect();return 
 function Btn({id,children,onClick,className='',disabled=false}:React.PropsWithChildren<{id:string;onClick:()=>void;className?:string;disabled?:boolean}>){
  return <button id={id} data-focus type="button" className={className} disabled={disabled} onClick={onClick}>{children}</button>;
 }
+function SearchGlyph(){
+ return <svg className="search-glyph" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>;
+}
 function Artwork({title,wide=false}:{title:Title;wide?:boolean}){
  const url=wide?(title.background||title.poster):title.poster;
  const [failed,setFailed]=useState(false);
@@ -85,7 +88,10 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  const cache=useMemo(()=>new ContentCache(),[auth,refresh,addons]);
  const discovery=useDiscovery(addons,!!auth&&shelf==='Discover'&&!showSearch,cache,layout);
  const search=useRemoteSearch(addons,!!auth&&showSearch,searchTerm,cache);
- const submitSearch=()=>{const term=query.trim();setKeyboard(false);setPending('search-submit');setSearchLimit(30);if(term===searchTerm)search.retry();else setSearchTerm(term);};
+ const openSearch=()=>{if(!auth)return;setContinueMenu(null);setShowSearch(true);setKeyboard(false);setPending('query');};
+ const closeSearch=()=>{setShowSearch(false);setKeyboard(false);setPending('search');};
+ const clearSearch=()=>{setQuery('');setSearchTerm('');setSearchLimit(30);setPending('query');};
+ const submitSearch=()=>{if(!auth)return;const term=query.trim();setContinueMenu(null);setShowSearch(true);setKeyboard(false);setPending('search-submit');setSearchLimit(30);if(term===searchTerm)search.retry();else setSearchTerm(term);};
  const [rowLimit,setRowLimit]=useState(6);
  const [detail,setDetail]=useState<Title|null>(null);
  const [selectedTitle,setSelectedTitle]=useState<Title|null>(null);
@@ -96,7 +102,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  const go=(hash:string)=>{restored.current[location.hash]=(document.activeElement as HTMLElement)?.id||'link-account';location.hash=hash;};
  const closePlayer=()=>{viewingSession.current=newSession(namespace);setPlaying(null);setPending(playbackFocus.current);};
  const startPlayer=(intent:PlaybackIntent,title:Title,startOver=false)=>{viewingSession.current=newSession(namespace);playbackFocus.current=continueMenu?'continue-'+Math.max(0,continueRows(library.data.rows).findIndex(r=>keyFor(r.title)===keyFor(title))):(document.activeElement as HTMLElement)?.id||'back';setContinueMenu(null);setPlaying({intent,account:namespace,title,startAt:startOver?0:library.position(title,intent)});setPending('player-back');};
- const back=()=>{if(continueMenu){setContinueMenu(null);setPending('continue-'+Math.max(0,continueRows(library.data.rows).findIndex(r=>keyFor(r.title)===keyFor(continueMenu.title))));return;}if(confirmSignOut){setConfirmSignOut(false);setPending('sign-out');return;}if(playing){closePlayer();return;}if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){if(keyboard){setKeyboard(false);setPending('search-keyboard');}else{setShowSearch(false);setPending('search');}}else if(shelf!=='Home'){setShelf('Home');setPending('nav-Home');}};
+ const back=()=>{if(continueMenu){setContinueMenu(null);setPending('continue-'+Math.max(0,continueRows(library.data.rows).findIndex(r=>keyFor(r.title)===keyFor(continueMenu.title))));return;}if(confirmSignOut){setConfirmSignOut(false);setPending('sign-out');return;}if(playing){closePlayer();return;}if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){if(keyboard){setKeyboard(false);setPending('search-keyboard');}else{closeSearch();}}else if(shelf!=='Home'){setShelf('Home');setPending('nav-Home');}};
  useEffect(()=>{
   const handler=()=>{const r=routeFromHash(location.hash);const old=lastHash.current;lastHash.current=location.hash;
    if(location.hash&&r.kind!=='home')history.replaceState({tarnRoute:true},'');
@@ -147,6 +153,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  useEffect(()=>{
   const handler=(e:KeyboardEvent)=>{
    if(e.defaultPrevented)return;
+   if(auth&&!playing&&route.kind==='home'&&!continueMenu&&!confirmSignOut&&(e.ctrlKey||e.metaKey)&&!e.altKey&&!e.shiftKey&&e.key.toLowerCase()==='k'){e.preventDefault();openSearch();return;}
    const target=e.target as HTMLElement;
    const typing=target.tagName==='INPUT'||target.tagName==='TEXTAREA';
    if(typing){
@@ -163,7 +170,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
    if(dest)focus(dest);
   };
   document.addEventListener('keydown',handler);return()=>document.removeEventListener('keydown',handler);
- },[route,showSearch,shelf,keyboard,playing,confirmSignOut,continueMenu,library.data]);
+ },[auth,route,showSearch,shelf,keyboard,playing,confirmSignOut,continueMenu,library.data]);
  useEffect(()=>{library.enrich(rows.reduce<Title[]>((all,r)=>all.concat(r.titles),[]));},[rows]);
  useEffect(()=>{if(detail)library.enrich([detail]);},[detail]);
  // Hydrate imported history using the installed metadata providers, not invented title names.
@@ -186,18 +193,28 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  },[playingTitleKey,addons,cache]);
  const upcomingEpisode=playing&&playing.title.type==='series'?nextEpisode(playing.title,playing.intent.videoId,(playing.title.episodes||[]).filter(e=>library.watched(playing.title,e.id)).map(e=>e.id)):null;
  const upcomingIntent=playing&&upcomingEpisode?playbackIntent(playing.title,upcomingEpisode):null;
+ const searchForm= <form className="search-form" role="search" aria-label="Search movies and series" onSubmit={e=>{e.preventDefault();submitSearch();}}>
+  <div className="search-field"><SearchGlyph/><input id="query" data-focus maxLength={120} value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'||e.keyCode===13){if(e.nativeEvent.isComposing)return;e.preventDefault();submitSearch();}}} placeholder="Search movies and series…" aria-label="Search movies and series" autoComplete="off"/></div>
+  <button id="search-submit" type="submit" data-focus className="search-submit">{search.loading?'Search again':'Search'}</button>
+  {(query||searchTerm)&&<Btn id="search-clear" className="search-clear" onClick={clearSearch}>Clear</Btn>}
+  <span className="search-shortcut" aria-hidden="true">Ctrl + K</span>
+ </form>;
  return <><div className="app" style={playing?{display:"none"}:undefined} onPointerDown={e=>{const b=(e.target as HTMLElement).closest<HTMLElement>('button[data-focus]');if(b)b.focus();}}>
  <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">Desktop • 0.1.0-dev.1</span></header>
  {route.kind==='home'?<main>
-  <nav>{tabs.map(n=><Btn key={n} id={'nav-'+n} className={shelf===n?'selected':''} onClick={()=>{setContinueMenu(null);setShelf(n);setShowSearch(false);setKeyboard(false);setRowLimit(6);}}>{n}</Btn>)}
-  {auth&&<Btn id="search" onClick={()=>{setContinueMenu(null);setShowSearch(!showSearch);setKeyboard(false);if(!showSearch)setTimeout(()=>document.getElementById('query')?.focus(),0);}}>Search</Btn>}
+  <nav aria-label="Main navigation">{auth&&<button id="search" type="button" data-focus className={'search-nav'+(showSearch?' selected':'')} aria-current={showSearch?'page':undefined} onClick={openSearch}><SearchGlyph/><span>Search</span></button>}
+  {tabs.map(n=><Btn key={n} id={'nav-'+n} className={!showSearch&&shelf===n?'selected':''} onClick={()=>{setContinueMenu(null);setShelf(n);setShowSearch(false);setKeyboard(false);setRowLimit(6);}}>{n}</Btn>)}
   <Btn id="settings" onClick={()=>go('#settings')}>{home.updates&&updates.release?'Settings · Update available':'Settings'}</Btn><Btn id="diagnostics" onClick={()=>go('#diagnostics')}>Diagnostics</Btn>
   <button id="switch-profile" type="button" data-focus className="profile profile-switch" onClick={onSwitch}><Portrait profile={profile}/><span>{profile.name}</span></button></nav>
+  {auth&&<div className="desktop-search-bar">{searchForm}</div>}
   {!showSearch&&shelf==='Home'&&<ContinueWatching rows={continueRows(library.data.rows)} onResume={r=>startPlayer(rowIntent(r),r.title)} onOptions={r=>{setContinueMenu(r);setPending('continue-resume');}}/>}
   {continueMenu&&<section className="continue-menu" role="dialog" aria-label="Continue Watching options"><h2>{continueMenu.title.name}</h2><div className="controls"><Btn id="continue-resume" onClick={()=>startPlayer(rowIntent(continueMenu),continueMenu.title)}>Resume</Btn><Btn id="continue-restart" onClick={()=>startPlayer(rowIntent(continueMenu),continueMenu.title,true)}>Start over</Btn><Btn id="continue-details" onClick={()=>{openTitle(continueMenu.title);setContinueMenu(null);}}>View details</Btn><Btn id="continue-watched" onClick={()=>{library.act({kind:'watched',title:continueMenu.title,videoId:continueMenu.videoId});setContinueMenu(null);setPending('nav-Home');}}>Mark as watched</Btn><Btn id="continue-remove" onClick={()=>{library.act({kind:'hide',title:continueMenu.title,videoId:continueMenu.videoId});setContinueMenu(null);setPending('nav-Home');}}>Remove from Continue Watching</Btn><Btn id="continue-cancel" onClick={back}>Cancel</Btn></div></section>}
   {!showSearch&&shelf==='My List'?<><div className="catalog-status"><p role="status">{library.status}</p>{profile.mode==='stremio'&&<Btn id="library-sync" onClick={library.retry}>Sync now</Btn>}</div><MyList rows={listRows(library.data.rows)} onOpen={openTitle}/></>:<>
-  <div className="catalog-status"><p aria-live="polite">{collection.busy||!collection.loaded?collection.status:status}</p><Btn id="refresh-catalogues" disabled={loading||collection.busy} onClick={()=>setRefresh(x=>x+1)}>{loading||collection.busy?'Loading…':'Refresh catalogues'}</Btn></div>
-  {showSearch?<section className="search"><h1>Search</h1><input id="query" data-focus maxLength={120} value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'||e.keyCode===13){e.preventDefault();submitSearch();focus('search-submit');}}} placeholder="Search movies and series…" aria-label="Search installed add-ons"/><div className="controls"><Btn id="search-submit" className="primary" onClick={submitSearch}>{search.loading?'Search again':'Search'}</Btn><Btn id="search-keyboard" onClick={()=>{setKeyboard(!keyboard);if(!keyboard)setPending('key-A');}}>{keyboard?'Hide keyboard':'On-screen keyboard'}</Btn><Btn id="close-search" onClick={()=>{setShowSearch(false);setKeyboard(false);setPending('search');}}>Close search</Btn></div>{keyboard&&<div className="search-keys" aria-label="On-screen search keyboard">{'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('').map(k=><Btn key={k} id={'key-'+k} onClick={()=>setQuery(q=>(q+k).slice(0,120))}>{k}</Btn>)}<Btn id="key-space" onClick={()=>setQuery(q=>(q+' ').slice(0,120))}>Space</Btn><Btn id="key-delete" onClick={()=>setQuery(q=>q.slice(0,-1))}>Delete</Btn><Btn id="key-clear" onClick={()=>setQuery('')}>Clear</Btn><Btn id="key-search" onClick={submitSearch}>Search</Btn></div>}<p aria-live="polite">{search.status}</p></section>:
+  {!showSearch&&<div className="catalog-status"><p aria-live="polite">{collection.busy||!collection.loaded?collection.status:status}</p><Btn id="refresh-catalogues" disabled={loading||collection.busy} onClick={()=>setRefresh(x=>x+1)}>{loading||collection.busy?'Loading…':'Refresh catalogues'}</Btn></div>}
+  {showSearch?<section className="search search-page" aria-labelledby="search-title"><div className="search-page-heading"><div><p className="eyebrow">FIND SOMETHING TO WATCH</p><h1 id="search-title">Search</h1><p className="search-intro">Find movies and series across your installed add-ons.</p></div><Btn id="close-search" className="search-back" onClick={closeSearch}>‹ Back to {shelf}</Btn></div>
+  
+  <div className="controls search-tools"><Btn id="search-keyboard" onClick={()=>{setKeyboard(!keyboard);setPending(keyboard?'search-keyboard':'key-A');}}>{keyboard?'Hide keyboard':'On-screen keyboard'}</Btn></div>{keyboard&&<div className="search-keys" aria-label="On-screen search keyboard">{'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('').map(k=><Btn key={k} id={'key-'+k} onClick={()=>setQuery(q=>(q+k).slice(0,120))}>{k}</Btn>)}<Btn id="key-space" onClick={()=>setQuery(q=>(q+' ').slice(0,120))}>Space</Btn><Btn id="key-delete" onClick={()=>setQuery(q=>q.slice(0,-1))}>Delete</Btn><Btn id="key-clear" onClick={()=>setQuery('')}>Clear</Btn><Btn id="key-search" onClick={submitSearch}>Search</Btn></div>}
+  <div className="search-feedback" role="status" aria-live="polite" aria-atomic="true">{searchTerm&&<strong>{'Results for “'+searchTerm+'”'}</strong>}<p>{search.status||'Enter a movie or series title to get started.'}</p></div></section>:
   shelf==='Discover'?<DiscoverFilters model={discovery}/>:featured&&<section className="hero"><Artwork key={titleKey(featured)} title={featured} wide/><div className="hero-copy"><p className="eyebrow">FEATURED</p><h1>{featured.name}</h1><p>{[featured.year,featured.genre].filter(Boolean).join(' · ')}</p><p className="synopsis">{featured.description}</p><Btn id="featured" className="primary" onClick={()=>openTitle(featured)}>View details</Btn></div></section>}
   {!showSearch&&shelf!=='Discover'&&visible.length===0&&!loading&&<p>No catalogues available for this view. Try Refresh or check your installed add-ons.</p>}
   {visible.slice(0,rowLimit).map(r=><section className="shelf" key={r.key}><h2>{r.name} <small>· {r.addon}</small></h2><div className="cards live-cards">{r.titles.map((t,i)=><div className="poster-card" key={titleKey(t)}><Artwork title={t}/><span className="poster-title" aria-hidden="true">{t.name}</span><small aria-hidden="true">{t.year||t.genre||'\u00a0'}</small><button type="button" className="poster-hit" data-focus id={'card-'+r.key+'-'+i} aria-label={[t.name,t.year].filter(Boolean).join(', ')} onClick={()=>openTitle(t)}/></div>)}</div></section>)}

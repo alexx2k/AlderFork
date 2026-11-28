@@ -9,7 +9,7 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "dev": "npm start",
-    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test tests/foundation.test.mjs tests/content.test.mjs tests/playback.test.mjs tests/profiles.test.mjs tests/library.test.mjs tests/playerPrefs.test.mjs tests/advancedPlayback.test.mjs tests/viewingExperience.test.mjs tests/addonManagement.test.mjs tests/customisation.test.mjs tests/auditPolicy.test.mjs tests/auditNative.test.mjs tests/desktop.test.mjs",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test tests/foundation.test.mjs tests/content.test.mjs tests/playback.test.mjs tests/profiles.test.mjs tests/library.test.mjs tests/playerPrefs.test.mjs tests/advancedPlayback.test.mjs tests/viewingExperience.test.mjs tests/addonManagement.test.mjs tests/customisation.test.mjs tests/auditPolicy.test.mjs tests/auditNative.test.mjs tests/desktop.test.mjs tests/searchUi.test.mjs",
     "typecheck": "tsc --noEmit",
     "audit": "npm run typecheck && npm test && npm run build",
     "start": "npm run build && electron .",

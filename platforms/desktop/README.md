@@ -1,3 +1,7 @@
+## Search navigation refresh
+
+Search is now the first fixed navigation action, independently of configurable Home tabs. The browse screen has a persistent search field and Ctrl+K (or Cmd+K) opens Search while not playing or in a modal. Search continues to query the existing installed add-ons and retains poster results and pagination. Search input is submitted explicitly; no per-keystroke network calls. Clear resets the submitted query and results. Physical keyboard/mouse or LG remote testing, typechecking and a full build are required before release.
+
 # Tarn Desktop 0.1.0-dev.1
 
 Windows x64 experimental port of Tarn's webOS application at 60ebff8c60e7c60fd94aaeb89a1447b7fa230c9e. Desktop-specific code lives in this folder; Android and webOS source are not modified. GPL-3.0 upstream license and Inter font notice are included in builds. The desktop implementation uses Electron (sandboxed, context-isolated Chromium) rather than the proposed Rust/WebView2/MPV stack to reuse existing playback state and profile logic.

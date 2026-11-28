@@ -18,3 +18,37 @@ a{color:var(--lake)}
 .player-controls{padding:28px 28px 22px}.player-panel{width:min(600px,85vw)}
 @media(max-width:999px){.app{padding:14px 18px}.brand{width:116px}.hero-copy{width:85%}}
 @media(max-width:700px){.live-cards{--art-width:120px;--art-height:180px}.hero-copy{width:95%}h1{font-size:1.7em}}
+
+/* First-class Search: compatible with Chromium 68; no grid, gap or :has dependency on TV. */
+nav .search-nav{display:inline-flex;align-items:center;min-width:6.5em;padding:.6em .95em;margin-right:.8em;background:var(--deep);border:2px solid var(--slate);color:var(--silver);font-weight:600}
+.search-glyph{width:1.15em;height:1.15em;flex:none;margin-right:.55em;vertical-align:middle}
+nav .search-nav.selected{background:var(--silver);color:var(--midnight);border-color:var(--silver)}
+nav .search-nav:focus{outline:3px solid var(--silver);outline-offset:3px;border-color:var(--silver)}
+nav .search-nav.selected:focus{background:var(--silver);color:var(--midnight)}
+.search.search-page{padding:1.4em 1.7em;margin:.6em 0 1.2em;background:var(--midnight);border:1px solid var(--track);border-radius:10px}
+.search-page-heading{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.search-page-heading h1{font-size:2.5em;line-height:1.12;margin:.08em 0 .15em}
+.search-page-heading .eyebrow{margin:0 0 .5em}
+.search-intro{color:var(--secondary);margin:.25em 0 1em}
+.search-back{color:var(--secondary);border:1px solid var(--track);margin:.1em 0 .8em}
+.search-form{display:flex;align-items:center;flex-wrap:wrap;margin:.3em 0 .8em}
+.search-field{display:flex;align-items:center;flex:1 1 16em;min-width:0;max-width:100%;box-sizing:border-box;border:2px solid var(--slate);background:var(--black);border-radius:8px;padding:0 .9em;margin:0 .6em .45em 0;color:var(--lake)}
+.search-field:focus-within{border-color:var(--silver);box-shadow:0 0 0 2px var(--lake)}
+.search-field input{flex:1;width:100%;min-width:0;box-sizing:border-box;background:transparent;border:0;margin:0;padding:.85em 0;color:var(--silver);font-size:1.05em}
+.search-field input:focus{background:transparent;outline:none}
+.search-field input::placeholder{color:var(--muted);opacity:1}
+.search-submit{background:var(--silver);color:var(--midnight);font-weight:600;padding:.85em 1.35em;margin:0 .45em .45em 0;border:2px solid var(--silver);border-radius:8px}
+.search-submit:focus{background:var(--deep);color:var(--silver)}
+.search-clear{margin:0 .4em .45em 0;border:1px solid var(--track)}
+.search-tools{margin:0 0 .7em}
+.search-feedback{border-top:1px solid var(--track);padding-top:.8em;color:var(--secondary);overflow-wrap:break-word}
+.search-feedback strong{font-size:1.12em;color:var(--silver)}
+.search-feedback p{margin:.3em 0 0;font-size:.9em}
+.search-page .search-keys{max-width:100%;margin:.4em 0 1em}
+.search-page .search-keys button{min-width:2.7em;padding:.65em .5em}
+.desktop-search-bar{margin:0 0 20px;padding:10px 14px 5px;background:var(--midnight);border:1px solid var(--track);border-radius:10px}
+.desktop-search-bar .search-form{margin:0}
+.desktop-search-bar .search-field{max-width:760px}
+.search-shortcut{white-space:nowrap;color:var(--muted);font-size:.8em;margin:0 0 .45em .4em;padding:.35em .5em;border:1px solid var(--track);border-radius:4px}
+@media(min-width:1000px){.app>main>nav .search-nav{margin:0 0 12px;min-height:46px}}
+@media(max-width:720px){.search-shortcut{display:none}.search-field{flex-basis:100%}.search.search-page{padding:1em}}
