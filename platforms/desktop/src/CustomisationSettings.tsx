@@ -23,5 +23,5 @@ export function UpdatePanel({model}:{model:ReturnType<typeof useReleaseUpdates>}
  {model.release&&<p>A newer Windows installer is available: {model.release.version}. Download it from GitHub and run the installer.</p>}
  <a href={link} target="_blank" rel="noreferrer">Open GitHub releases</a><div className="controls">{btn('update-check',model.busy?'Checking…':'Check for updates',()=>void model.check(),model.busy)}{btn('update-qr',qrOpen?'Hide release QR':'View releases on phone',()=>setQrOpen(!qrOpen))}</div>
  {qrOpen&&<div className="update-qr">{qr&&<img src={qr} alt="GitHub release page QR code"/>}<p>{link}</p></div>}
- <p className="muted">Only stable releases containing a matching Windows x64 installer qualify. Android APKs, LG IPKs and prereleases are ignored. Updates are installed manually.</p></section>;
+ <p className="muted">Desktop preview builds check newer Windows previews and stable desktop releases. Stable builds ignore previews. Android APKs and LG IPKs are ignored. Updates are installed manually.</p></section>;
 }

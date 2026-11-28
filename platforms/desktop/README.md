@@ -1,3 +1,7 @@
+## Desktop updates — 0.1.0-dev.3
+
+Checks at startup and hourly, with a prominent desktop update banner and manual check in Settings. Desktop preview channel includes newer dev builds and stable desktop releases; stable installations exclude prereleases. Installers open via the official GitHub release page. No silent installation. Existing v0.1.0-dev.2 installs need one manual upgrade to receive this behavior.
+
 ## Desktop player — 0.1.0-dev.2
 
 Mouse-first controls, draggable seekbar, hover time/available thumbnails, volume, mute, fullscreen via a restricted native window bridge, double-click video, F/F11, Esc, Space/K, J/L and M. AudioVideoTracks is enabled explicitly in the sandboxed Chromium renderer. Embedded tracks are listed when exposed; English is preferred in Automatic mode, and Prefer English saves an explicit choice. A zero-track or single-track result does not establish that the file lacks other languages. Chromium may still need replacement by a native engine (MPV/libmpv) for full multilingual MKV support; no fake track labels or guaranteed decoding. Test with actual multilingual media. Existing subtitle/episode/progress logic retained. Windows installer and physical playback validation required.

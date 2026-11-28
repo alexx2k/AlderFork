@@ -22,23 +22,26 @@ export function avatarCrop(width,height){
  if(!Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1||width*height>MAX_AVATAR_PIXELS)throw Error('Image dimensions are too large or invalid.');
  const side=Math.min(width,height);return {x:(width-side)/2,y:(height-side)/2,side,size:Math.min(side,256)};
 }
-export function versionParts(value){if(typeof value!=='string'||!/^\d{1,6}\.\d{1,6}\.\d{1,6}$/.test(value))return null;return value.split('.').map(Number);}
-export function compareVersions(a,b){const x=versionParts(a),y=versionParts(b);if(!x||!y)return null;for(let i=0;i<3;i++)if(x[i]!==y[i])return Math.sign(x[i]-y[i]);return 0;}
+export function versionParts(value){
+ if(typeof value!=='string'||!/^\d{1,6}\.\d{1,6}\.\d{1,6}(?:-dev\.\d{1,6})?$/.test(value))return null;
+ const [core,preview]=value.split('-dev.');return [...core.split('.').map(Number),preview===undefined?Infinity:Number(preview)];
+}
+export function compareVersions(a,b){const x=versionParts(a),y=versionParts(b);if(!x||!y)return null;for(let i=0;i<4;i++)if(x[i]!==y[i])return x[i]>y[i]?1:-1;return 0;}
 export const RELEASES_URL='https://github.com/alexx2k/Tarn/releases';
-export const RELEASES_API='https://api.github.com/repos/alexx2k/Tarn/releases?per_page=30';
+export const RELEASES_API='https://api.github.com/repos/alexx2k/Tarn/releases?per_page=100';
 export const APP_ID='Tarn-Desktop';
-export const APP_VERSION='0.1.0';
+export const APP_VERSION='0.1.0-dev.3';
 export function availableUpdate(raw,current=APP_VERSION,appId=APP_ID){
  if(!Array.isArray(raw)||!versionParts(current))return null;
- let best=null;
+ let best=null;const preview=current.includes('-dev.');
  for(const r of raw){
-  if(!r||r.draft!==false||r.prerelease!==false||!Array.isArray(r.assets))continue;
+  if(!r||r.draft!==false||typeof r.prerelease!=='boolean'||(!preview&&r.prerelease)||!Array.isArray(r.assets))continue;
   for(const a of r.assets){
    if(!a||typeof a.name!=='string'||!a.name.startsWith(appId+'-')||!a.name.endsWith('-win-x64.exe'))continue;
    const version=a.name.slice(appId.length+1,-'-win-x64.exe'.length);
-   if(compareVersions(version,current)!==1||best&&compareVersions(version,best.version)!==1)continue;
-   const tag=typeof r.tag_name==='string'?r.tag_name:'';
-   if(!tag||!/^[-a-zA-Z0-9._]+$/.test(tag)||a.browser_download_url!==RELEASES_URL+'/download/'+tag+'/'+a.name||a.state!=='uploaded'||!Number.isFinite(a.size)||a.size<=0)continue;
+   if(!versionParts(version)||r.prerelease!==version.includes('-dev.')||compareVersions(version,current)!==1||best&&compareVersions(version,best.version)!==1)continue;
+   const tag='desktop-v'+version;
+   if(r.tag_name!==tag||a.browser_download_url!==RELEASES_URL+'/download/'+tag+'/'+a.name||a.state!=='uploaded'||!Number.isFinite(a.size)||a.size<=0)continue;
    best={version,url:a.browser_download_url,tag,page:RELEASES_URL+'/tag/'+tag};
   }
  }

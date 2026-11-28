@@ -1,0 +1,38 @@
+name: Publish desktop update-enabled preview
+on:
+  push:
+    branches: [feature/desktop-client]
+    paths: ['.github/workflows/desktop-preview-dev3.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: desktop-preview-dev3
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/feature/desktop-client'
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: platforms/desktop
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: alexx2k/Tarn
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run dist:win
+      - name: Publish preview only after passing audit and build
+        shell: pwsh
+        run: |
+          $asset = 'release/Tarn-Desktop-0.1.0-dev.3-win-x64.exe'
+          if (!(Test-Path $asset)) { throw 'Expected installer missing' }
+          $hash = (Get-FileHash $asset -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  Tarn-Desktop-0.1.0-dev.3-win-x64.exe" | Set-Content -Encoding ascii release/SHA256SUMS.txt
+          gh release create desktop-v0.1.0-dev.3 $asset release/SHA256SUMS.txt --target "$env:GITHUB_SHA" --prerelease --latest=false --title "Tarn Desktop v0.1.0-dev.3 — Windows preview" --notes "Desktop preview with update notifications and manual installer links. Includes the redesigned desktop player, fullscreen, Search, volume, seeking and experimental multilingual audio selection. Unsigned Windows x64 installer. Direct compatible HTTP(S) streams only; not all embedded tracks may be exposed."
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed' }
