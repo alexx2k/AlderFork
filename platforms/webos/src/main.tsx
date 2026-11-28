@@ -94,7 +94,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  const go=(hash:string)=>{restored.current[location.hash]=(document.activeElement as HTMLElement)?.id||'link-account';location.hash=hash;};
  const closePlayer=()=>{viewingSession.current=newSession(namespace);setPlaying(null);setPending(playbackFocus.current);};
  const startPlayer=(intent:PlaybackIntent,title:Title,startOver=false)=>{viewingSession.current=newSession(namespace);playbackFocus.current=continueMenu?'continue-'+Math.max(0,continueRows(library.data.rows).findIndex(r=>keyFor(r.title)===keyFor(title))):(document.activeElement as HTMLElement)?.id||'back';setContinueMenu(null);setPlaying({intent,account:namespace,title,startAt:startOver?0:library.position(title,intent)});setPending('player-back');};
- const back=()=>{if(continueMenu){setContinueMenu(null);setPending('continue-'+Math.max(0,continueRows(library.data.rows).findIndex(r=>keyFor(r.title)===keyFor(continueMenu.title))));return;}if(confirmSignOut){setConfirmSignOut(false);return;}if(playing){closePlayer();return;}if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){if(keyboard){setKeyboard(false);setPending('search-keyboard');}else{setShowSearch(false);setPending('search');}}else if(shelf==='Discover'||shelf==='My List'){setShelf('Home');setPending('nav-Home');}};
+ const back=()=>{if(continueMenu){setContinueMenu(null);setPending('continue-'+Math.max(0,continueRows(library.data.rows).findIndex(r=>keyFor(r.title)===keyFor(continueMenu.title))));return;}if(confirmSignOut){setConfirmSignOut(false);return;}if(playing){closePlayer();return;}if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){if(keyboard){setKeyboard(false);setPending('search-keyboard');}else{setShowSearch(false);setPending('search');}}else if(shelf!=='Home'){setShelf('Home');setPending('nav-Home');}};
  useEffect(()=>{
   const handler=()=>{const r=routeFromHash(location.hash);const old=lastHash.current;lastHash.current=location.hash;
    if(location.hash&&r.kind!=='home')history.replaceState({tarnRoute:true},'');
@@ -151,7 +151,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
     if(e.key==='ArrowDown'||e.keyCode===40){e.preventDefault();focus(target.id==='addon-url'?'addon-inspect':target.id==='query'?'search-submit':target.id==='name'?'save':'network');}
     return;
    }
-   if(isBack(e.key,e.keyCode)){if(continueMenu||confirmSignOut||playing||route.kind!=='home'||showSearch||shelf==='Discover'||shelf==='My List'){e.preventDefault();back();}return;}
+   if(isBack(e.key,e.keyCode)){if(continueMenu||confirmSignOut||playing||route.kind!=='home'||showSearch||shelf!=='Home'){e.preventDefault();back();}return;}
    const dir=directionFor(e.key,e.keyCode);if(!dir)return;
    e.preventDefault();
    const items=continueMenu?buttons().filter(x=>x.closest('.continue-menu')):playing&&document.querySelector('.player-panel')?buttons().filter(x=>x.closest('.player-panel')):buttons(),active=document.activeElement as HTMLElement;
@@ -182,7 +182,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  },[playingTitleKey,addons,cache]);
  const upcomingEpisode=playing&&playing.title.type==='series'?nextEpisode(playing.title,playing.intent.videoId,(playing.title.episodes||[]).filter(e=>library.watched(playing.title,e.id)).map(e=>e.id)):null;
  const upcomingIntent=playing&&upcomingEpisode?playbackIntent(playing.title,upcomingEpisode):null;
- return <><div className={'app'+(home.blurThumbnails?' blur-spoilers':'')} style={playing?{display:"none"}:undefined} onPointerDown={e=>{const b=(e.target as HTMLElement).closest<HTMLElement>('button[data-focus]');if(b)b.focus();}}>
+ return <><div className="app" style={playing?{display:"none"}:undefined} onPointerDown={e=>{const b=(e.target as HTMLElement).closest<HTMLElement>('button[data-focus]');if(b)b.focus();}}>
  <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.6.0-dev.2 • Development</span></header>
  {route.kind==='home'?<main>
   <nav>{tabs.map(n=><Btn key={n} id={'nav-'+n} className={shelf===n?'selected':''} onClick={()=>{setContinueMenu(null);setShelf(n);setShowSearch(false);setKeyboard(false);setRowLimit(6);}}>{n}</Btn>)}
