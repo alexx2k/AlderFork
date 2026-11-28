@@ -1,7 +1,7 @@
 <h1 align="center">Tarn</h1>
 
 <p align="center">
-  <b>Stremio for the living room.</b><br>
+  <b>Stremio for the living room and desktop.</b><br>
   Press Play and it plays. No stream lists to decode, no dead links, no setup on the remote.
 </p>
 
@@ -17,7 +17,21 @@
   <img src="design/tarn/stacked.svg" alt="Tarn" width="220">
 </p>
 
-Tarn is an Android TV app for your Stremio account. Your account, add-ons, library and watch progress stay exactly where they are, and everything you watch syncs back to Stremio on your phone and computer. What changes is the app on the TV: built for a remote, simple enough for anyone in the family, and quiet enough that the film is the main thing on screen.
+Tarn began as an Android TV app for your Stremio account and is expanding to LG webOS and Windows desktop. Your account, add-ons, library and watch progress stay exactly where they are, and everything you watch syncs back to Stremio on your phone and computer. What changes is the app on the TV: built for a remote, simple enough for anyone in the family, and quiet enough that the film is the main thing on screen.
+
+## Platforms
+
+Tarn is a multiplatform project in one repository. Android remains the production client; LG webOS and Windows desktop are development clients until their platform-specific release gates pass. Features and compatibility differ by platform.
+
+| Client | Source | Build | Status |
+| --- | --- | --- | --- |
+| Android TV / Google TV / Fire TV | [app/](app/) (root Gradle project) | APK | Stable |
+| LG webOS | [platforms/webos/](platforms/webos/) | IPK | Development / physical TV testing required |
+| Windows desktop | [platforms/desktop/](platforms/desktop/) | EXE | Development / Windows testing required |
+
+[Multiplatform development and release policy](docs/multiplatform.md) · [Official downloads](https://tarn.alexbalsillie.com/downloads)
+
+The feature overview, screenshots, installation and Android-specific requirements below describe the Android TV client unless explicitly stated otherwise.
 
 ## Why Tarn
 

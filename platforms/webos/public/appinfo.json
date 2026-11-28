@@ -1,0 +1,12 @@
+{
+  "id": "dev.tarn.webos.dev",
+  "version": "0.6.0",
+  "vendor": "Tarn",
+  "type": "web",
+  "main": "index.html",
+  "title": "Tarn Dev",
+  "icon": "assets/icon.png",
+  "largeIcon": "assets/largeIcon.png",
+  "resolution": "1920x1080",
+  "bgColor": "#000000"
+}

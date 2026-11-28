@@ -1,0 +1,15 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {directionFor,isBack,nextFocus,routeFromHash} from '../src/navigation.ts';
+import {initialState,parseState} from '../src/storage.ts';
+import {endpointForManifest} from '../src/diagnostics.ts';
+const r=(id,x,y)=>({id,left:x,top:y,right:x+80,bottom:y+80});
+test('LG and browser arrow keys',()=>{assert.equal(directionFor('Unidentified',37),'left');assert.equal(directionFor('ArrowDown',0),'down');assert.equal(directionFor('Enter',13),undefined);});
+test('LG Back and browser Escape',()=>{assert.equal(isBack('Unidentified',461),true);assert.equal(isBack('Escape',27),true);assert.equal(isBack('Enter',13),false);});
+test('directional focus prefers aligned row',()=>{const a=r('a',0,0);assert.equal(nextFocus(a,[a,r('b',120,0),r('c',90,100)],'right'),'b');});
+test('directional focus does not wrap',()=>{const a=r('a',0,0);assert.equal(nextFocus(a,[a,r('b',120,0)],'left'),undefined);});
+test('vertical navigation prefers same column',()=>{const a=r('a',120,0);assert.equal(nextFocus(a,[a,r('b',120,120),r('c',0,90)],'down'),'b');});
+test('route parsing rejects unrecognised paths',()=>{assert.deepEqual(routeFromHash('#details/still-water'),{kind:'details',id:'still-water'});assert.deepEqual(routeFromHash('#settings'),{kind:'settings'});assert.deepEqual(routeFromHash('#unknown'),{kind:'home'});});
+test('state round-trips',()=>{const state={...initialState(100),name:'Test',visits:5};assert.deepEqual(parseState(JSON.stringify(state)),state);});
+test('corrupt or future storage recovers',()=>{for(const raw of ['bad','{"version":2}',null])assert.deepEqual(parseState(raw,100),initialState(100));});
+test('manifest endpoint validates scheme and path',()=>{assert.equal(endpointForManifest('https://example.com/manifest.json'),'https://example.com/manifest.json');for(const url of ['file:///manifest.json','https://example.com/foo','https://user:pass@example.com/manifest.json'])assert.throws(()=>endpointForManifest(url));});

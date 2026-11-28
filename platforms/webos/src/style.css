@@ -1,0 +1,144 @@
+@font-face{font-family:Inter;src:url(./assets/inter.ttf) format('truetype');font-weight:100 900;font-display:swap}
+:root{--black:#000000;--midnight:#0B1624;--deep:#1E3A54;--slate:#3F6D89;--lake:#8CB9CF;--silver:#E6F1F6;--secondary:#C3D5DF;--muted:#9BB0C0;--track:#24384A}
+*{box-sizing:border-box}html,body,#root{margin:0;min-height:100%;background:var(--black);color:var(--silver);font-family:Inter,Arial,sans-serif;font-size:16px}
+/* Chromium 68 has no clamp() or flex gap. Base size remains valid. */
+body{font-size:1.35vw}@media(max-width:1185px){body{font-size:16px}}button,input{font:inherit;color:inherit}button{background:var(--midnight);border:2px solid transparent;border-radius:6px;padding:.55em .9em;cursor:pointer;text-align:left}button:focus,input:focus{outline:3px solid var(--silver);outline-offset:3px;background:var(--deep)}button:hover{border-color:var(--lake)}button:disabled{opacity:.55;cursor:default}.app{padding:2.4vh 4vw 3vh;max-width:1920px;margin:auto}header{display:flex;align-items:center;justify-content:space-between;height:6vh;margin-bottom:2vh}.brand{width:12vw;min-width:150px;max-height:6vh}.dev,.muted,footer{color:var(--muted);font-size:.78em}nav{display:flex;align-items:center;flex-wrap:wrap;margin-bottom:2vh}nav button{margin-right:.45em;background:transparent}nav .selected{color:var(--silver);border-bottom-color:var(--lake)}.profile{margin-left:auto;color:var(--lake);font-size:.9em}.hero{height:36vh;min-height:250px;position:relative;overflow:hidden;background:var(--midnight);border-radius:8px}.hero-copy{position:relative;z-index:2;padding:2.1vh 2vw;width:62%;background:linear-gradient(90deg,#0b1624 65%,transparent)}h1{font-size:2.5em;margin:.15em 0 .35em;font-weight:600}h2{font-size:1.2em;font-weight:600;margin:1em 0 .55em}p{margin:.5em 0;line-height:1.45}.eyebrow{color:var(--lake);letter-spacing:.14em;font-size:.75em}.primary{background:var(--silver);color:var(--midnight);font-weight:600;margin-top:.4em}.primary:focus{color:var(--silver)}.art{position:relative;overflow:hidden;background:linear-gradient(155deg,#416a7e,#14283b 55%,#090f18);height:100%;width:100%}.art span,.art i,.art b{display:block;position:absolute;bottom:0;left:0;width:100%;height:70%;background:#213b52;clip-path:polygon(0 78%,22% 35%,38% 61%,58% 12%,80% 52%,100% 20%,100% 100%,0 100%)}.art i{height:45%;background:#142638;transform:scaleX(-1)}.art b{height:17%;background:linear-gradient(#5e879d,#0b1624);clip-path:none}.art.north{background:linear-gradient(135deg,#617d8e,#112238)}.art.light{background:linear-gradient(135deg,#977a61,#1c263b)}.art.ridge{background:linear-gradient(135deg,#859caa,#253b47)}.art.tide{background:linear-gradient(135deg,#6a9b9c,#102c3a)}.art.blue{background:linear-gradient(135deg,#5074aa,#121734)}.hero>.art{position:absolute;right:0;width:65%}.cards{display:flex;flex-wrap:wrap;margin:-.35em}.poster{width:calc(16.666% - .7em);min-width:110px;padding:.35em;margin:.35em;display:flex;flex-direction:column;background:var(--midnight)}.poster .art{height:23vh;min-height:115px;border-radius:3px}.poster>span{font-weight:600;margin-top:.4em}.poster small{color:var(--muted);font-size:.75em;margin-top:.2em}footer{margin-top:2vh}.page>button{margin-bottom:2vh}.page section{max-width:100%}.detail{display:flex;align-items:center;position:relative;min-height:45vh;background:var(--midnight);padding:2vw}.detail>.art{height:45vh;width:38%;margin-right:3vw;flex:none}.detail>div:last-child{max-width:55%}input{background:var(--midnight);border:2px solid var(--track);border-radius:6px;padding:.55em;display:block;margin:.5em 0;min-width:12em;max-width:100%}label{display:block;color:var(--secondary);margin-top:1em}.diagnostic-grid{display:flex;align-items:flex-start}.diagnostic-grid>div{width:50%;padding-right:2vw;min-width:0}.diagnostic-grid>div:last-child{padding-right:0}.diagnostics input{width:100%}.diagnostics video{width:100%;height:29vh;background:var(--midnight)}.controls{display:flex;flex-wrap:wrap}.controls button{margin:.3em .3em 0 0}.small{font-size:.7em;overflow-wrap:break-word;word-break:break-word;color:var(--secondary)}.ok{color:#a7d8bd;font-size:.8em}.warn{color:#e9b98a;font-size:.8em}.search{padding:1em;background:var(--midnight);border-radius:6px}@media(max-width:800px){.poster{width:calc(33.333% - .7em)}.hero-copy{width:80%}.diagnostic-grid{display:block}.diagnostic-grid>div{width:100%;padding:0}.detail{display:block}.detail>.art{width:100%;height:25vh}.detail>div:last-child{max-width:100%}}
+
+/* Live catalogue / account linking; layout avoids flex gap for older engines. */
+.welcome{padding:6vh 3vw;background:linear-gradient(120deg,var(--midnight),var(--deep));border-radius:8px;min-height:35vh}.sign-in{max-width:75vw}.link-panel{display:flex;align-items:center;margin:2vh 0;padding:1.4em;background:var(--midnight);border-radius:8px}.qr{width:220px;max-width:30vw;height:auto;margin-right:2em;background:white}.link-url{color:var(--lake)}.device-code{font-size:2em;letter-spacing:.15em;font-weight:600;word-break:break-all}.catalog-status{display:flex;align-items:center;justify-content:space-between;margin-bottom:1vh}.catalog-status p{font-size:.8em;color:var(--muted);margin-right:1em}.art img{width:100%;height:100%;object-fit:cover;display:block}.hero .art img{object-position:center}.hero-copy .synopsis{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.shelf h2 small{font-weight:400;color:var(--muted);font-size:.72em}.live-cards{flex-wrap:nowrap;align-items:flex-start;overflow-x:auto;overflow-y:hidden;padding:8px 8px 12px;margin:0 -8px;scrollbar-width:none}.live-cards::-webkit-scrollbar{display:none}.detail>.art img{object-fit:contain}.detail>div:last-child{overflow-wrap:break-word}.detail h1{font-size:2em}
+
+
+
+/* A plain layout box owns the artwork. A separate native button overlays it for OK, pointer and spatial focus.
+   This avoids the anonymous shrink-to-fit content box of older Chromium button implementations. */
+.live-cards{--art-width:13vw;--art-height:19.5vw;display:flex;flex-wrap:nowrap;align-items:flex-start;overflow-x:auto;overflow-y:hidden;padding:8px 8px 12px;margin:0 -8px}
+.poster-card{position:relative;display:block;flex:0 0 auto;width:calc(var(--art-width) + 12px);padding:6px;margin:0 10px 0 0;border-radius:6px;background:var(--midnight);overflow:hidden}
+.live-cards .poster-card .art{display:block;position:relative;width:var(--art-width);height:var(--art-height);min-height:0;padding:0;border-radius:3px;overflow:hidden}
+.live-cards .poster-card .art img{position:absolute;top:0;left:0;display:block;width:var(--art-width);height:var(--art-height);max-width:none;max-height:none;object-fit:cover}
+.poster-card .poster-title,.poster-card small{display:block;width:var(--art-width);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35}
+.poster-card .poster-title{font-weight:600;margin-top:.45em}
+.poster-card small{color:var(--muted);font-size:.75em;margin-top:.2em}
+.poster-card .poster-hit,.poster-card .poster-hit:hover,.poster-card .poster-hit:focus{position:absolute;z-index:2;top:0;left:0;right:0;bottom:0;width:100%;height:100%;margin:0;padding:0;border:2px solid transparent;border-radius:6px;outline:0;background:transparent;box-shadow:none;cursor:pointer}
+.poster-card:focus-within{background:var(--deep);box-shadow:0 0 0 2px var(--silver)}
+.poster-card .poster-hit:focus{border-color:var(--silver)}
+.poster-card:hover .poster-hit{border-color:var(--lake)}
+.poster-card:focus-within .poster-hit{border-color:var(--silver)}
+@media(min-width:1920px){.live-cards{--art-width:249.6px;--art-height:374.4px}}
+@media(max-width:800px){.live-cards{--art-width:26vw;--art-height:39vw}}
+
+/* Discovery and title details — leave the approved poster-card rules above intact. */
+.discovery-filters{margin:1vh 0 2vh;padding:1.2em;background:var(--midnight);border-radius:8px}
+.discovery-filters h1{font-size:1.8em}.discovery-filters h2{font-size:1em;color:var(--secondary);margin:.75em 0 .25em}
+.filter-strip{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:7px 6px 9px;margin:0 -6px;scrollbar-width:none}.filter-strip::-webkit-scrollbar{display:none}
+.filter-strip button{flex:none;margin-right:10px;white-space:nowrap;background:var(--deep)}.filter-strip .filter-active{border-color:var(--lake);color:var(--silver);background:var(--slate)}
+.title-page{position:relative}.title-hero{position:relative;min-height:51vh;overflow:hidden;background:var(--midnight);border-radius:8px}
+.title-backdrop{position:absolute;top:0;right:0;width:75%;height:100%;object-fit:cover;object-position:center;display:block}
+.artwork-placeholder{background:linear-gradient(145deg,var(--deep),var(--midnight))}
+.title-shade{position:absolute;inset:0;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,#0b1624 12%,rgba(11,22,36,.97) 32%,rgba(11,22,36,.65) 64%,rgba(11,22,36,.08)),linear-gradient(0deg,#0b1624,transparent 45%)}
+.title-copy{position:relative;padding:3vh 3vw;width:65%;min-height:51vh;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;overflow-wrap:break-word}
+.title-copy h1{font-size:2.3em}.title-facts{color:var(--secondary)}.title-description{line-height:1.5;max-width:100%}
+.playback-preview{margin:2vh 0;padding:1em 1.2em;border-left:4px solid var(--lake);background:var(--midnight);border-radius:5px}
+.episode-section{margin-top:2vh}.episode-list{display:block}.episode-card{position:relative;display:flex;align-items:center;min-height:calc(10.125vw + 20px);padding:10px;margin:10px 0;border-radius:6px;background:var(--midnight);overflow:hidden}
+.episode-thumb{flex:0 0 18vw;width:18vw;height:10.125vw;object-fit:cover;display:block;border-radius:4px;margin-right:1em}
+.episode-copy{flex:1;min-width:0}.episode-copy h3{font-size:1.1em;margin:.2em 0;overflow-wrap:break-word}.episode-copy p{margin:.2em 0;font-size:.85em;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.episode-card .episode-hit,.episode-card .episode-hit:focus,.episode-card .episode-hit:hover{position:absolute;top:0;left:0;right:0;bottom:0;width:100%;height:100%;border:2px solid transparent;outline:0;background:transparent;padding:0;z-index:2;border-radius:6px}
+.episode-card:hover .episode-hit{border-color:var(--lake)}.episode-card:focus-within{background:var(--deep)}.episode-card .episode-hit:focus{border-color:var(--silver)}
+@media(max-width:800px){.title-copy{width:95%}.title-backdrop{width:100%}.title-shade{background:linear-gradient(90deg,rgba(11,22,36,.96),rgba(11,22,36,.65))}.episode-thumb{width:25vw;height:14.0625vw;flex-basis:25vw}}
+
+/* Optional D-pad keyboard; inline-block avoids flex sizing quirks in old TV engines. */
+.search-keys{max-width:44em;margin-top:1em;padding:.35em;background:var(--black);border-radius:6px}.search-keys button{display:inline-block;min-width:2.55em;text-align:center;margin:4px;background:var(--deep)}
+
+/* Standalone playback screen; existing catalogue and poster selectors remain unchanged. */
+.player-page{position:fixed;top:0;left:0;right:0;bottom:0;background:#000;color:var(--silver);overflow:hidden;font-size:inherit}
+.player-video{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:#000}
+.player-video video{display:block;width:100%;height:100%;object-fit:contain}
+.player-empty{text-align:center;max-width:75vw;padding:2em}.player-empty h1{font-size:2em}
+.player-controls{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:4vh 4vw 3vh;background:linear-gradient(transparent,rgba(0,0,0,.94) 24%,#000)}
+.player-top h2{margin:0;font-size:1.2em}.player-top p{font-size:.82em;color:var(--secondary)}
+.player-progress{display:flex;align-items:center;margin:1vh 0;font-variant-numeric:tabular-nums}.player-progress span{font-size:.8em}
+.progress-rail{flex:1;height:6px;background:var(--track);border-radius:3px;margin:0 1em;overflow:hidden}.progress-rail>div{height:100%;background:var(--lake)}
+.player-panel{position:absolute;top:4vh;right:4vw;bottom:23vh;width:53vw;z-index:5;padding:1em;background:var(--midnight);border:1px solid var(--deep);border-radius:8px;overflow:auto}
+.player-panel-header{display:flex;justify-content:space-between;align-items:center}.player-panel-header h2{margin:0}
+.player-list{display:block}.player-list button{display:block;width:100%;margin:.45em 0;background:var(--deep);overflow:hidden;white-space:normal;word-break:break-word}
+.player-list strong,.player-list small{display:block;max-width:100%;white-space:pre-wrap}.player-list small{font-size:.76em;color:var(--secondary);margin-top:.25em}
+.player-list .filter-active,.player-panel .filter-active{border-color:var(--lake)}.player-panel>button{margin:.3em}
+@media(max-width:800px){.player-panel{width:80vw;bottom:27vh}}
+
+/* Draw external subtitle cues in the app, independently of native blob-track support. */
+.player-caption{position:absolute;z-index:2;left:8%;right:8%;bottom:25vh;text-align:center;pointer-events:none;white-space:pre-line;font-size:2.2vw;font-weight:600;line-height:1.4;color:#fff;text-shadow:1px 2px 3px #000,-1px -1px 2px #000}
+.player-caption span{display:inline;padding:.12em .35em;background:rgba(0,0,0,.78);box-decoration-break:clone;-webkit-box-decoration-break:clone}
+
+/* Profiles: separate picker and editor, leaving all catalogue/poster styling intact. */
+.profile-picker{text-align:center;padding:9vh 0 4vh}.profile-picker h1{margin-bottom:6vh}
+.profile-grid{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start}.profile-tile{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;width:16vw;min-width:120px;max-width:260px;margin:.5em;padding:.7em;background:transparent;text-align:center}.profile-tile strong{margin-top:.65em;max-width:100%;overflow-wrap:break-word}.profile-tile small{display:block;font-size:.65em;color:var(--muted);margin-top:.3em}
+.profile-portrait{display:inline-flex;flex:none;width:10vw;height:10vw;min-width:85px;min-height:85px;max-width:190px;max-height:190px;align-items:center;justify-content:center;overflow:hidden;border-radius:50%;font-size:3em;font-weight:600;color:var(--midnight);vertical-align:middle}.profile-portrait img{display:block;width:100%;height:100%;object-fit:cover}.profile-add{background:var(--deep);color:var(--silver)}
+.profile-picker .controls{justify-content:center;margin-top:4vh}.profile-editor{max-width:90vw;margin:auto;padding-bottom:3vh}.profile-editor h1{font-size:2em}.profile-editor h2{margin-top:1em}.profile-edit-preview{display:flex;align-items:center}.profile-edit-preview>.profile-portrait{margin-right:1.2em}.profile-edit-preview label{margin-top:0}.profile-editor .controls{margin-top:.6em}
+.profile-swatch{width:2.2em;height:2.2em;padding:0;text-align:center;color:#0B1624;border-radius:50%}.profile-swatch.filter-active{border:3px solid var(--silver)}
+.avatar-browser{padding:1em;margin:.8em 0;background:var(--midnight);border-radius:8px}.avatar-grid{display:flex;flex-wrap:wrap}.avatar-grid button{display:block;width:8.5vw;min-width:85px;padding:5px;margin:5px;overflow:hidden;text-align:center}.avatar-grid img{display:block;width:100%;height:7.5vw;min-height:75px;object-fit:cover;border-radius:5px;background:var(--deep)}.avatar-grid small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.65em}.avatar-grid .filter-active{border-color:var(--lake)}
+.pin-keys{display:flex;flex-wrap:wrap;max-width:25em}.pin-keys button{min-width:2.3em;text-align:center;margin:4px}.profile-pin-panel{max-width:30em;margin:5vh auto;text-align:center}.profile-pin-panel input{margin:.5em auto;text-align:center;letter-spacing:.5em}.profile-pin-panel .pin-keys{margin:auto;justify-content:center}
+.profile-switch{display:flex;align-items:center;max-width:18vw;white-space:nowrap;overflow:hidden;margin-left:auto!important;padding:.3em .5em!important}.profile-switch .profile-portrait{width:2.2em;height:2.2em;min-width:0;min-height:0;font-size:1em;margin-right:.5em}.profile-switch>span:last-child{overflow:hidden;text-overflow:ellipsis}
+@media(max-width:800px){.profile-tile{width:25vw}.profile-switch{max-width:40vw}.avatar-grid button{width:18vw}.avatar-grid img{height:16vw}}
+
+.profile-alert{position:fixed;z-index:20;left:4vw;right:4vw;bottom:3vh;background:var(--midnight);border:2px solid var(--lake);border-radius:6px;padding:1em}.profile-alert button{margin-left:1em}
+
+/* Separate landscape resume cards. Existing portrait catalogue styles are untouched. */
+.continue-shelf{margin:1.2vh 0 2vh}.continue-cards,.my-list-cards{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:8px;margin:0 -8px;scrollbar-width:none}.continue-cards::-webkit-scrollbar,.my-list-cards::-webkit-scrollbar{display:none}
+.continue-card,.library-list-card{position:relative;flex:0 0 auto;width:22vw;margin:0 12px 0 0;padding:6px;background:var(--midnight);border-radius:6px;overflow:hidden}.library-art{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:12.375vw;background:var(--deep);overflow:hidden;border-radius:4px}.library-art img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}.library-art span{font-size:2em;color:var(--silver)}.continue-card strong,.continue-card small,.library-list-card strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:.25em}.continue-card small{font-size:.75em;color:var(--muted)}.continue-progress{height:4px;background:#24384a;margin-top:4px}.continue-progress>div{height:100%;background:var(--lake)}
+.continue-card .continue-hit,.library-list-card .continue-hit{position:absolute;inset:0;top:0;left:0;right:0;bottom:0;width:100%;height:100%;padding:0;background:transparent;border:2px solid transparent;border-radius:6px;outline:none}.continue-hit:focus{border-color:var(--silver)!important}.continue-card .continue-more{position:absolute;z-index:3;top:10px;right:10px;padding:.25em .5em;background:rgba(0,0,0,.75)}.continue-menu,.episode-action-panel{padding:1em;background:var(--midnight);border:1px solid var(--lake);border-radius:6px;margin:.5em 0}.episode-options{position:absolute;right:12px;top:12px;z-index:4;padding:.25em .6em}.episode-copy{padding-right:3em}.watched-label{font-size:.75em;color:var(--lake);margin-left:.6em}.library-list-card{width:14vw}.library-list-card .library-art{height:21vw}.my-list-cards{flex-wrap:wrap}.library-list-card{margin-bottom:12px}
+@media(max-width:800px){.continue-card{width:42vw}.continue-card .library-art{height:23.625vw}.library-list-card{width:26vw}.library-list-card .library-art{height:39vw}}
+
+/* Player controls and settings. Catalogue/poster styles above are unchanged. */
+.player-reveal,.player-reveal:focus,.player-reveal:hover{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;border:0;outline:0;background:transparent;padding:0;box-shadow:none}
+.player-progress .progress-rail{position:relative;flex:1;height:20px;min-width:0;margin:0 1em;padding:0;background:#24384a;border:2px solid transparent;border-radius:5px;overflow:hidden}
+.player-progress .progress-rail span{display:block;height:100%;background:var(--lake);pointer-events:none}
+.player-progress .progress-rail:focus{border-color:var(--silver);outline:2px solid var(--silver)}
+.player-preferences .pref-row{margin:.7em 0}.player-preferences h3{font-size:.95em;margin:.3em 0}.player-preferences .filter-strip button{font-size:.86em}.player-preferences .muted{font-size:.8em}
+.player-panel .player-preferences{padding-bottom:1em}.player-panel .player-preferences .filter-strip{flex-wrap:wrap;overflow:visible}.player-panel .player-preferences .filter-strip button{margin-bottom:6px}
+.player-controls .controls{flex-wrap:wrap}.player-controls .controls button{margin-bottom:4px}
+
+/* Advanced playback overlays, independent of the Home catalogue/poster layout. */
+.player-upnext{position:absolute;right:4vw;bottom:7vh;max-width:36vw;z-index:6;padding:1.1em;background:#0b1624;border:1px solid #365369;border-radius:10px;color:var(--silver);box-shadow:0 4px 22px #0008}
+.player-upnext.with-controls{bottom:27vh}.player-upnext h2{margin:.3em 0;font-size:1.25em}.player-upnext p{margin:.4em 0}.player-upnext .eyebrow{font-size:.7em;color:var(--lake)}.player-upnext .controls{flex-wrap:wrap}
+.player-skip{position:absolute;right:4vw;bottom:8vh;z-index:4;background:#0b1624;border:1px solid #365369;border-radius:6px;padding:.65em 1em}.player-skip.with-controls{bottom:27vh}
+@media(max-width:800px){.player-upnext{max-width:70vw}.player-upnext.with-controls,.player-skip.with-controls{bottom:32vh}}
+
+/* Viewing experience: modal session check, season indicators, optional storyboard preview. */
+.still-watching{position:absolute;inset:0;top:0;left:0;right:0;bottom:0;z-index:10;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:5vw}
+.still-watching-content{width:580px;max-width:80vw;padding:2em;background:#0b1624;border:1px solid #365369;border-radius:12px;text-align:center}
+.still-watching-content h1{font-size:1.65em;margin:.3em 0}.still-watching-content p{color:var(--silver);margin:.7em 0}.still-actions{display:flex;flex-direction:column;align-items:stretch;margin-top:1.2em}.still-actions button{margin:.25em 0}
+.season-count{display:inline-block;margin-left:.6em;padding:.12em .45em;border-radius:4px;background:#24384a;color:#e6f1f6;font-size:.72em}.episode-badge{display:inline-block;margin-left:.6em;color:#b7d9eb;font-size:.72em;font-weight:500}.episode-badge.upcoming{color:#aaa}.season-navigation{margin:.7em 0;flex-wrap:wrap}
+.player-progress{position:relative}.scrub-preview{position:absolute;bottom:calc(100% + 10px);transform:translateX(-50%);z-index:4;background:#0b1624;border:1px solid #365369;border-radius:5px;padding:5px;text-align:center;pointer-events:none;white-space:nowrap}.scrub-preview-art{position:relative;overflow:hidden;max-width:none}.scrub-preview-art img{display:block;max-width:160px;max-height:90px;object-fit:contain}.scrub-preview-art img[style]{max-height:none}.scrub-preview span{display:block;padding:.2em;font-size:.85em}
+
+/* Add-on management; existing catalogue and poster styling is unchanged. */
+.addon-manager{max-width:100%;padding-bottom:2em}.addon-manager .controls{flex-wrap:wrap}.addon-manager h2{margin-top:1.1em}.addon-row,.addon-install,.addon-review{padding:1em;margin:.5em 0;border:1px solid #365369;border-radius:8px;background:#0b1624}.addon-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between}.addon-row h3{font-size:1em;margin:.15em 0}.addon-row p{margin:.2em 0}.addon-row .addon-review{flex:1 0 100%}.addon-install input{display:block;width:100%;margin:.6em 0}.addon-qr{display:flex;align-items:center;margin:1em 0}.addon-qr img{width:180px;height:180px;margin-right:1em;flex-shrink:0}.addon-qr p{max-width:55vw;overflow-wrap:break-word}
+
+/* Profile customisation; all prior poster, row and player geometry remains unchanged. */
+.spoiler-thumb{filter:blur(12px)}.avatar-url-entry{max-width:70vw}.avatar-url-entry input{width:100%}.home-tab-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:.6em;margin:.4em 0;border:1px solid #365369;background:#0b1624;border-radius:6px}.home-tab-row .controls{margin-left:1em}.update-qr{display:flex;align-items:center;flex-wrap:wrap}.update-qr img{width:180px;height:180px;margin:1em 1em 1em 0}.update-qr p{overflow-wrap:break-word;max-width:60vw}
+
+/* First-class Search: compatible with Chromium 68; no grid, gap or :has dependency on TV. */
+nav .search-nav{display:inline-flex;align-items:center;min-width:6.5em;padding:.6em .95em;margin-right:.8em;background:var(--deep);border:2px solid var(--slate);color:var(--silver);font-weight:600}
+.search-glyph{width:1.15em;height:1.15em;flex:none;margin-right:.55em;vertical-align:middle}
+nav .search-nav.selected{background:var(--silver);color:var(--midnight);border-color:var(--silver)}
+nav .search-nav:focus{outline:3px solid var(--silver);outline-offset:3px;border-color:var(--silver)}
+nav .search-nav.selected:focus{background:var(--silver);color:var(--midnight)}
+.search.search-page{padding:1.4em 1.7em;margin:.6em 0 1.2em;background:var(--midnight);border:1px solid var(--track);border-radius:10px}
+.search-page-heading{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.search-page-heading h1{font-size:2.5em;line-height:1.12;margin:.08em 0 .15em}
+.search-page-heading .eyebrow{margin:0 0 .5em}
+.search-intro{color:var(--secondary);margin:.25em 0 1em}
+.search-back{color:var(--secondary);border:1px solid var(--track);margin:.1em 0 .8em}
+.search-form{display:flex;align-items:center;flex-wrap:wrap;margin:.3em 0 .8em}
+.search-field{display:flex;align-items:center;flex:1 1 16em;min-width:0;max-width:100%;box-sizing:border-box;border:2px solid var(--slate);background:var(--black);border-radius:8px;padding:0 .9em;margin:0 .6em .45em 0;color:var(--lake)}
+.search-field:focus-within{border-color:var(--silver);box-shadow:0 0 0 2px var(--lake)}
+.search-field input{flex:1;width:100%;min-width:0;box-sizing:border-box;background:transparent;border:0;margin:0;padding:.85em 0;color:var(--silver);font-size:1.05em}
+.search-field input:focus{background:transparent;outline:none}
+.search-field input::placeholder{color:var(--muted);opacity:1}
+.search-submit{background:var(--silver);color:var(--midnight);font-weight:600;padding:.85em 1.35em;margin:0 .45em .45em 0;border:2px solid var(--silver);border-radius:8px}
+.search-submit:focus{background:var(--deep);color:var(--silver)}
+.search-clear{margin:0 .4em .45em 0;border:1px solid var(--track)}
+.search-tools{margin:0 0 .7em}
+.search-feedback{border-top:1px solid var(--track);padding-top:.8em;color:var(--secondary);overflow-wrap:break-word}
+.search-feedback strong{font-size:1.12em;color:var(--silver)}
+.search-feedback p{margin:.3em 0 0;font-size:.9em}
+.search-page .search-keys{max-width:100%;margin:.4em 0 1em}
+.search-page .search-keys button{min-width:2.7em;padding:.65em .5em}
