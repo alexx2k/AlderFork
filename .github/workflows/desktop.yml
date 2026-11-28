@@ -1,0 +1,31 @@
+name: Tarn Desktop Windows development
+on:
+  push:
+    branches: [feature/desktop-client]
+    paths:
+      - 'platforms/desktop/**'
+      - '.github/workflows/desktop.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    if: github.ref == 'refs/heads/feature/desktop-client'
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: platforms/desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run dist:win
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tarn-Desktop-Windows-x64-dev
+          path: platforms/desktop/release/*.exe
+          if-no-files-found: error
