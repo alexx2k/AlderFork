@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {providerKey,preferredOrder,fallbackIndex,preparedFresh,introQuery,parseSegments,chapterSegments,validCredits,creditsStart,triggerAt,skipSegment,segmentKey,countdownTick,COUNTDOWN_SECONDS,PREPARED_TTL} from '../src/advancedPlayback.mjs';
+import {providerKey,preferredOrder,fallbackIndex,preparedFresh,introQuery,parseSegments,chapterSegments,validCredits,creditsStart,creditsSkipTarget,triggerAt,skipSegment,segmentKey,countdownTick,COUNTDOWN_SECONDS,PREPARED_TTL} from '../src/advancedPlayback.mjs';
 import {nextEpisode,applyAction,makeRow} from '../src/library.mjs';
 const source=(providerId,name)=>({providerId,name});
 const title={id:'tt10',type:'series',name:'Series',year:'',genre:'',description:'',theme:'lake',episodes:[{id:'tt10:1:1',season:1,number:1,name:'One',released:'2025-01-01',description:''},{id:'tt10:1:2',season:1,number:2,name:'Two',released:'2025-01-02',description:''},{id:'tt10:2:1',season:2,number:1,name:'Three',released:'2025-01-03',description:''}]};
@@ -18,3 +18,5 @@ test('skip only offers validated current intro or recap and honours dismissals',
 test('five-second countdown only consumes active playback, never paused time or seek jumps',()=>{let r=COUNTDOWN_SECONDS;r=countdownTick(r,100,101,true);assert.equal(r,4);r=countdownTick(r,101,105,false);assert.equal(r,4);r=countdownTick(r,105,150,true);assert.equal(r,4);r=countdownTick(r,150,149,true);assert.equal(r,4);for(let i=0;i<4;i++)r=countdownTick(r,i,i+1,true);assert.equal(r,0);assert.equal(countdownTick(r,5,6,true),0);});
 test('next episode uses existing library order and ignores watched or future entries',()=>{assert.equal(nextEpisode(title,intent.videoId,[],now).id,'tt10:1:2');assert.equal(nextEpisode(title,intent.videoId,['tt10:1:2'],now).id,'tt10:2:1');assert.equal(nextEpisode(title,'tt10:2:1',[],now),null);});
 test('intentional credits transition completes before 90 percent and advances library',()=>{const row=makeRow(title);const action={id:'complete',kind:'progress',title,videoId:intent.videoId,position:800,duration:1200,played:30,ended:true,at:now};const updated=applyAction(row,action,()=>new Uint8Array());assert.equal(updated.videoId,'tt10:1:2');assert.equal(updated.next,true);assert.equal(updated.position,0);assert.ok(updated.watched.includes(intent.videoId));});
+
+test('final credits skip ends before a later scene and never guesses missing timings',()=>{const chapter=[{kind:'outro',start:1100,end:1150}];assert.equal(creditsSkipTarget(1200,1120,[],chapter),1150);assert.equal(creditsSkipTarget(1200,1160,[],chapter),null);assert.equal(creditsSkipTarget(1200,1090,[],chapter),null);assert.equal(creditsSkipTarget(1200,1190,[],[]),null);});

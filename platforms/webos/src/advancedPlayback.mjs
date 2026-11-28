@@ -70,3 +70,11 @@ export function countdownTick(remaining,previous,current,playing){
  const delta=current-previous;
  return Math.max(0,remaining-(playing&&Number.isFinite(delta)&&delta>0&&delta<=2?delta:0));
 }
+
+// For the last episode or a movie, jump only to the end of a validated credits segment, not past a later scene.
+export function creditsSkipTarget(duration,position,remote,chapters){
+ const start=creditsStart(duration,remote,chapters);
+ if(start===null||position<start)return null;
+ const segment=remote.concat(chapters).find(s=>s.kind==='outro'&&s.start===start&&Number.isFinite(s.end)&&s.end>position&&s.end<=duration+1);
+ return segment?Math.min(duration,segment.end):null;
+}

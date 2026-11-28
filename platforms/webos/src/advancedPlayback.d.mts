@@ -19,3 +19,5 @@ export function triggerAt(duration:number,remote:Segment[],chapters:Segment[],fa
 export function skipSegment(position:number,duration:number,remote:Segment[],chapters:Segment[],dismissed:string[]):Segment|null;
 export function segmentKey(s:Segment):string;
 export function countdownTick(remaining:number,previous:number,current:number,playing:boolean):number;
+
+export function creditsSkipTarget(duration:number,position:number,remote:Segment[],chapters:Segment[]):number|null;

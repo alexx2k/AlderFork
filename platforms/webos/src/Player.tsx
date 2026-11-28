@@ -8,7 +8,7 @@ import {PlayerPreferences} from './PlayerPreferences.tsx';
 import {Prefs,colors,matchTrack,trackFingerprint,scrubTarget,scrubStep,captionTime,objectFit,shouldAutoHide} from './playerPrefs.mjs';
 import {readChoices,saveChoices} from './playerSettings.ts';
 import {directionFor,isBack} from './navigation.ts';
-import {PREPARE_SECONDS,COUNTDOWN_SECONDS,preferredOrder,fallbackIndex,preparedFresh,introQuery,parseSegments,chapterSegments,triggerAt,creditsStart,skipSegment,segmentKey,countdownTick,Prepared,Segment,Chapter} from './advancedPlayback.mjs';
+import {PREPARE_SECONDS,COUNTDOWN_SECONDS,preferredOrder,fallbackIndex,preparedFresh,introQuery,parseSegments,chapterSegments,triggerAt,creditsSkipTarget,skipSegment,segmentKey,countdownTick,Prepared,Segment,Chapter} from './advancedPlayback.mjs';
 import {readProvider,saveProvider,forgetProvider} from './advancedStore.ts';
 async function resolveEpisodeSources(addons:unknown[],lenders:string[],intent:PlaybackIntent,signal:AbortSignal){
  const shared=await Promise.all(lenders.map(token=>installedAddons(token,signal).catch(()=>[])));
@@ -282,7 +282,7 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
   const update=()=>{const v=video.current;if(v){const markers=chapterSegments(nativeChapters(v),v.duration);setChapterMarkers(old=>JSON.stringify(old)===JSON.stringify(markers)?old:markers);}};
   update();const timer=window.setInterval(update,1500);return()=>window.clearInterval(timer);
  },[attempt?.serial]);
- const credits=creditsStart(duration,remoteSegments,chapterMarkers);
+ const creditsTarget=creditsSkipTarget(duration,position,remoteSegments,chapterMarkers);
  const trigger=triggerAt(duration,remoteSegments,chapterMarkers,prefs.creditsFallback);
  const hasNext=!!nextIntent&&intent.type==='series';
  const playbackReady=!!attempt&&started.current&&!failed.current;
@@ -312,7 +312,7 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
   latestAdvance.current(nextIntent,ready,origin);
  };
  const showNext=hasNext&&!upNextDismissed&&(inCredits||endedPlayback&&duration>=120)&&!panel&&preview===null;
- const canCountdown=showNext&&prefs.autoplay&&pageVisible;
+ const canCountdown=showNext&&prefs.autoplay;
  useEffect(()=>{const visible=()=>setPageVisible(document.visibilityState!=='hidden');document.addEventListener('visibilitychange',visible);return()=>document.removeEventListener('visibilitychange',visible);},[]);
  useEffect(()=>{
   if(!canCountdown){remaining.current=COUNTDOWN_SECONDS;setCountdown(null);return;}
@@ -328,8 +328,8 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
   return()=>window.clearInterval(timer);
  },[canCountdown,nextIntent?.videoId,attempt?.serial]);
  useEffect(()=>{
-  if(canCountdown&&(remaining.current<=0||endedPlayback))advance('autoplay');
- },[canCountdown,countdown,endedPlayback,nextIntent?.videoId]);
+  if(canCountdown&&pageVisible&&(remaining.current<=0||endedPlayback))advance('autoplay');
+ },[canCountdown,countdown,endedPlayback,nextIntent?.videoId,pageVisible]);
  useEffect(()=>{
   if(showNext){requestAnimationFrame(()=>document.getElementById('up-next-play')?.focus());}
  },[showNext]);
@@ -350,9 +350,9 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
    setDismissedSegments(old=>old.concat(segmentKey(candidate)));
   }catch{pendingSeek.current=null;setStatus('This source does not allow skipping here.');}
  };
- const skipMovieCredits=()=>{
-  const v=video.current;if(!v||credits===null||position<credits)return;
-  try{const target=v.duration;if(!Array.from({length:v.seekable.length},(_,i)=>target>=v.seekable.start(i)&&target<=v.seekable.end(i)).some(Boolean))throw Error('Not seekable');lastTick.current=null;v.currentTime=target;setPosition(target);}catch{setStatus('This source does not allow skipping credits.');}
+ const skipFinalCredits=()=>{
+  const v=video.current;if(!v||creditsTarget===null)return;
+  try{const target=creditsTarget;if(!Array.from({length:v.seekable.length},(_,i)=>target>=v.seekable.start(i)&&target<=v.seekable.end(i)).some(Boolean))throw Error('Not seekable');lastTick.current=null;pendingSeek.current=target;v.currentTime=target;setPosition(target);}catch{pendingSeek.current=null;setStatus('This source does not allow skipping credits.');}
  };
  function clearScrub(){if(scrubTimer.current!==undefined)window.clearTimeout(scrubTimer.current);scrubTimer.current=undefined;scrubValue.current=null;repeatCount.current=0;setPreview(null);}
  function commitScrub(){
@@ -416,7 +416,7 @@ export function Player({title,nextIntent,nextEpisode,prepared,onAdvance,intent,a
    <div className="controls">{button('player-back','‹ Back',exit)}{button('player-rewind','−10 sec',()=>seek(-10),!attempt)}{button('player-toggle',paused?'▶ Play':'Ⅱ Pause',toggle,!attempt)}{button('player-forward','+10 sec',()=>seek(10),!attempt)}{button('player-sources','Sources ('+sources.length+')',()=>openPanel('sources'))}{button('player-subs','Subtitles',()=>openPanel('subtitles'),!attempt)}{button('player-audio','Audio',()=>openPanel('audio'),!attempt)}{button('player-settings','Settings',()=>openPanel('settings'))}{button('player-no-audio','No audio · Next source',()=>{if(attempt){const next=activeSources.current.findIndex((_,i)=>i!==attempt.index&&!attempted.current.has(i));if(next>=0)begin(next);else openPanel('sources');}},!attempt)}{button('player-retry','Retry sources',retry)}</div>
   </section>
   {showSkip&&candidate&&<button type="button" data-focus id="skip-intro" className={'player-skip'+(controlsShown?' with-controls':'')} onClick={skipCurrent}>{candidate.kind==='recap'?'Skip recap':'Skip intro'}</button>}
-  {playbackReady&&!showNext&&!showSkip&&!panel&&intent.type==='movie'&&credits!==null&&position>=credits&&!endedPlayback&&<button type="button" data-focus id="skip-credits" className={'player-skip'+(controlsShown?' with-controls':'')} onClick={skipMovieCredits}>Skip credits</button>}
+  {playbackReady&&!hasNext&&!showNext&&!showSkip&&!panel&&creditsTarget!==null&&!endedPlayback&&<button type="button" data-focus id="skip-credits" className={'player-skip'+(controlsShown?' with-controls':'')} onClick={skipFinalCredits}>Skip credits</button>}
   {showNext&&nextEpisode&&<section className={'player-upnext'+(controlsShown?' with-controls':'')} role="region" aria-label="Next episode"><p className="eyebrow">UP NEXT</p><h2>{nextEpisode.name}</h2><p>{nextEpisode.season!==null?'S'+nextEpisode.season+' ':''}{nextEpisode.number!==null?'E'+nextEpisode.number:''}</p>{prefs.autoplay&&<p aria-live="polite">Playing next in {countdown??COUNTDOWN_SECONDS}s</p>}<div className="controls">{button('up-next-play','▶ Play next',()=>advance('manual'))}{button('up-next-dismiss',endedPlayback?'Stay here':'Watch credits',dismissUpNext)}</div></section>}
   {panel&&<section className="player-panel"><div className="player-panel-header"><h2>{panel==='sources'?'Sources':panel==='audio'?'Audio tracks':panel==='settings'?'Playback settings':'Subtitles'}</h2>{button('player-close-panel','Close',closePanel)}</div>
    {panel==='settings'?<><PlayerPreferences prefs={prefs} onChange={onPrefs} inPlayer/>{button('player-reset-track-choices','Forget remembered tracks for this title',()=>{choices.current={};saveChoices(account,titleChoiceKey,{});setSubtitleStatus('Remembered tracks cleared. Defaults apply on next source.');setStatus('Remembered tracks cleared; defaults apply on next source.');})}</>:panel==='sources'?<><p className="muted">Direct HTTP(S) sources only. Automatic playback tries up to three candidates.</p>{intent.type==='series'&&<div className="controls"><p className="muted">{preferredProvider?'Preferred series provider: '+(sources.find(s=>s.providerId===preferredProvider)?.provider||'currently unavailable'):'Choose a source manually to remember its provider for this series.'}</p>{preferredProvider&&button('forget-provider','Forget preferred provider',()=>{forgetProvider(account,intent.titleId);preferred.current=null;setPreferredProvider(null);})}</div>}{resolution&&<p className="muted">{resolution.providers} providers · {resolution.failures} failed · {resolution.excluded.torrent} torrent · {resolution.excluded.headers} header-dependent · {resolution.excluded.external} external · {resolution.excluded.other} other excluded</p>}
