@@ -1,0 +1,28 @@
+name: Tarn webOS development
+on:
+  push:
+    branches: [main, webos, integration/multiplatform, 'feature/webos-*', 'feature/shared-*']
+    paths:
+      - 'platforms/webos/**'
+      - '.github/workflows/webos.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'platforms/webos/**'
+      - '.github/workflows/webos.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platforms/webos
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run audit
