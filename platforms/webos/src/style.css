@@ -104,7 +104,7 @@ body{font-size:1.35vw}@media(max-width:1185px){body{font-size:16px}}button,input
 
 /* Viewing experience: modal session check, season indicators, optional storyboard preview. */
 .still-watching{position:absolute;inset:0;top:0;left:0;right:0;bottom:0;z-index:10;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:5vw}
-.still-watching-content{width: min(580px,80vw);max-width:80vw;padding:2em;background:#0b1624;border:1px solid #365369;border-radius:12px;text-align:center}
+.still-watching-content{width:580px;max-width:80vw;padding:2em;background:#0b1624;border:1px solid #365369;border-radius:12px;text-align:center}
 .still-watching-content h1{font-size:1.65em;margin:.3em 0}.still-watching-content p{color:var(--silver);margin:.7em 0}.still-actions{display:flex;flex-direction:column;align-items:stretch;margin-top:1.2em}.still-actions button{margin:.25em 0}
 .season-count{display:inline-block;margin-left:.6em;padding:.12em .45em;border-radius:4px;background:#24384a;color:#e6f1f6;font-size:.72em}.episode-badge{display:inline-block;margin-left:.6em;color:#b7d9eb;font-size:.72em;font-weight:500}.episode-badge.upcoming{color:#aaa}.season-navigation{margin:.7em 0;flex-wrap:wrap}
 .player-progress{position:relative}.scrub-preview{position:absolute;bottom:calc(100% + 10px);transform:translateX(-50%);z-index:4;background:#0b1624;border:1px solid #365369;border-radius:5px;padding:5px;text-align:center;pointer-events:none;white-space:nowrap}.scrub-preview-art{position:relative;overflow:hidden;max-width:none}.scrub-preview-art img{display:block;max-width:160px;max-height:90px;object-fit:contain}.scrub-preview-art img[style]{max-height:none}.scrub-preview span{display:block;padding:.2em;font-size:.85em}

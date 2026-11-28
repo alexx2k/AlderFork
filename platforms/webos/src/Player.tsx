@@ -163,7 +163,7 @@ export function Player({viewingSession,title,nextIntent,nextEpisode,prepared,onA
  useEffect(()=>{
   if(!attempt)return;
   const v=video.current,id=attempt.serial;if(!v)return;
-  let alive=true,frameHandle:number|undefined,framePending=false,frameStart=0;
+  let alive=true,frameHandle:number|undefined,framePending=false,frameStart=0,frameCallbackSupported=false;
   const frameVideo=v as NativeVideo&{requestVideoFrameCallback?:(callback:()=>void)=>number;cancelVideoFrameCallback?:(handle:number)=>void};
   const valid=()=>alive&&current.current?.serial===id&&!failed.current;
   const startClock=()=>{clock.current=window.setTimeout(()=>{if(valid()&&!started.current)fallback(id,'Source did not start in time.');},25000);};
@@ -196,12 +196,12 @@ export function Player({viewingSession,title,nextIntent,nextEpisode,prepared,onA
    if(!valid())return;
    setEmbedded(Array.from({length:v.textTracks.length},(_,index)=>({track:v.textTracks[index],index})).filter(x=>x.track.kind==='subtitles'||x.track.kind==='captions').map(x=>({index:x.index,label:x.track.label||x.track.language||'Embedded '+(x.index+1),lang:x.track.language||''})));
   };
-  const playing=()=>{if(!valid())return;started.current=true;if(viewingSession.current.pendingFrame&&!framePending){framePending=true;frameStart=v.currentTime;if(typeof frameVideo.requestVideoFrameCallback==='function')try{frameHandle=frameVideo.requestVideoFrameCallback(()=>{frameHandle=undefined;if(valid()&&v.videoWidth>0)countFrame();});}catch{frameHandle=undefined;}}const successful=activeSources.current[attempt.index];if(successful){rememberSource(account,intent,successful);if(intent.type==='series'&&manualAttempt.current===id){manualAttempt.current=-1;saveProvider(account,intent.titleId,successful.providerId);preferred.current=successful.providerId;setPreferredProvider(successful.providerId);}}cancelTimers();setPaused(false);setStatus('Playing');refreshAudio();refreshEmbedded();};
+  const playing=()=>{if(!valid())return;started.current=true;if(viewingSession.current.pendingFrame&&!framePending){framePending=true;frameStart=v.currentTime;if(typeof frameVideo.requestVideoFrameCallback==='function')try{frameHandle=frameVideo.requestVideoFrameCallback(()=>{frameHandle=undefined;if(valid()&&v.videoWidth>0)countFrame();else frameCallbackSupported=false;});frameCallbackSupported=true;}catch{frameHandle=undefined;}}const successful=activeSources.current[attempt.index];if(successful){rememberSource(account,intent,successful);if(intent.type==='series'&&manualAttempt.current===id){manualAttempt.current=-1;saveProvider(account,intent.titleId,successful.providerId);preferred.current=successful.providerId;setPreferredProvider(successful.providerId);}}cancelTimers();setPaused(false);setStatus('Playing');refreshAudio();refreshEmbedded();};
   const pausedEvent=()=>{if(valid()){lastTick.current=null;setPaused(true);if(started.current){cancelTimers();persist();}}};
   const tick=()=>{
    if(!valid()||!started.current||!Number.isFinite(v.duration)||v.duration<=0)return;
    if(pendingSeek.current!==null){if(v.seeking||Math.abs(v.currentTime-pendingSeek.current)>3)return;pendingSeek.current=null;}
-   if(viewingSession.current.pendingFrame&&framePending&&v.videoWidth>0&&!v.paused&&!v.seeking&&v.readyState>=2&&v.currentTime>frameStart+.05&&typeof frameVideo.requestVideoFrameCallback!=='function')countFrame();
+   if(viewingSession.current.pendingFrame&&framePending&&v.videoWidth>0&&!v.paused&&!v.seeking&&v.readyState>=2&&v.currentTime>frameStart+.05&&!frameCallbackSupported)countFrame();
    const before=lastTick.current;lastTick.current=v.currentTime;if(before!==null&&!v.paused&&!v.seeking){const delta=v.currentTime-before;if(delta>0&&delta<=3)playedSinceSave.current+=delta;}
    last.current={position:v.currentTime,duration:v.duration};setPosition(v.currentTime);setDuration(v.duration);
    if(Date.now()-lastSaved.current>=5000){lastSaved.current=Date.now();persist();}
@@ -420,7 +420,7 @@ export function Player({viewingSession,title,nextIntent,nextEpisode,prepared,onA
     if(ok&&document.activeElement?.closest('.still-watching')&&!e.repeat)return;
     e.preventDefault();e.stopImmediatePropagation();return;
    }
-   if(!e.repeat&&(dir||ok||isBack(e.key,e.keyCode)||[179,415,19,417,412].includes(e.keyCode)||['MediaPlayPause','MediaPlay','MediaPause','MediaFastForward','MediaRewind'].includes(e.key)))deliberate();
+   if(e.isTrusted&&!e.repeat&&(dir||ok||isBack(e.key,e.keyCode)||[179,415,19,417,412].includes(e.keyCode)||['MediaPlayPause','MediaPlay','MediaPause','MediaFastForward','MediaRewind'].includes(e.key)))deliberate();
    if(isBack(e.key,e.keyCode)&&showNext){e.preventDefault();e.stopImmediatePropagation();dismissUpNext();return;}
    if(showNext&&(dir||ok)&&!document.activeElement?.closest('.player-upnext')){e.preventDefault();e.stopImmediatePropagation();document.getElementById('up-next-play')?.focus();return;}
    if(showNext&&dir){e.preventDefault();e.stopImmediatePropagation();const id=document.activeElement?.id==='up-next-play'?'up-next-dismiss':'up-next-play';document.getElementById(id)?.focus();return;}
@@ -458,7 +458,7 @@ export function Player({viewingSession,title,nextIntent,nextEpisode,prepared,onA
  },[attempt?.serial,preview!==null]);
  const shownPosition=preview??position;
  const scrubFrame=preview===null?null:thumbnailAt(thumbnailFrames,preview);
- return <main className="player-page" onPointerMove={()=>{if(showNext||stillActive.current)return;if(!controlsShown)reveal();else setActivity(x=>x+1);}} onPointerDown={()=>{deliberate();setActivity(x=>x+1);}} onClickCapture={e=>{if(e.isTrusted)deliberate();}}>
+ return <main className="player-page" onPointerMove={()=>{if(showNext||stillActive.current)return;if(!controlsShown)reveal();else setActivity(x=>x+1);}} onPointerDown={e=>{if(e.isTrusted)deliberate();setActivity(x=>x+1);}} onClickCapture={e=>{if(e.isTrusted)deliberate();}}>
   <div className="player-video">{attempt&&source?<video key={attempt.serial} ref={video} playsInline preload="auto" style={{objectFit:objectFit(prefs.fit)}}/>:<div className="player-empty"><h1>{intent.name}</h1><p>{status}</p></div>}</div>
   {caption&&!panel&&<div className="player-caption" aria-hidden="true" style={{bottom:controlsShown?'25vh':'6vh',fontSize:(2.2*prefs.size/100)+'vw',color:colors[prefs.color]}}><span style={{background:prefs.background?'rgba(0,0,0,.7)':'transparent'}}>{caption}</span></div>}
   {!controlsShown&&!stillPrompt&&<button id="player-reveal" data-focus type="button" className="player-reveal" aria-label="Show playback controls" onClick={reveal}/>}
