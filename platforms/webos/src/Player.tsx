@@ -205,7 +205,7 @@ export function Player({viewingSession,title,nextIntent,nextEpisode,prepared,onA
   const tick=()=>{
    if(!valid()||!started.current||!Number.isFinite(v.duration)||v.duration<=0)return;
    if(pendingSeek.current!==null){if(v.seeking)return;if(Math.abs(v.currentTime-pendingSeek.current)>3&&Date.now()<seekDeadline.current)return;pendingSeek.current=null;}
-   if(viewingSession.current.pendingFrame&&framePending&&v.videoWidth>0&&!v.paused&&!v.seeking&&v.readyState>=2&&v.currentTime>frameStart+.05&&!frameCallbackSupported)countFrame();
+   if(viewingSession.current.pendingFrame&&framePending&&v.videoWidth>0&&!v.paused&&!v.seeking&&v.readyState>=2&&v.currentTime>frameStart+.05&&(!frameCallbackSupported||v.currentTime>frameStart+2))countFrame();
    const before=lastTick.current;lastTick.current=v.currentTime;if(before!==null&&!v.paused&&!v.seeking){const delta=v.currentTime-before;if(delta>0&&delta<=3)playedSinceSave.current+=delta;}
    last.current={position:v.currentTime,duration:v.duration};setPosition(v.currentTime);setDuration(v.duration);
    if(Date.now()-lastSaved.current>=5000){lastSaved.current=Date.now();persist();}
@@ -391,7 +391,7 @@ export function Player({viewingSession,title,nextIntent,nextEpisode,prepared,onA
  };
  const skipFinalCredits=()=>{
   const v=video.current;if(!v||creditsTarget===null)return;
-  try{const target=creditsTarget;if(!Array.from({length:v.seekable.length},(_,i)=>target>=v.seekable.start(i)&&target<=v.seekable.end(i)).some(Boolean))throw Error('Not seekable');lastTick.current=null;pendingSeek.current=target;seekDeadline.current=Date.now()+10000;v.currentTime=target;setPosition(target);requestAnimationFrame(()=>document.getElementById(controlsShown?'player-toggle':'player-reveal')?.focus());}catch{pendingSeek.current=null;setStatus('This source does not allow skipping credits.');}
+  try{const target=creditsTarget;if(!withinSeekRange(v.seekable,target))throw Error('Not seekable');lastTick.current=null;pendingSeek.current=target;seekDeadline.current=Date.now()+10000;v.currentTime=target;setPosition(target);requestAnimationFrame(()=>document.getElementById(controlsShown?'player-toggle':'player-reveal')?.focus());}catch{pendingSeek.current=null;setStatus('This source does not allow skipping credits.');}
  };
  function clearScrub(){if(scrubTimer.current!==undefined)window.clearTimeout(scrubTimer.current);scrubTimer.current=undefined;scrubValue.current=null;repeatCount.current=0;setPreview(null);}
  function commitScrub(){

@@ -39,8 +39,8 @@ export function chapterSegments(chapters,duration){
  const sorted=chapters.filter(c=>Number.isFinite(c.start)&&Number.isFinite(c.end)&&c.start>=0&&c.end>c.start&&c.end<=duration+1).sort((a,b)=>a.start-b.start);
  return sorted.reduce((out,c)=>{
   const label=String(c.label||'').trim();
-  if(/\b(post[- ]credits?|after credits?|mid[- ]credits?)\b/i.test(label))return out;
-  const kind=/^(?:end(?:ing)?[ -]+credits?|credits?|closing(?: titles)?|outro)$/i.test(label)?'outro':/\b(recap|previously on)\b/i.test(label)?'recap':/\b(intro|opening|opening titles)\b/i.test(label)?'intro':null;
+  if(/\b(post[- ]?credits?|after credits?|mid[- ]?credits?)\b/i.test(label)){out.push({kind:'postcredits',start:c.start,end:c.end});return out;}
+  const kind=/^(?:end(?:ing)?[ -]+credits?|credits?|closing[ -]+(?:titles|credits?)|outro)$/i.test(label)?'outro':/\b(recap|previously on)\b/i.test(label)?'recap':/\b(intro|opening|opening titles)\b/i.test(label)?'intro':null;
   if(kind)out.push({kind,start:c.start,end:c.end});return out;
  },[]);
 }
@@ -56,12 +56,15 @@ export function creditsStart(duration,remote,chapters){
 }
 export function triggerAt(duration,remote,chapters,fallbackSeconds=5){
  if(!Number.isFinite(duration)||duration<120)return null;
- return creditsStart(duration,remote,chapters)??duration-Math.max(5,Math.min(30,Number.isFinite(fallbackSeconds)?fallbackSeconds:5));
+ const base=creditsStart(duration,remote,chapters)??duration-Math.max(5,Math.min(30,Number.isFinite(fallbackSeconds)?fallbackSeconds:5));
+ // Known post-credit scenes must finish before autoplay, even if credits begin much earlier.
+ const sceneEnd=chapters.filter(s=>s.kind==='postcredits'&&s.start>=duration/2&&s.end>s.start&&s.end<=duration+1).reduce((end,s)=>Math.max(end,s.end),0);
+ return Math.min(duration,Math.max(base,sceneEnd));
 }
 export function skipSegment(position,duration,remote,chapters,dismissed){
  if(!Number.isFinite(position)||!Number.isFinite(duration)||duration<120)return null;
  // Native chapters are stronger evidence than remote intro timings; never skip a whole episode.
- const valid=s=>s.kind!=='outro'&&s.start>=0&&s.end>s.start&&s.end<=Math.min(duration/2,600)&&s.end-s.start<=300;
+ const valid=s=>['intro','recap'].includes(s.kind)&&s.start>=0&&s.end>s.start&&s.end<=Math.min(duration/2,600)&&s.end-s.start<=300;
  const options=chapters.some(valid)?chapters:remote;
  return options.find(s=>valid(s)&&position>=s.start&&position<s.end&&!dismissed.includes(segmentKey(s)))||null;
 }

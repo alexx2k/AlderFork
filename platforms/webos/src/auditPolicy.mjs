@@ -3,7 +3,6 @@ export function cloudWriteAllowed(cloud,bound,verified){return cloud===true&&typ
 export function withinSeekRange(ranges,target){if(!ranges||!Number.isFinite(target)||target<0)return false;try{for(let i=0;i<ranges.length;i++)if(target>=ranges.start(i)&&target<=ranges.end(i))return true;}catch{}return false;}
 export function mediaSnapshot(position,duration){return Number.isFinite(position)&&Number.isFinite(duration)&&position>=0&&duration>0?{position:Math.min(position,duration),duration}:null;}
 export function protectedFlag(v){return v===true||v==='true';}
-export function isHttpAddress(value){return typeof value==='string'&&/^https?:\/\//i.test(value)&&!/[\r\n\t]/.test(value);}
 export async function boundedBody(response,limit){
  const declared=Number(response.headers.get('content-length')||0);
  if(declared>limit)throw Error('Response too large');

@@ -1,6 +1,6 @@
 import type {PlaybackIntent,Title} from './liveCatalogue.ts';
 import type {Source,Resolution} from './playback.mjs';
-export type Segment={kind:'intro'|'recap'|'outro';start:number;end:number};
+export type Segment={kind:'intro'|'recap'|'outro'|'postcredits';start:number;end:number};
 export type Chapter={label:string;start:number;end:number};
 export type Prepared={namespace:string;titleId:string;videoId:string;type:PlaybackIntent['type'];at:number;result:Resolution};
 export const PREPARE_SECONDS:number;

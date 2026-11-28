@@ -6,9 +6,12 @@ import {readLibraryItems,writeLibraryItems,getUserId} from './stremio.ts';
 import {historyPrefix} from './profiles.mjs';
 import {cloudWriteAllowed} from './auditPolicy.mjs';
 import {resumeFor} from './progress.ts';
-function read(namespace:string):{data:LibraryData;warning:string}{
- const key=libraryKey(namespace);let raw:string|null=null;
- try{raw=localStorage.getItem(key);if(raw===null)return {data:emptyLibrary(),warning:''};const result=recoverLibrary(JSON.parse(raw));if(!result.damaged)return {data:result.data,warning:''};if(localStorage.getItem(key+':recovery')===null)localStorage.setItem(key+':recovery',raw);return {data:result.data,warning:'Some invalid local library records were skipped; a recovery copy was retained.'};}catch{try{if(raw!==null&&localStorage.getItem(key+':recovery')===null)localStorage.setItem(key+':recovery',raw);}catch{}return {data:emptyLibrary(),warning:'Local library data could not be read. Check storage before relying on local history.'};}
+function read(namespace:string):{data:LibraryData;warning:string;writable:boolean}{
+ const key=libraryKey(namespace);let raw:string|null=null,data=emptyLibrary();
+ try{raw=localStorage.getItem(key);if(raw===null)return {data,warning:'',writable:true};const result=recoverLibrary(JSON.parse(raw));data=result.data;if(!result.damaged)return {data,warning:'',writable:true};}catch{}
+ if(raw===null)return {data,warning:'Local library storage unavailable. Changes are temporary and cloud writes are paused.',writable:false};
+ try{if(localStorage.getItem(key+':recovery')===null)localStorage.setItem(key+':recovery',raw);return {data,warning:'Invalid local library records were skipped; a recovery copy was retained.',writable:true};}
+ catch{return {data,warning:'Could not retain a recovery copy. Original library left untouched; changes are temporary and cloud writes are paused.',writable:false};}
 }
 function oldHistory(data:LibraryData,namespace:string,titles:Title[]):LibraryData{
  const rows={...data.rows},prefix=historyPrefix('progress',namespace);
@@ -23,7 +26,7 @@ function oldHistory(data:LibraryData,namespace:string,titles:Title[]):LibraryDat
    if(!id)continue;
    const title:Title=t||{id,type:type as Title['type'],name:id,year:'',genre:'',description:'',theme:'lake'};
    const key=keyFor(title),p=JSON.parse(localStorage.getItem(k)||'null');
-   if(!p||!Number.isFinite(p.position)||!Number.isFinite(p.duration)||!Number.isFinite(p.updatedAt))continue;
+   if(!p||!Number.isFinite(p.position)||p.position<0||!Number.isFinite(p.duration)||p.duration<=0||!Number.isFinite(p.updatedAt)||p.updatedAt<0)continue;
    const row=rows[key]||makeRow(title);
    // Once a real library action exists, do not resurrect old dismissed progress.
    if(data.rows[key]){if(t)rows[key]={...row,title:mergeTitle(row.title,t)};continue;}
@@ -37,7 +40,7 @@ export function useLibrary(namespace:string,token:string,cloud:boolean){
  const [initial]=useState(()=>read(namespace));
  const [data,setData]=useState(()=>oldHistory(initial.data,namespace,[]));
  const model=useRef(data),alive=useRef(true),working=useRef(false),timer=useRef<number|undefined>(undefined),seq=useRef(0);
- const [status,setStatus]=useState(initial.warning||(cloud?'Waiting to sync library…':'Local library'));
+ const [status,setStatus]=useState(cloud?'Waiting to sync library…':'Local library');
  const recoveryWarning=initial.warning;
  const [revision,setRevision]=useState(0);
  const controller=useRef<AbortController|null>(null);
@@ -48,12 +51,13 @@ export function useLibrary(namespace:string,token:string,cloud:boolean){
  const save=(d:LibraryData)=>{
   model.current=d;
   if(alive.current)setData(d);
+  if(!initial.writable)return;
   try{localStorage.setItem(libraryKey(namespace),JSON.stringify(d));}
   catch{if(alive.current)setStatus('Local library storage full or unavailable; changes may not survive restart.');}
  };
- const schedule=(delay=1500)=>{if(!cloud||!alive.current)return;if(timer.current!==undefined){if(delay!==0)return;window.clearTimeout(timer.current);}timer.current=window.setTimeout(()=>{timer.current=undefined;setRevision(v=>v+1);},delay);};
+ const schedule=(delay=1500)=>{if(!cloud||!initial.writable||!alive.current)return;if(timer.current!==undefined){if(delay!==0)return;window.clearTimeout(timer.current);}timer.current=window.setTimeout(()=>{timer.current=undefined;setRevision(v=>v+1);},delay);};
  const sync=async()=>{
-  if(!cloud||working.current||!alive.current)return;
+  if(!cloud||!initial.writable||working.current||!alive.current)return;
   working.current=true;const c=new AbortController();controller.current=c;
   setStatus('Synchronising Stremio library…');
   try{
@@ -96,7 +100,7 @@ export function useLibrary(namespace:string,token:string,cloud:boolean){
   if(!alive.current)return;
   const at=Math.max(Date.now(),actionClock.current+1);actionClock.current=at;
   const a:Action={...action,title:titleSnapshot(action.title),at,id:at.toString(36)+'-'+(++seq.current).toString(36)+'-'+Math.random().toString(36).slice(2)};
-  const bound=boundAccount(),safeCloud=cloudWriteAllowed(cloud,bound,identity.current);
+  const bound=boundAccount(),safeCloud=initial.writable&&cloudWriteAllowed(cloud,bound,identity.current);
   save(reduceLibrary(model.current,a,safeCloud,inflateWatched,inFlightIds.current));if(cloud&&!safeCloud)setStatus('Account identity not verified or changed. This change is local only.');schedule(5000);
  };
  const enrich=(titles:Title[])=>{
