@@ -1,7 +1,8 @@
+import {catalogueIdentity} from './addonManagement.mjs';
 import {array,object,string,jsonRequest} from './stremio.ts';
 export type ContentType='movie'|'series';
 export type Title={id:string;type:ContentType;name:string;year:string;genre:string;description:string;theme:string;poster?:string;background?:string;rating?:string;runtime?:string;cast?:string[];episodes?:Episode[]};
-export type Catalog={key:string;name:string;addon:string;type:ContentType;id:string;base:string;required:Record<string,string>;search:boolean;searchRequiredOnly:boolean;genres:string[];pages:boolean;searchable:boolean};
+export type Catalog={key:string;preferenceKey?:string;name:string;addon:string;type:ContentType;id:string;base:string;required:Record<string,string>;search:boolean;searchRequiredOnly:boolean;genres:string[];pages:boolean;searchable:boolean};
 export type Shelf={key:string;name:string;addon:string;type:ContentType;titles:Title[]};
 export type CatalogResult={shelves:Shelf[];failures:number;total:number;truncated:boolean};
 function contentType(value:unknown):value is ContentType{return value==='movie'||value==='series';}
@@ -42,7 +43,7 @@ export function catalogues(descriptors:unknown[]):Catalog[]{
    if(!browse&&!searchable)return;
    // Search-only catalogues are retained for search, not requested on the home screen.
    if(!browse||requiredNames.includes('search'))required.search='';
-   out.push({key:'a'+index+'c'+i,name:string(c.name)||id,addon,type,id,base,required,search,searchRequiredOnly,genres:Array.from(new Set(genres)),pages:supported.includes('skip'),searchable});
+   out.push({key:'a'+index+'c'+i,preferenceKey:catalogueIdentity(string(desc.transportUrl),type,id),name:string(c.name)||id,addon,type,id,base,required,search,searchRequiredOnly,genres:Array.from(new Set(genres)),pages:supported.includes('skip'),searchable});
   });
  });
  return out;

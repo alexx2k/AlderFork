@@ -1,6 +1,6 @@
 {
   "name": "tarn-webos",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -9,7 +9,7 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "dev": "node tools/build.mjs --serve",
-    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test tests/foundation.test.mjs tests/content.test.mjs tests/playback.test.mjs tests/profiles.test.mjs tests/library.test.mjs tests/playerPrefs.test.mjs tests/advancedPlayback.test.mjs tests/viewingExperience.test.mjs",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test tests/foundation.test.mjs tests/content.test.mjs tests/playback.test.mjs tests/profiles.test.mjs tests/library.test.mjs tests/playerPrefs.test.mjs tests/advancedPlayback.test.mjs tests/viewingExperience.test.mjs tests/addonManagement.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

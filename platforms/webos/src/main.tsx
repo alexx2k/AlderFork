@@ -3,7 +3,9 @@ import {createRoot} from 'react-dom/client';
 import {directionFor,isBack,nextFocus,routeFromHash,FocusRect,Route} from './navigation.ts';
 import {createStore,initialState,FoundationState,StateStore} from './storage.ts';
 import {capabilities,endpointForManifest,mediaSamples,probeJson,ProbeResult} from './diagnostics.ts';
-import {ApiError,installedAddons} from './stremio.ts';
+import {useAddonCollection} from './useAddonCollection.ts';
+import {AddonManager} from './AddonManager.tsx';
+import {Layout,cleanLayout,layoutKey,orderCatalogues} from './addonManagement.mjs';
 import {catalogues,loadShelves,loadDetails,titleKey,Title,Shelf,ContentCache,PlaybackIntent,playbackIntent} from './liveCatalogue.ts';
 import {useDiscovery,DiscoverFilters,useRemoteSearch} from './Discovery.tsx';
 import {TitleDetails} from './TitleDetails.tsx';
@@ -55,10 +57,15 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  const authRef=useRef<string|null>(token);
  
  const [rows,setRows]=useState<Shelf[]>([]);
- const [addons,setAddons]=useState<unknown[]>([]);
  const [status,setStatus]=useState('');
  const [loading,setLoading]=useState(false);
  const [refresh,setRefresh]=useState(0);
+ const collection=useAddonCollection(token,profile.mode==='stremio',refresh,onExpired);
+ const addons=collection.addons;
+ const [layout,setLayout]=useState<Layout>(()=>{try{return cleanLayout(JSON.parse(localStorage.getItem(layoutKey(namespace))||'null'));}catch{return cleanLayout(null);}});
+ const saveLayout=(next:Layout)=>{setLayout(next);try{localStorage.setItem(layoutKey(namespace),JSON.stringify(next));return true;}catch{return false;}};
+ const catalogs=useMemo(()=>catalogues(addons),[addons]);
+ const browsing=useMemo(()=>orderCatalogues(catalogs,layout),[catalogs,layout]);
  const [shelf,setShelf]=useState('Home');
  const [query,setQuery]=useState('');
  const [showSearch,setShowSearch]=useState(false);
@@ -66,7 +73,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  const [keyboard,setKeyboard]=useState(false);
  const [searchLimit,setSearchLimit]=useState(30);
  const cache=useMemo(()=>new ContentCache(),[auth,refresh]);
- const discovery=useDiscovery(addons,!!auth&&shelf==='Discover'&&!showSearch,cache);
+ const discovery=useDiscovery(addons,!!auth&&shelf==='Discover'&&!showSearch,cache,layout);
  const search=useRemoteSearch(addons,!!auth&&showSearch,searchTerm,cache);
  const submitSearch=()=>{const term=query.trim();setKeyboard(false);setPending('search-submit');setSearchLimit(30);if(term===searchTerm)search.retry();else setSearchTerm(term);};
  const [rowLimit,setRowLimit]=useState(6);
@@ -97,34 +104,26 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
   return()=>{alive=false;authRef.current=null;};
  },[]);
  useEffect(()=>{
+  if(!collection.loaded){setLoading(false);return;}
   const controller=new AbortController(),signal=controller.signal,key=auth;
-  setLoading(true);setStatus('Loading installed add-ons…');
+  setRows([]);setLoading(true);setStatus('Loading catalogues…');
   (async()=>{
    try{
-    const descriptors=await installedAddons(key,signal);
-    if(signal.aborted||authRef.current!==key)return;
-    setAddons(descriptors);
-    const catalogs=catalogues(descriptors);
-    setStatus('Loading catalogues…');
     const received=new Map<string,Shelf>();
-    const result=await loadShelves(catalogs,signal,undefined,(url,init,s)=>cache.request(url,init,s),row=>{
+    const result=await loadShelves(browsing,signal,undefined,(url,init,s)=>cache.request(url,init,s),row=>{
      if(signal.aborted||authRef.current!==key)return;
      received.set(row.key,row);
-     setRows(catalogs.map(c=>received.get(c.key)).filter((s):s is Shelf=>!!s&&s.titles.length>0));
+     setRows(browsing.map(c=>received.get(c.key)).filter((s):s is Shelf=>!!s&&s.titles.length>0));
     });
     if(signal.aborted||authRef.current!==key)return;
     setRows(result.shelves.filter(s=>s.titles.length));
     const count=result.shelves.filter(s=>s.titles.length).length;
-    setStatus(count+' catalogue'+(count===1?'':'s')+' loaded from '+descriptors.length+' installed add-ons'+(result.failures?' · '+result.failures+' request(s) failed':'')+(result.truncated?' · first 24 catalogues':'')+'.');
-   }catch(error){
-    if(signal.aborted||authRef.current!==key)return;
-    if(error instanceof ApiError&&error.code===1){
-     authRef.current=null;setRows([]);setAddons([]);setLoading(false);setStatus('Account session expired. Returning to profiles…');onExpired();
-    }else setStatus('Could not load your account or catalogues. Check the connection and select Refresh.');
-   }finally{if(!signal.aborted&&authRef.current===key)setLoading(false);}
+    setStatus(count+' catalogue'+(count===1?'':'s')+' loaded from '+addons.length+' installed add-ons'+(result.failures?' · '+result.failures+' request(s) failed':'')+(result.truncated?' · first 24 catalogues':'')+'.');
+   }catch{if(!signal.aborted)setStatus('Could not load catalogues. Select Refresh to retry.');}
+   finally{if(!signal.aborted)setLoading(false);}
   })();
   return()=>controller.abort();
- },[auth,refresh,cache]);
+ },[auth,cache,browsing,collection.loaded]);
  const selected=route.kind==='details'&&auth?(selectedTitle&&titleKey(selectedTitle)===route.id?selectedTitle:rows.reduce<Title|undefined>((found,row)=>found||row.titles.find(t=>titleKey(t)===route.id),undefined)):undefined;
  useEffect(()=>{
   setDetail(selected||null);setDetailLoading(!!selected);
@@ -140,8 +139,8 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
    const target=e.target as HTMLElement;
    const typing=target.tagName==='INPUT'||target.tagName==='TEXTAREA';
    if(typing){
-    if(isBack(e.key,e.keyCode)){e.preventDefault();const id=target.id;focus(id==='query'?'search':id==='name'?'save':'network');return;}
-    if(e.key==='ArrowDown'||e.keyCode===40){e.preventDefault();focus(target.id==='query'?'search-submit':target.id==='name'?'save':'network');}
+    if(isBack(e.key,e.keyCode)){e.preventDefault();const id=target.id;focus(id==='addon-url'?'addon-inspect':id==='query'?'search':id==='name'?'save':'network');return;}
+    if(e.key==='ArrowDown'||e.keyCode===40){e.preventDefault();focus(target.id==='addon-url'?'addon-inspect':target.id==='query'?'search-submit':target.id==='name'?'save':'network');}
     return;
    }
    if(isBack(e.key,e.keyCode)){if(continueMenu||confirmSignOut||playing||route.kind!=='home'||showSearch||shelf==='Discover'||shelf==='My List'){e.preventDefault();back();}return;}
@@ -176,7 +175,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  const upcomingEpisode=playing&&playing.title.type==='series'?nextEpisode(playing.title,playing.intent.videoId,(playing.title.episodes||[]).filter(e=>library.watched(playing.title,e.id)).map(e=>e.id)):null;
  const upcomingIntent=playing&&upcomingEpisode?playbackIntent(playing.title,upcomingEpisode):null;
  return <><div className="app" style={playing?{display:"none"}:undefined} onPointerDown={e=>{const b=(e.target as HTMLElement).closest<HTMLElement>('button[data-focus]');if(b)b.focus();}}>
- <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.5.0-dev.2 • Development</span></header>
+ <header><img className="brand" src="assets/lockup.svg" alt="Tarn"/><span className="dev">webOS • 0.6.0-dev.1 • Development</span></header>
  {route.kind==='home'?<main>
   <nav>{['Home','Discover','Movies','Series','My List'].map(n=><Btn key={n} id={'nav-'+n} className={shelf===n?'selected':''} onClick={()=>{setContinueMenu(null);setShelf(n);setShowSearch(false);setKeyboard(false);setRowLimit(6);}}>{n}</Btn>)}
   {auth&&<Btn id="search" onClick={()=>{setContinueMenu(null);setShowSearch(!showSearch);setKeyboard(false);if(!showSearch)setTimeout(()=>document.getElementById('query')?.focus(),0);}}>Search</Btn>}
@@ -185,7 +184,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
   {!showSearch&&shelf==='Home'&&<ContinueWatching rows={continueRows(library.data.rows)} onResume={r=>startPlayer(rowIntent(r),r.title)} onOptions={r=>{setContinueMenu(r);setPending('continue-resume');}}/>}
   {continueMenu&&<section className="continue-menu" role="dialog" aria-label="Continue Watching options"><h2>{continueMenu.title.name}</h2><div className="controls"><Btn id="continue-resume" onClick={()=>startPlayer(rowIntent(continueMenu),continueMenu.title)}>Resume</Btn><Btn id="continue-restart" onClick={()=>startPlayer(rowIntent(continueMenu),continueMenu.title,true)}>Start over</Btn><Btn id="continue-details" onClick={()=>{openTitle(continueMenu.title);setContinueMenu(null);}}>View details</Btn><Btn id="continue-watched" onClick={()=>{library.act({kind:'watched',title:continueMenu.title,videoId:continueMenu.videoId});setContinueMenu(null);setPending('nav-Home');}}>Mark as watched</Btn><Btn id="continue-remove" onClick={()=>{library.act({kind:'hide',title:continueMenu.title,videoId:continueMenu.videoId});setContinueMenu(null);setPending('nav-Home');}}>Remove from Continue Watching</Btn><Btn id="continue-cancel" onClick={back}>Cancel</Btn></div></section>}
   {!showSearch&&shelf==='My List'?<><div className="catalog-status"><p role="status">{library.status}</p>{profile.mode==='stremio'&&<Btn id="library-sync" onClick={library.retry}>Sync now</Btn>}</div><MyList rows={listRows(library.data.rows)} onOpen={openTitle}/></>:<>
-  <div className="catalog-status"><p aria-live="polite">{status}</p><Btn id="refresh-catalogues" disabled={loading} onClick={()=>setRefresh(x=>x+1)}>{loading?'Loading…':'Refresh catalogues'}</Btn></div>
+  <div className="catalog-status"><p aria-live="polite">{collection.busy||!collection.loaded?collection.status:status}</p><Btn id="refresh-catalogues" disabled={loading||collection.busy} onClick={()=>setRefresh(x=>x+1)}>{loading||collection.busy?'Loading…':'Refresh catalogues'}</Btn></div>
   {showSearch?<section className="search"><h1>Search</h1><input id="query" data-focus maxLength={120} value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'||e.keyCode===13){e.preventDefault();submitSearch();focus('search-submit');}}} placeholder="Search movies and series…" aria-label="Search installed add-ons"/><div className="controls"><Btn id="search-submit" className="primary" onClick={submitSearch}>{search.loading?'Search again':'Search'}</Btn><Btn id="search-keyboard" onClick={()=>{setKeyboard(!keyboard);if(!keyboard)setPending('key-A');}}>{keyboard?'Hide keyboard':'On-screen keyboard'}</Btn><Btn id="close-search" onClick={()=>{setShowSearch(false);setKeyboard(false);setPending('search');}}>Close search</Btn></div>{keyboard&&<div className="search-keys" aria-label="On-screen search keyboard">{'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('').map(k=><Btn key={k} id={'key-'+k} onClick={()=>setQuery(q=>(q+k).slice(0,120))}>{k}</Btn>)}<Btn id="key-space" onClick={()=>setQuery(q=>(q+' ').slice(0,120))}>Space</Btn><Btn id="key-delete" onClick={()=>setQuery(q=>q.slice(0,-1))}>Delete</Btn><Btn id="key-clear" onClick={()=>setQuery('')}>Clear</Btn><Btn id="key-search" onClick={submitSearch}>Search</Btn></div>}<p aria-live="polite">{search.status}</p></section>:
   shelf==='Discover'?<DiscoverFilters model={discovery}/>:featured&&<section className="hero"><Artwork key={titleKey(featured)} title={featured} wide/><div className="hero-copy"><p className="eyebrow">FEATURED</p><h1>{featured.name}</h1><p>{[featured.year,featured.genre].filter(Boolean).join(' · ')}</p><p className="synopsis">{featured.description}</p><Btn id="featured" className="primary" onClick={()=>openTitle(featured)}>View details</Btn></div></section>}
   {!showSearch&&shelf!=='Discover'&&visible.length===0&&!loading&&<p>No catalogues available for this view. Try Refresh or check your installed add-ons.</p>}
@@ -195,9 +194,9 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
   {!showSearch&&shelf!=='Discover'&&visible.length>rowLimit&&<Btn id="more-rows" onClick={()=>setRowLimit(x=>x+6)}>Show more catalogues</Btn>}
   <footer>Tarn webOS · Direct playback development build.</footer></>}
  </main>:<main className="page"><Btn id="back" onClick={back}>‹ Back</Btn>
- {route.kind==='diagnostics'?<Diagnostics/>:route.kind==='settings'?<section><h1>Settings</h1><div className="profile-edit-preview"><Portrait profile={profile}/><div><h2>{profile.name}</h2><p>{profile.mode==='local'?'Local profile · shared streaming account':'Stremio profile · linked account'}</p></div></div><div className="controls"><Btn id="settings-profiles" onClick={onSwitch}>Switch or manage profiles</Btn>{profile.mode==='stremio'&&<Btn id="sign-out" onClick={()=>setConfirmSignOut(true)}>Sign out of Stremio</Btn>}</div>
+ {route.kind==='diagnostics'?<Diagnostics/>:route.kind==='addons'?<AddonManager collection={collection} owner={profile.mode==='stremio'} catalogs={catalogs} layout={layout} onLayout={saveLayout}/>:route.kind==='settings'?<section><h1>Settings</h1><div className="profile-edit-preview"><Portrait profile={profile}/><div><h2>{profile.name}</h2><p>{profile.mode==='local'?'Local profile · shared streaming account':'Stremio profile · linked account'}</p></div></div><div className="controls"><Btn id="settings-profiles" onClick={onSwitch}>Switch or manage profiles</Btn>{profile.mode==='stremio'&&<Btn id="sign-out" onClick={()=>setConfirmSignOut(true)}>Sign out of Stremio</Btn>}</div>
  {confirmSignOut&&<section className="playback-preview"><h2>Sign out of this account?</h2><p>Your profile and local history will remain. Local profiles using this account will need it relinked.</p><Btn id="cancel-sign-out" onClick={()=>setConfirmSignOut(false)}>Cancel</Btn><Btn id="confirm-sign-out" onClick={onSignOut}>Sign out</Btn></section>}
- <h2>Playback preferences</h2><PlayerPreferences prefs={prefs} onChange={updatePrefs}/><h2>Local storage</h2><p>{storage}</p><p>Launch count: {state.visits}</p><p className="muted">Playback progress and source memory are separate for each profile. Stremio profiles sync their library; local profiles never send library changes to Stremio.</p></section>:activeDetail?<TitleDetails key={titleKey(activeDetail)} title={activeDetail} loading={detailLoading} onPlay={(intent,startOver)=>startPlayer(intent,activeDetail,startOver)} inList={!!library.row(activeDetail)?.list} onList={()=>library.act({kind:'list',title:activeDetail,on:!library.row(activeDetail)?.list})} isWatched={id=>library.watched(activeDetail,id)} onWatched={(id,on)=>library.act({kind:on?'watched':'unwatch',title:activeDetail,videoId:id})} resumeAt={intent=>library.position(activeDetail,intent)} preferredEpisodeId={(()=>{const r=library.row(activeDetail);return r&&!r.hidden&&(r.next||r.position>0)?r.videoId:undefined;})()}/>:<p>{loading?'Loading catalogues…':'Title not available. Return to Home and refresh.'}</p>}
+ <h2>Add-ons and catalogues</h2><p>Manage the linked account’s add-ons and this profile’s catalogue layout.</p><Btn id="settings-addons" onClick={()=>go('#addons')}>My add-ons</Btn><h2>Playback preferences</h2><PlayerPreferences prefs={prefs} onChange={updatePrefs}/><h2>Local storage</h2><p>{storage}</p><p>Launch count: {state.visits}</p><p className="muted">Playback progress and source memory are separate for each profile. Stremio profiles sync their library; local profiles never send library changes to Stremio.</p></section>:activeDetail?<TitleDetails key={titleKey(activeDetail)} title={activeDetail} loading={detailLoading} onPlay={(intent,startOver)=>startPlayer(intent,activeDetail,startOver)} inList={!!library.row(activeDetail)?.list} onList={()=>library.act({kind:'list',title:activeDetail,on:!library.row(activeDetail)?.list})} isWatched={id=>library.watched(activeDetail,id)} onWatched={(id,on)=>library.act({kind:on?'watched':'unwatch',title:activeDetail,videoId:id})} resumeAt={intent=>library.position(activeDetail,intent)} preferredEpisodeId={(()=>{const r=library.row(activeDetail);return r&&!r.hidden&&(r.next||r.position>0)?r.videoId:undefined;})()}/>:<p>{loading?'Loading catalogues…':'Title not available. Return to Home and refresh.'}</p>}
  </main>}
  </div>{playing&&<Player viewingSession={viewingSession} key={playing.account+'|'+playing.intent.type+'|'+playing.intent.videoId} title={playing.title} nextIntent={upcomingIntent} nextEpisode={upcomingEpisode} prepared={playing.prepared} onAdvance={(next,prepared,origin)=>{setPlaying(p=>p&&p.intent.videoId===playing.intent.videoId?{intent:next,account:p.account,title:p.title,startAt:0,prepared,origin}:p);setPending('player-back');}} intent={playing.intent} addons={addons} lenders={lenders} account={playing.account} startAt={playing.startAt} prefs={prefs} onPrefs={updatePrefs} onProgress={(position,duration,played,ended)=>library.act({kind:'progress',title:playing.title,videoId:playing.intent.videoId,position,duration,played,ended})} onExit={closePlayer}/>}</>;
 }

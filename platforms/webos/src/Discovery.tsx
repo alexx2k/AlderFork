@@ -1,8 +1,9 @@
+import {Layout,orderCatalogues} from './addonManagement.mjs';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {appendPage,browseCatalogs,catalogues,ContentCache,ContentType,loadPage,loadShelves,Title,uniqueTitles} from './liveCatalogue.ts';
 
-export function useDiscovery(addons:unknown[],active:boolean,cache:ContentCache){
- const catalogs=useMemo(()=>browseCatalogs(catalogues(addons)),[addons]);
+export function useDiscovery(addons:unknown[],active:boolean,cache:ContentCache,layout:Layout){
+ const catalogs=useMemo(()=>orderCatalogues(browseCatalogs(catalogues(addons)),layout),[addons,layout]);
  const [type,setType]=useState<ContentType>('movie');
  const options=catalogs.filter(c=>c.type===type);
  const [key,setKey]=useState('');

@@ -1,4 +1,4 @@
-// Direct, read-only Stremio account integration. Never log response bodies, tokens or transport URLs.
+// Direct Stremio account integration. Never log response bodies, tokens or transport URLs.
 export class ApiError extends Error {
  readonly code:number;
  constructor(code:number){super('Stremio API error '+code);this.code=code;}
@@ -71,4 +71,10 @@ export async function writeLibraryItems(authKey:string,changes:JsonObject[],sign
  const raw=object(await post('datastorePut',{authKey,collection:'libraryItem',changes},signal));
  if(raw.error)throw new ApiError(Number(object(raw.error).code)||0);
  if(!Object.prototype.hasOwnProperty.call(raw,'result'))throw Error('Invalid library write response');
+}
+
+export async function writeAddons(authKey:string,addons:unknown[],signal?:AbortSignal):Promise<void>{
+ const body=object(await post('addonCollectionSet',{type:'AddonCollectionSet',authKey,addons},signal));
+ if(body.error)throw new ApiError(Number(object(body.error).code)||0);
+ if(!Object.prototype.hasOwnProperty.call(body,'result'))throw Error('Unexpected add-on save response');
 }

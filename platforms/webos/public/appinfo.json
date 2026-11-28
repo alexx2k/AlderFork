@@ -1,6 +1,6 @@
 {
   "id": "dev.tarn.webos.dev",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "vendor": "Tarn",
   "type": "web",
   "main": "index.html",

@@ -23,10 +23,11 @@ export function nextFocus(from:FocusRect,items:FocusRect[],dir:Direction):string
   }
   return best;
 }
-export type Route={kind:'home'}|{kind:'details';id:string}|{kind:'diagnostics'}|{kind:'settings'}|{kind:'signin'};
+export type Route={kind:'home'}|{kind:'details';id:string}|{kind:'diagnostics'}|{kind:'settings'}|{kind:'addons'}|{kind:'signin'};
 export function routeFromHash(hash:string):Route{
   if(hash==='#diagnostics')return {kind:'diagnostics'};
   if(hash==='#signin')return {kind:'signin'};
+  if(hash==='#addons')return {kind:'addons'};
   if(hash==='#settings')return {kind:'settings'};
   if(hash.startsWith('#details/')){try{const id=decodeURIComponent(hash.slice(9));if(id&&id.length<=512)return {kind:'details',id};}catch{}}
   return {kind:'home'};

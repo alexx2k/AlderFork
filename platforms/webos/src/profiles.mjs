@@ -70,6 +70,7 @@ export function deleteHistory(storage,profileId){
  const keys=[];for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key&&prefixes.some(p=>key.startsWith(p)))keys.push(key);}
  for(const key of keys)storage.removeItem(key);
  const preferences='tarn.playerprefs.v1:'+encodeURIComponent(historyNamespace(profileId));const prefKeys=[];for(let i=0;i<storage.length;i++){const k=storage.key(i);if(k&&(k===preferences||k.startsWith(preferences+':')))prefKeys.push(k);}for(const k of prefKeys)storage.removeItem(k);
+ storage.removeItem('tarn.cataloglayout.v1:'+encodeURIComponent(historyNamespace(profileId)));
  const library='tarn.library.v1:'+encodeURIComponent(historyNamespace(profileId));storage.removeItem(library);storage.removeItem(library+':account');
 }
 

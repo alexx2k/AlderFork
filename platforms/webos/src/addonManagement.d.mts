@@ -1,0 +1,16 @@
+import type {Catalog} from './liveCatalogue.ts';
+export const PHONE_ADDONS_URL:string;
+export type AddonInfo={name:string;id:string;version:string;description:string;roles:string[];official:boolean;locked:boolean;shareable:boolean;url:string};
+export type CollectionEdit={kind:'install';descriptor:unknown}|{kind:'remove';index:number}|{kind:'move';index:number;delta:-1|1};
+export type Layout={hidden:string[];order:string[]};
+export function normalizeManifestUrl(value:string,parse:(raw:string)=>URL):string;
+export function makeDescriptor(url:string,raw:unknown):unknown;
+export function addonInfo(raw:unknown,index:number):AddonInfo;
+export function applyCollectionEdit(list:unknown[],edit:CollectionEdit,writable:boolean):unknown[];
+export function sameCollection(a:unknown[],b:unknown[]):boolean;
+export function sameOrder(a:unknown[],b:unknown[]):boolean;
+export function catalogueIdentity(url:string,type:string,id:string):string;
+export function layoutKey(namespace:string):string;
+export function cleanLayout(raw:unknown):Layout;
+export function orderCatalogues(catalogs:Catalog[],layout:Layout,includeHidden?:boolean):Catalog[];
+export function editLayout(layout:Layout,catalogs:Catalog[],key:string,kind:'toggle'|'move',delta?:number):Layout;
