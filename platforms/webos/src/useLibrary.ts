@@ -10,7 +10,7 @@ function read(namespace:string):{data:LibraryData;warning:string;writable:boolea
  const key=libraryKey(namespace);let raw:string|null=null,data=emptyLibrary();
  try{raw=localStorage.getItem(key);if(raw===null)return {data,warning:'',writable:true};const result=recoverLibrary(JSON.parse(raw));data=result.data;if(!result.damaged)return {data,warning:'',writable:true};}catch{}
  if(raw===null)return {data,warning:'Local library storage unavailable. Changes are temporary and cloud writes are paused.',writable:false};
- try{if(localStorage.getItem(key+':recovery')===null)localStorage.setItem(key+':recovery',raw);return {data,warning:'Invalid local library records were skipped; a recovery copy was retained.',writable:true};}
+ try{const previous=localStorage.getItem(key+':recovery');if(previous===null)localStorage.setItem(key+':recovery',raw);else if(previous!==raw)throw Error('Previous recovery copy exists');return {data,warning:'Invalid local library records were skipped; a recovery copy was retained.',writable:true};}
  catch{return {data,warning:'Could not retain a recovery copy. Original library left untouched; changes are temporary and cloud writes are paused.',writable:false};}
 }
 function oldHistory(data:LibraryData,namespace:string,titles:Title[]):LibraryData{

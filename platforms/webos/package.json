@@ -9,7 +9,7 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "dev": "node tools/build.mjs --serve",
-    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test tests/foundation.test.mjs tests/content.test.mjs tests/playback.test.mjs tests/profiles.test.mjs tests/library.test.mjs tests/playerPrefs.test.mjs tests/advancedPlayback.test.mjs tests/viewingExperience.test.mjs tests/addonManagement.test.mjs tests/customisation.test.mjs tests/auditPolicy.test.mjs",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test tests/foundation.test.mjs tests/content.test.mjs tests/playback.test.mjs tests/profiles.test.mjs tests/library.test.mjs tests/playerPrefs.test.mjs tests/advancedPlayback.test.mjs tests/viewingExperience.test.mjs tests/addonManagement.test.mjs tests/customisation.test.mjs tests/auditPolicy.test.mjs tests/auditNative.test.mjs",
     "typecheck": "tsc --noEmit",
     "audit": "npm run typecheck && npm test && npm run build"
   },

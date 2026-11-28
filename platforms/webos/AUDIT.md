@@ -12,6 +12,7 @@ Scope: all code under `platforms/webos/` on feature/webos-client, beginning at 4
 | Media lifecycle | Diagnostics left sample decoder/network active on navigation; stale play promise could change new-source UI. | Cancel probes, release decoder, ignore stale results. |
 | Source retry | Source-local duration and focus survived retries; rejected old play promises could affect new attempts. | Clear attempt duration, restore focus, guard promise against serial. |
 | Seeking | Skip and transport seek handling inconsistent; unresolved resume target could suppress updates indefinitely. | Validate seekable ranges, settle unconfirmed target after deadline when media is not seeking, record seeked snapshots. |
+| Rewatch | The completion guard stayed set when replaying a finished video or selecting another source after natural end. | Reset progress tracking for a deliberate replay. |
 | Focus | Episode options and sign-out dialog were not included in directional focus scope; Back left title rather than closing episode options. | Scope directional focus to active dialog and restore focus. |
 | Link lifecycle | A profile-save failure could leave sign-in stuck at Opening Tarn; new code could be requested during save. | Propagate save failure to sign-in and disable buttons during commit. |
 | Storage | Foundation DB handles were opened during each profile activation and not closed. | Close handles at cleanup and after initial name read. |
@@ -32,3 +33,9 @@ Scope: all code under `platforms/webos/` on feature/webos-client, beginning at 4
 - Full security penetration test, dependency vulnerability scan, LG store certification and physical-device memory profiling are outside the executed source checks.
 
 Do not merge or publish until the checklist's release gates pass.
+
+## Executed verification
+
+- 91 focused cases passed against exact JS module source using an injected fixture URL implementation and assertion harness (audit policy, profiles, player preferences, advanced playback, viewing, add-ons, customisation). This is not the full Node suite.
+- 4 additional Node 22.16 native smoke tests passed using the exact `auditPolicy.mjs` verified by Git blob SHA `dc8971805441098cf604a077cb17241b2a82e361`. Native Response and ReadableStream were exercised. The same tests are checked in as `tests/auditNative.test.mjs`.
+- One new catalogue cache regression case is included in the normal Node suite, awaiting local execution. Browser lifecycle fixes require actual simulator/TV tests.

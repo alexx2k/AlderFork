@@ -127,12 +127,14 @@ export function Player({viewingSession,title,nextIntent,nextEpisode,prepared,onA
  const source=attempt?sources[attempt.index]:undefined;
  const persist=(final=false,forceComplete=false)=>{const p=mediaSnapshot(last.current.position,last.current.duration);if(!p||finished.current)return;saveProgress(account,intent,p.position,p.duration);const done=forceComplete||final&&p.position>=p.duration*.9;if(!final&&p.position>=p.duration*.9)return;const signature=p.position+'|'+p.duration+'|'+done;if(signature===lastReport.current&&!playedSinceSave.current)return;lastReport.current=signature;if(done)finished.current=true;const watched=playedSinceSave.current;playedSinceSave.current=0;latestProgress.current(p.position,p.duration,watched,done);};
  const cancelTimers=()=>{if(clock.current!==undefined)window.clearTimeout(clock.current);if(stall.current!==undefined)window.clearTimeout(stall.current);clock.current=undefined;stall.current=undefined;};
+ const resetReplay=()=>{finished.current=false;lastReport.current='';playedSinceSave.current=0;lastTick.current=null;last.current={position:0,duration:0};resume.current=0;pendingSeek.current=null;setEndedPlayback(false);setUpNextDismissed(false);setDismissedSegments([]);};
  const begin=(index:number,manual=false,explicit=false)=>{
   if(!activeSources.current[index])return;
   cancelTimers();
   if(manual){tries.current=0;attempted.current.clear();}
   const v=video.current;
-  if(v&&started.current&&pendingSeek.current===null&&Number.isFinite(v.duration)&&v.duration>0){last.current={position:v.currentTime,duration:v.duration};resume.current=v.currentTime;persist();}
+  if(finished.current)resetReplay();
+  else if(v&&started.current&&pendingSeek.current===null&&Number.isFinite(v.duration)&&v.duration>0){last.current={position:v.currentTime,duration:v.duration};resume.current=v.currentTime;persist();}
   else resume.current=last.current.position;
   lastTick.current=null;selectedAudioAttempt.current=-1;subtitleChosen.current=false;clearScrub();setControlsShown(true);setActivity(x=>x+1);attempted.current.add(index);tries.current++;failed.current=false;started.current=false;pendingSeek.current=null;
   const next={index,serial:++serial.current};current.current=next;manualAttempt.current=explicit?next.serial:-1;setEndedPlayback(false);setChapterMarkers([]);setThumbnailFrames([]);
@@ -267,6 +269,7 @@ export function Player({viewingSession,title,nextIntent,nextEpisode,prepared,onA
  const toggle=()=>{
   const v=video.current;if(!v||!attempt)return;
   if(!v.paused){v.pause();return;}
+  if(v.ended&&finished.current){resetReplay();setPosition(0);}
   setStatus('Starting…');
   if(!started.current){cancelTimers();clock.current=window.setTimeout(()=>fallback(attempt.serial,'Source did not start in time.'),25000);}
   v.play()?.catch(error=>{if(current.current?.serial!==attempt.serial||failed.current||error?.name==='AbortError')return;if(error?.name==='NotAllowedError'){cancelTimers();setStatus('Playback blocked by this device. Press Play again.');}else fallback(attempt.serial,'Could not play this source.');});

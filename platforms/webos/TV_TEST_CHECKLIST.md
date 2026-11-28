@@ -65,6 +65,7 @@ Use only legitimate media; test each supported format separately and record sour
 
 ## History and library — release blocker
 - [ ] Movie resume after 30+ seconds; source memory, Start over and completion near end.
+- [ ] Replay a completed movie in the same player or choose another source after it ends; progress recording resumes without double-counting the original completion.
 - [ ] Series episode progress, season counts, watched/unwatched, first unwatched, next marker, skip specials/future episodes.
 - [ ] Continue Watching options (long OK and menu), remove card without deleting My List; new playback restores.
 - [ ] My List add/remove, sync with other Stremio client; owner changes sync, local profile changes remain local.
