@@ -7,7 +7,7 @@ export function useDiscovery(addons:unknown[],active:boolean,cache:ContentCache,
  const [type,setType]=useState<ContentType>('movie');
  const options=catalogs.filter(c=>c.type===type);
  const [key,setKey]=useState('');
- const current=options.find(c=>c.key===key)||options[0];
+ const current=options.find(c=>(c.preferenceKey||c.key)===key)||options[0];
  const [genre,setGenre]=useState('');
  const genres=current?current.genres:[]; 
  const effectiveGenre=current&&genres.includes(genre)?genre:(current?.required.genre||'');
@@ -31,7 +31,7 @@ export function useDiscovery(addons:unknown[],active:boolean,cache:ContentCache,
  },[active,requestKey,revision,cache]);
  const reset=()=>{inflight.current?.abort();busy.current=false;setItems([]);setNext(null);setError('');};
  const chooseType=(value:ContentType)=>{if(value===type)return;reset();setType(value);setKey('');setGenre('');};
- const chooseCatalog=(value:string)=>{if(value===current?.key)return;reset();setKey(value);setGenre('');};
+ const chooseCatalog=(value:string)=>{const selected=options.find(c=>c.key===value);if(!selected||selected===current)return;reset();setKey(selected.preferenceKey||selected.key);setGenre('');};
  const chooseGenre=(value:string)=>{if(value===effectiveGenre)return;reset();setGenre(value);};
  const more=()=>{
   if(!active||!current||busy.current||next===null)return;

@@ -68,3 +68,10 @@ export function editLayout(layout,catalogs,key,kind,delta=0){
  if(kind==='move'){const at=keys.indexOf(key),dest=at+delta;if(![-1,1].includes(delta)||dest<0||dest>=keys.length)return p;[keys[at],keys[dest]]=[keys[dest],keys[at]];return {...p,order:keys};}
  return p;
 }
+
+// A whole-collection write must never be calculated against a stale index or descriptor list.
+export function planCollectionEdit(before,fresh,edit,writable){
+ if(!writable)throw Error('Only the linked account owner can change installed add-ons.');
+ if(!sameCollection(before,fresh))return {conflict:true,next:null};
+ return {conflict:false,next:applyCollectionEdit(fresh,edit,writable)};
+}

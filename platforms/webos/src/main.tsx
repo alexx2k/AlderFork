@@ -72,7 +72,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  const [searchTerm,setSearchTerm]=useState('');
  const [keyboard,setKeyboard]=useState(false);
  const [searchLimit,setSearchLimit]=useState(30);
- const cache=useMemo(()=>new ContentCache(),[auth,refresh]);
+ const cache=useMemo(()=>new ContentCache(),[auth,refresh,addons]);
  const discovery=useDiscovery(addons,!!auth&&shelf==='Discover'&&!showSearch,cache,layout);
  const search=useRemoteSearch(addons,!!auth&&showSearch,searchTerm,cache);
  const submitSearch=()=>{const term=query.trim();setKeyboard(false);setPending('search-submit');setSearchLimit(30);if(term===searchTerm)search.retry();else setSearchTerm(term);};

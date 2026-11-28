@@ -8,6 +8,7 @@ function btn(id:string,label:string,action:()=>void,disabled=false){return <butt
 export function AddonManager({collection,owner,catalogs,layout,onLayout}:{collection:AddonCollection;owner:boolean;catalogs:Catalog[];layout:Layout;onLayout:(next:Layout)=>boolean}){
  const [tab,setTab]=useState<'installed'|'catalogues'>('installed');
  const [url,setUrl]=useState(''),[candidate,setCandidate]=useState<unknown>(null),[checking,setChecking]=useState(false),[note,setNote]=useState('');
+ const [showUrl,setShowUrl]=useState(false);
  const [qrOpen,setQrOpen]=useState(false),[qr,setQr]=useState(''),[remove,setRemove]=useState<number|null>(null);
  const fetcher=useRef<AbortController|null>(null),alive=useRef(true);
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;fetcher.current?.abort();};},[]);
@@ -22,13 +23,13 @@ export function AddonManager({collection,owner,catalogs,layout,onLayout}:{collec
    const raw=await jsonRequest(normalized,{},c.signal);if(c.signal.aborted)return;
    const next=makeDescriptor(normalized,raw);
    if(collection.addons.some((d,i)=>addonInfo(d,i).url===normalized)){setNote('This add-on is already installed.');return;}
-   setCandidate(next);setUrl('');setNote('Review this manifest before installing. Only install add-ons you trust.');
+   setCandidate(next);setUrl('');setShowUrl(false);setNote('Review this manifest before installing. Only install add-ons you trust.');
    requestAnimationFrame(()=>document.getElementById('addon-install')?.focus());
   }catch{if(!c.signal.aborted)setNote('Could not read a valid manifest. Check the address, connection and add-on CORS support.');}
   finally{if(fetcher.current===c)fetcher.current=null;if(alive.current)setChecking(false);}
  };
  const install=async()=>{if(!owner||!candidate)return;const ok=await collection.edit({kind:'install',descriptor:candidate});if(alive.current&&ok){setCandidate(null);setNote('');requestAnimationFrame(()=>document.getElementById('addon-sync')?.focus());}};
- const move=async(index:number,delta:-1|1)=>{await collection.edit({kind:'move',index,delta});if(alive.current)requestAnimationFrame(()=>document.getElementById('addon-row-'+(index+delta))?.focus());};
+ const move=async(index:number,delta:-1|1)=>{const ok=await collection.edit({kind:'move',index,delta});if(alive.current)requestAnimationFrame(()=>{const at=ok?index+delta:index;const up=document.getElementById('addon-row-'+at) as HTMLButtonElement|null;const down=document.getElementById('addon-down-'+at) as HTMLButtonElement|null;(up&&!up.disabled?up:down&&!down.disabled?down:document.getElementById('addon-sync'))?.focus();});};
  const deleteSelected=async()=>{if(remove===null)return;const i=remove;setRemove(null);await collection.edit({kind:'remove',index:i});if(alive.current)requestAnimationFrame(()=>document.getElementById('addon-sync')?.focus());};
  const browse=browseCatalogs(catalogs),ordered=orderCatalogues(browse,layout,true);
  const changeLayout=(key:string,kind:'toggle'|'move',delta=0)=>{setNote(onLayout(editLayout(layout,browse,key,kind,delta))?'Catalogue layout saved for this profile.':'Layout changed for this session; local storage unavailable.');};
@@ -37,8 +38,8 @@ export function AddonManager({collection,owner,catalogs,layout,onLayout}:{collec
  <div className="controls">{btn('addon-tab-installed','Installed add-ons',()=>{setTab('installed');setNote('');},checking)}{btn('addon-tab-catalogues','Catalogue layout',()=>{setTab('catalogues');setNote('');},checking)}{btn('addon-sync',collection.busy?'Synchronising…':'Sync now',()=>{setNote('');void collection.sync();},collection.busy||checking)}</div>
  <p role="status">{collection.status}</p>{note&&<p role="status">{note}</p>}
  {tab==='installed'?<>
- {owner&&<section className="addon-install"><h2>Install an add-on</h2><p>Enter a manifest address, or scan a QR code to install from your phone using the same Stremio account.</p><label htmlFor="addon-url">Manifest URL</label><input id="addon-url" data-focus type="password" autoComplete="off" maxLength={8192} value={url} disabled={blocked} onChange={e=>{setUrl(e.target.value);setCandidate(null);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();void inspect();}}} placeholder="https://…/manifest.json"/>
- <div className="controls">{btn('addon-inspect',checking?'Checking…':'Review manifest',()=>void inspect(),blocked||!url.trim())}{btn('addon-phone',qrOpen?'Close phone QR':'Install from phone',()=>setQrOpen(!qrOpen),checking)}</div>
+ {owner&&<section className="addon-install"><h2>Install an add-on</h2><p>Enter a manifest address, or scan a QR code to install from your phone using the same Stremio account.</p><label htmlFor="addon-url">Manifest URL</label><input id="addon-url" data-focus type={showUrl?'text':'password'} autoComplete="off" maxLength={8192} value={url} disabled={blocked} onChange={e=>{setUrl(e.target.value);setCandidate(null);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();void inspect();}}} placeholder="https://…/manifest.json"/>
+ <div className="controls">{btn('addon-inspect',checking?'Checking…':'Review manifest',()=>void inspect(),blocked||!url.trim())}{btn('addon-url-visibility',showUrl?'Hide address':'Show address',()=>setShowUrl(!showUrl),checking)}{btn('addon-phone',qrOpen?'Close phone QR':'Install from phone',()=>setQrOpen(!qrOpen),checking)}</div>
  {qrOpen&&<div className="addon-qr">{qr&&<img src={qr} alt="QR code for Stremio web add-ons"/>}<div><strong>Install on your phone</strong><p>Scan the code, sign in to the same Stremio account and install your add-on there. Return here and select Sync now.</p><p className="muted">{PHONE_ADDONS_URL}</p><p className="muted">The QR contains no account token or configured manifest address.</p></div></div>}
  {candidate!==null&&<div className="addon-review"><h3>{addonInfo(candidate,0).name}</h3><p>{addonInfo(candidate,0).roles.join(' · ')}</p><p>{addonInfo(candidate,0).description.slice(0,400)}</p><div className="controls">{btn('addon-install','Install and sync',()=>void install(),blocked)}{btn('addon-cancel-install','Cancel',()=>{setCandidate(null);setNote('');},collection.busy)}</div></div>}</section>}
  <h2>Installed add-ons ({collection.addons.length})</h2>

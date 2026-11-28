@@ -1,10 +1,10 @@
 import {useEffect,useRef,useState} from 'react';
 import {installedAddons,writeAddons,ApiError} from './stremio.ts';
-import {applyCollectionEdit,sameCollection,sameOrder,CollectionEdit} from './addonManagement.mjs';
+import {planCollectionEdit,sameCollection,sameOrder,CollectionEdit} from './addonManagement.mjs';
 export function useAddonCollection(token:string,writable:boolean,refresh:number,onExpired:()=>void){
  const [addons,setAddons]=useState<unknown[]>([]),[loaded,setLoaded]=useState(false),[busy,setBusy]=useState(false),[status,setStatus]=useState('Loading installed add-ons…');
  const current=useRef<unknown[]>([]),ready=useRef(false),active=useRef<AbortController|null>(null),alive=useRef(true),expired=useRef(onExpired);expired.current=onExpired;
- const publish=(list:unknown[])=>{current.current=list;ready.current=true;if(alive.current){setAddons(list);setLoaded(true);}};
+ const publish=(list:unknown[])=>{const changed=!ready.current||!sameCollection(current.current,list);current.current=list;ready.current=true;if(alive.current){if(changed)setAddons(list);setLoaded(true);}};
  const invalidate=()=>{ready.current=false;if(alive.current)setLoaded(false);};
  const run=async(edit?:CollectionEdit)=>{
   if(active.current||!alive.current)return false;
@@ -14,8 +14,7 @@ export function useAddonCollection(token:string,writable:boolean,refresh:number,
   try{
    const before=current.current,fresh=await installedAddons(token,c.signal);if(c.signal.aborted)return false;
    if(!edit){publish(fresh);setStatus('Installed add-ons synchronised.');return true;}
-   if(!sameCollection(before,fresh)){publish(fresh);setStatus('Collection changed on another device. Review the refreshed list and try again.');return false;}
-   let next:unknown[];try{next=applyCollectionEdit(fresh,edit,writable);}catch(e){setStatus(e instanceof Error?e.message:'Invalid change.');return false;}
+   let next:unknown[];try{const plan=planCollectionEdit(before,fresh,edit,writable);if(plan.conflict){publish(fresh);setStatus('Collection changed on another device. Review the refreshed list and try again.');return false;}next=plan.next;}catch(e){setStatus(e instanceof Error?e.message:'Invalid change.');return false;}
    writeStarted=true;setStatus('Saving to Stremio…');await writeAddons(token,next,c.signal);
    if(c.signal.aborted)return false;
    const verified=await installedAddons(token,c.signal);if(c.signal.aborted)return false;

@@ -14,3 +14,5 @@ export function layoutKey(namespace:string):string;
 export function cleanLayout(raw:unknown):Layout;
 export function orderCatalogues(catalogs:Catalog[],layout:Layout,includeHidden?:boolean):Catalog[];
 export function editLayout(layout:Layout,catalogs:Catalog[],key:string,kind:'toggle'|'move',delta?:number):Layout;
+
+export function planCollectionEdit(before:unknown[],fresh:unknown[],edit:CollectionEdit,writable:boolean):{conflict:true;next:null}|{conflict:false;next:unknown[]};
