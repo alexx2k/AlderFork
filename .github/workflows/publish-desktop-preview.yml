@@ -1,0 +1,41 @@
+name: Publish Tarn Desktop preview
+on:
+  push:
+    branches: [feature/desktop-client]
+    paths: ['.github/workflows/publish-desktop-preview.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: desktop-preview-0.1.0-dev.2
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/feature/desktop-client'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: alexx2k/Tarn
+    steps:
+      - name: Verify successful source build
+        run: |
+          gh api repos/alexx2k/Tarn/actions/runs/46091209755 --jq '[.head_sha,.conclusion,.head_branch] | @tsv' | grep -Fx $'388da1cd30851f64f3094174b3ce70d60219959e\tsuccess\tfeature/desktop-client'
+      - uses: actions/download-artifact@v4
+        with:
+          name: Tarn-Desktop-Windows-x64-dev
+          run-id: 46091209755
+          github-token: ${{ github.token }}
+          path: installer
+      - name: Publish separate unsigned Windows prerelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset=installer/Tarn-Desktop-0.1.0-dev.2-win-x64.exe
+          test -s "$asset"
+          test "$(find installer -type f -name '*.exe' | wc -l)" -eq 1
+          sha256sum "$asset" | sed 's|installer/||' > installer/SHA256SUMS.txt
+          gh release create desktop-v0.1.0-dev.2 "$asset" installer/SHA256SUMS.txt \
+            --target 388da1cd30851f64f3094174b3ce70d60219959e --prerelease --latest=false \
+            --title "Tarn Desktop v0.1.0-dev.2 — Windows preview" \
+            --notes "Experimental Windows x64 preview. Redesigned playback controls, fullscreen shortcuts, volume and seeking, prominent Search, profiles, and experimental embedded audio track selection. Chromium may not expose every multilingual track. Direct compatible HTTP(S) streams only. Unsigned installer; Windows runtime and codec compatibility remain under testing. Android and LG packages are unaffected."
