@@ -1,3 +1,9 @@
+## Desktop 0.2.0-dev.1
+
+- Integrated, user-initiated Windows update download. Main process independently validates the desktop release/version and official installer/checksum, restricts redirects, enforces size bounds, verifies SHA-256 and asks before launching the unsigned standard installer and closing Tarn. No silent installation. Manual release link remains available. Older builds need one manual upgrade.
+- Native Chromium picture-in-picture (P), persistent playback speed, and independent optional seek previews. Storyboard metadata takes priority; generated previews require seekable CORS-enabled sources. No main-video seeking for hover previews; timestamps remain if images fail.
+- Remembers normal window bounds and maximized state, clamps to connected monitors, keeps fullscreen temporary. Existing playback and multilingual audio engine retained. Physical Windows runtime validation still required.
+
 ## Desktop updates — 0.1.0-dev.3
 
 Checks at startup and hourly, with a prominent desktop update banner and manual check in Settings. Desktop preview channel includes newer dev builds and stable desktop releases; stable installations exclude prereleases. Installers open via the official GitHub release page. No silent installation. Existing v0.1.0-dev.2 installs need one manual upgrade to receive this behavior.

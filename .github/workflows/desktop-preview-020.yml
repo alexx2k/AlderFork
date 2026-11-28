@@ -1,0 +1,39 @@
+name: Publish desktop 0.2 preview
+on:
+  push:
+    branches: [feature/desktop-client]
+    paths: ['.github/workflows/desktop-preview-020.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: desktop-preview-020-dev1
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/feature/desktop-client'
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: platforms/desktop
+    env:
+      GH_REPO: alexx2k/Tarn
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run dist:win
+      - name: Publish audited desktop preview
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $asset = 'release/Tarn-Desktop-0.2.0-dev.1-win-x64.exe'
+          if (!(Test-Path $asset)) { throw 'Expected installer missing' }
+          $hash = (Get-FileHash $asset -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  Tarn-Desktop-0.2.0-dev.1-win-x64.exe" | Set-Content -Encoding ascii release/SHA256SUMS.txt
+          gh release create desktop-v0.2.0-dev.1 $asset release/SHA256SUMS.txt --target "$env:GITHUB_SHA" --prerelease --latest=false --title "Tarn Desktop v0.2.0-dev.1 — Windows preview" --notes "Integrated user-confirmed updater, native picture-in-picture, playback speed, optional seek thumbnails and remembered window placement. Existing Chromium playback engine retained. Unsigned Windows x64 experimental preview. Generated thumbnails require compatible CORS-enabled seekable streams."
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed' }
