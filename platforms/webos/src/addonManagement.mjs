@@ -1,3 +1,4 @@
+import {protectedFlag} from './auditPolicy.mjs';
 // Account edits preserve whole descriptors, including unknown fields and broken entries.
 const obj=v=>v&&typeof v==='object'&&!Array.isArray(v)?v:{};
 const str=v=>typeof v==='string'?v:'';
@@ -18,7 +19,7 @@ export function makeDescriptor(url,raw){
 }
 export function addonInfo(raw,index){
  const d=obj(raw),m=obj(d.manifest),flags=obj(d.flags),resources=arr(m.resources).map(r=>typeof r==='string'?r:str(obj(r).name));
- return {name:str(m.name)||str(m.id)||'Unknown add-on '+(index+1),id:str(m.id),version:str(m.version),description:str(m.description),roles:Array.from(new Set(resources.filter(Boolean))),official:flags.official===true,locked:flags.protected===true,shareable:flags.official!==true&&resources.includes('stream')&&!/watchly|trakt|simkl|syncribullet|aiolists/i.test(str(m.name)),url:str(d.transportUrl)};
+ return {name:str(m.name)||str(m.id)||'Unknown add-on '+(index+1),id:str(m.id),version:str(m.version),description:str(m.description),roles:Array.from(new Set(resources.filter(Boolean))),official:protectedFlag(flags.official),locked:protectedFlag(flags.protected),shareable:!protectedFlag(flags.official)&&!protectedFlag(flags.protected)&&resources.includes('stream')&&!/watchly|trakt|simkl|syncribullet|aiolists/i.test(str(m.name)),url:str(d.transportUrl)};
 }
 export function applyCollectionEdit(list,edit,writable){
  if(!writable)throw Error('Only the linked account owner can change installed add-ons.');

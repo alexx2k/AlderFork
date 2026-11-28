@@ -4,6 +4,7 @@ import {Action,LibraryData,Row,emptyLibrary,libraryKey,keyFor,makeRow,mergeTitle
 import {inflateWatched,deflateWatched} from './watchedCodec.ts';
 import {readLibraryItems,writeLibraryItems,getUserId} from './stremio.ts';
 import {historyPrefix} from './profiles.mjs';
+import {cloudWriteAllowed} from './auditPolicy.mjs';
 import {resumeFor} from './progress.ts';
 function read(namespace:string):LibraryData{
  try{const d=JSON.parse(localStorage.getItem(libraryKey(namespace))||'null');if(d?.version===1&&d.rows&&d.pending)return d;}catch{}
@@ -93,7 +94,7 @@ export function useLibrary(namespace:string,token:string,cloud:boolean){
   if(!alive.current)return;
   const at=Math.max(Date.now(),actionClock.current+1);actionClock.current=at;
   const a:Action={...action,title:titleSnapshot(action.title),at,id:at.toString(36)+'-'+(++seq.current).toString(36)+'-'+Math.random().toString(36).slice(2)};
-  const bound=boundAccount(),safeCloud=cloud&&!!bound&&(!identity.current||identity.current===bound);
+  const bound=boundAccount(),safeCloud=cloudWriteAllowed(cloud,bound,identity.current);
   save(reduceLibrary(model.current,a,safeCloud,inflateWatched,inFlightIds.current));if(cloud&&!safeCloud)setStatus('Account identity not verified or changed. This change is local only.');schedule(5000);
  };
  const enrich=(titles:Title[])=>{
@@ -103,7 +104,7 @@ export function useLibrary(namespace:string,token:string,cloud:boolean){
  };
  const row=(title:Title):Row|undefined=>data.rows[keyFor(title)];
  // One decoded set per title/row snapshot, rather than inflate the cloud bitfield for every episode badge.
- const watchedCache=new WeakMap<Title,{row:Row;ids:Set<string>}>();
+ const watchedCache=useRef(new WeakMap<Title,{row:Row;ids:Set<string>}>()).current;
  const watchedSet=(title:Title,r:Row)=>{const cached=watchedCache.get(title);if(cached?.row===r)return cached.ids;const ids=new Set(seenIds({...r,title:mergeTitle(r.title,title)},inflateWatched));watchedCache.set(title,{row:r,ids});return ids;};
  const watched=(title:Title,videoId:string)=>{const r=row(title);return r?watchedSet(title,r).has(videoId):false;};
  const position=(title:Title,intent:PlaybackIntent)=>{

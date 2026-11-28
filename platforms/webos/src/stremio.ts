@@ -1,3 +1,4 @@
+import {boundedBody} from './auditPolicy.mjs';
 // Direct Stremio account integration. Never log response bodies, tokens or transport URLs.
 export class ApiError extends Error {
  readonly code:number;
@@ -23,7 +24,8 @@ export async function jsonRequest(url:string,init:RequestInit={},signal?:AbortSi
  try{
   const response=await fetch(url,{...init,signal:controller.signal,credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer'});
   if(!response.ok)throw Error('HTTP '+response.status);
-  return await response.json();
+  const bytes=await boundedBody(response,32*1024*1024);
+  return JSON.parse(new TextDecoder('utf-8').decode(bytes));
  }finally{clearTimeout(timeout);if(signal)signal.removeEventListener('abort',cancel);}
 }
 const API='https://api.strem.io/api/';
@@ -33,7 +35,7 @@ export async function createLink(signal?:AbortSignal):Promise<DeviceLink>{
  const data=unwrap(await jsonRequest(LINK+'create?type=Create',{},signal));
  const code=string(data.code),url=string(data.link);
  const parsed=new URL(url);
- if(!code||code.length>32||parsed.protocol!=='https:'||!(/(^|\.)stremio\.com$/i.test(parsed.hostname)))throw Error('Unexpected sign-in link');
+ if(!code||code.length>32||parsed.username||parsed.password||parsed.protocol!=='https:'||!(/(^|\.)stremio\.com$/i.test(parsed.hostname)))throw Error('Unexpected sign-in link');
  return {code,url};
 }
 export async function readLink(code:string,signal?:AbortSignal):Promise<string|null>{

@@ -114,6 +114,7 @@ export function ProfileGate({renderApp,renderDiagnostics}:Props){
  const remove=(id:string)=>{void run(async()=>{const d=model.current!;const p=d.profiles.find(x=>x.id===id);await commit(removeProfile(d,id));clearPlayerSettings(historyNamespace(id));forgetProviderMemory(historyNamespace(id));try{deleteHistory(localStorage,id);}catch{setError('Profile removed, but local history cleanup failed.');}if(p?.mode==='stremio'&&p.authKey&&!model.current!.profiles.some(x=>x.authKey===p.authKey))revokeSession(p.authKey).catch(()=>{});setStep({kind:'pick'});});};
  useLayoutEffect(()=>{if(active||busy)return;const id=step.kind==='diagnostics'?'diagnostics-back':step.kind==='pin'?'unlock-1':step.kind==='edit'?'profile-name':step.kind==='link'?'retry-link':step.kind==='delete'?'delete-cancel':data?.profiles.length?'pick-'+data.profiles[0].id:'add-profile';jump(id);},[active,step,data,busy]);
  useEffect(()=>{if(active)return;const handler=(e:KeyboardEvent)=>{
+  if(e.defaultPrevented)return;
   const target=e.target as HTMLElement,typing=target.tagName==='INPUT';
   if(isBack(e.key,e.keyCode)){if(step.kind!=='pick'){e.preventDefault();if(!lock.current)pick();}return;}
   const dir=directionFor(e.key,e.keyCode);if(!dir||typing&&dir!=='down')return;

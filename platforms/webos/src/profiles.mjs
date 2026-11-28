@@ -1,3 +1,4 @@
+import {protectedFlag} from './auditPolicy.mjs';
 import {validLocalAvatar} from './customisation.mjs';
 export const MAX_PROFILES=5;
 export const COLORS=['#F3D9B1','#C98E6A','#8FA39A','#A6A2BD','#D3A66B'];
@@ -89,7 +90,7 @@ export function mergeStreamAddons(own,lent){
  own.forEach(raw=>addKey(obj(raw)));
  for(const raw of lent){
   const d=obj(raw),manifest=obj(d.manifest),id=string(manifest.id),url=string(d.transportUrl);
-  if(!url||ids.has(id)||urls.has(url)||[true,'true'].includes(obj(d.flags).official)||/watchly|trakt|simkl|syncribullet|aiolists/i.test(string(manifest.name)))continue;
+  if(!url||ids.has(id)||urls.has(url)||protectedFlag(obj(d.flags).official)||protectedFlag(obj(d.flags).protected)||/watchly|trakt|simkl|syncribullet|aiolists/i.test(string(manifest.name)))continue;
   const resources=Array.isArray(manifest.resources)?manifest.resources.filter(r=>r==='stream'||obj(r).name==='stream'):[];
   if(!resources.length)continue;
   out.push({...d,manifest:{...manifest,resources}});addKey(d);

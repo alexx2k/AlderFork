@@ -10,7 +10,7 @@ export function parseState(raw:string|null,now=Date.now()):FoundationState {
  }catch{}
  return initialState(now);
 }
-export interface StateStore {load():Promise<FoundationState>;save(state:FoundationState):Promise<void>}
+export interface StateStore {load():Promise<FoundationState>;save(state:FoundationState):Promise<void>;close():void}
 export function createStore(factory:IDBFactory):StateStore {
  const db=new Promise<IDBDatabase>((resolve,reject)=>{
    const request=factory.open('tarn-webos',1);
@@ -20,6 +20,7 @@ export function createStore(factory:IDBFactory):StateStore {
    request.onblocked=()=>reject(Error('Storage upgrade blocked'));
  });
  return {
+   close(){void db.then(d=>d.close()).catch(()=>{});},
    async load(){const d=await db;return new Promise((resolve,reject)=>{
      const r=d.transaction('state','readonly').objectStore('state').get(STORE_KEY);
      r.onsuccess=()=>resolve(parseState(typeof r.result==='string'?r.result:null));

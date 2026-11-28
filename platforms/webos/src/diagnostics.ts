@@ -6,16 +6,17 @@ export function endpointForManifest(raw:string):string{
  if(!u.pathname.endsWith('/manifest.json'))throw Error('Use an add-on manifest.json URL');
  return u.href;
 }
-export async function probeJson(label:string,url:string,init?:RequestInit):Promise<ProbeResult>{
+export async function probeJson(label:string,url:string,init?:RequestInit,signal?:AbortSignal):Promise<ProbeResult>{
  const controller=new AbortController();
- const timer=setTimeout(()=>controller.abort(),12000);
+ const cancel=()=>controller.abort();if(signal?.aborted)cancel();else signal?.addEventListener('abort',cancel);
+ const timer=setTimeout(cancel,12000);
  try{
   const response=await fetch(url,{...init,signal:controller.signal,credentials:'omit',cache:'no-store'});
   const payload=await response.json();
   if(!response.ok)return {label,ok:true,detail:'HTTP '+response.status+' · JSON reachable (request rejected)'};
   return {label,ok:true,detail:'HTTP '+response.status+' · JSON '+(Array.isArray(payload)?'array':typeof payload)};
  }catch(e){return {label,ok:false,detail:controller.signal.aborted?'Timed out':'Network, TLS, CORS or JSON failure'};}
- finally{clearTimeout(timer);}
+ finally{clearTimeout(timer);signal?.removeEventListener('abort',cancel);}
 }
 export const mediaSamples=[
  {name:'MP4 / H.264',url:'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'},

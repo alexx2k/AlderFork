@@ -40,7 +40,7 @@ export function chapterSegments(chapters,duration){
  return sorted.reduce((out,c)=>{
   const label=String(c.label||'').trim();
   if(/\b(post[- ]credits?|after credits?|mid[- ]credits?)\b/i.test(label))return out;
-  const kind=/\b(credits?|closing|outro|ending)\b/i.test(label)?'outro':/\b(recap|previously on)\b/i.test(label)?'recap':/\b(intro|opening|opening titles)\b/i.test(label)?'intro':null;
+  const kind=/^(?:end(?:ing)?[ -]+credits?|credits?|closing(?: titles)?|outro)$/i.test(label)?'outro':/\b(recap|previously on)\b/i.test(label)?'recap':/\b(intro|opening|opening titles)\b/i.test(label)?'intro':null;
   if(kind)out.push({kind,start:c.start,end:c.end});return out;
  },[]);
 }

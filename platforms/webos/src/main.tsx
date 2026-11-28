@@ -94,7 +94,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  const go=(hash:string)=>{restored.current[location.hash]=(document.activeElement as HTMLElement)?.id||'link-account';location.hash=hash;};
  const closePlayer=()=>{viewingSession.current=newSession(namespace);setPlaying(null);setPending(playbackFocus.current);};
  const startPlayer=(intent:PlaybackIntent,title:Title,startOver=false)=>{viewingSession.current=newSession(namespace);playbackFocus.current=continueMenu?'continue-'+Math.max(0,continueRows(library.data.rows).findIndex(r=>keyFor(r.title)===keyFor(title))):(document.activeElement as HTMLElement)?.id||'back';setContinueMenu(null);setPlaying({intent,account:namespace,title,startAt:startOver?0:library.position(title,intent)});setPending('player-back');};
- const back=()=>{if(continueMenu){setContinueMenu(null);setPending('continue-'+Math.max(0,continueRows(library.data.rows).findIndex(r=>keyFor(r.title)===keyFor(continueMenu.title))));return;}if(confirmSignOut){setConfirmSignOut(false);return;}if(playing){closePlayer();return;}if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){if(keyboard){setKeyboard(false);setPending('search-keyboard');}else{setShowSearch(false);setPending('search');}}else if(shelf!=='Home'){setShelf('Home');setPending('nav-Home');}};
+ const back=()=>{if(continueMenu){setContinueMenu(null);setPending('continue-'+Math.max(0,continueRows(library.data.rows).findIndex(r=>keyFor(r.title)===keyFor(continueMenu.title))));return;}if(confirmSignOut){setConfirmSignOut(false);setPending('sign-out');return;}if(playing){closePlayer();return;}if(route.kind!=='home'){if(history.state?.tarnRoute)history.back();else location.hash='';}else if(showSearch){if(keyboard){setKeyboard(false);setPending('search-keyboard');}else{setShowSearch(false);setPending('search');}}else if(shelf!=='Home'){setShelf('Home');setPending('nav-Home');}};
  useEffect(()=>{
   const handler=()=>{const r=routeFromHash(location.hash);const old=lastHash.current;lastHash.current=location.hash;
    if(location.hash&&r.kind!=='home')history.replaceState({tarnRoute:true},'');
@@ -103,13 +103,13 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
   window.addEventListener('hashchange',handler);return()=>window.removeEventListener('hashchange',handler);
  },[]);
  useEffect(()=>{
-  let alive=true;
+  let alive=true;authRef.current=token;
   (async()=>{try{
    const s=createStore(indexedDB);store.current=s;
    const previous=await s.load();const updated={...previous,visits:previous.visits+1,updatedAt:Date.now()};await s.save(updated);
    if(alive){setState(updated);setStorage('IndexedDB read/write passed');}
   }catch{if(alive)setStorage('Local storage unavailable; changes are temporary');}})();
-  return()=>{alive=false;authRef.current=null;};
+  return()=>{alive=false;authRef.current=null;store.current?.close();store.current=null;};
  },[]);
  useEffect(()=>{
   if(!collection.loaded){setLoading(false);return;}
@@ -144,6 +144,7 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
  useLayoutEffect(()=>{focus(route.kind==='home'?'nav-'+shelf:'back');},[]);
  useEffect(()=>{
   const handler=(e:KeyboardEvent)=>{
+   if(e.defaultPrevented)return;
    const target=e.target as HTMLElement;
    const typing=target.tagName==='INPUT'||target.tagName==='TEXTAREA';
    if(typing){
@@ -151,10 +152,11 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
     if(e.key==='ArrowDown'||e.keyCode===40){e.preventDefault();focus(target.id==='addon-url'?'addon-inspect':target.id==='query'?'search-submit':target.id==='name'?'save':'network');}
     return;
    }
-   if(isBack(e.key,e.keyCode)){if(continueMenu||confirmSignOut||playing||route.kind!=='home'||showSearch||shelf!=='Home'){e.preventDefault();back();}return;}
+   if(isBack(e.key,e.keyCode)){if(!playing&&document.getElementById('episode-options-close')){e.preventDefault();document.getElementById('episode-options-close')?.click();return;}if(continueMenu||confirmSignOut||playing||route.kind!=='home'||showSearch||shelf!=='Home'){e.preventDefault();back();}return;}
    const dir=directionFor(e.key,e.keyCode);if(!dir)return;
    e.preventDefault();
-   const items=continueMenu?buttons().filter(x=>x.closest('.continue-menu')):playing&&document.querySelector('.player-panel')?buttons().filter(x=>x.closest('.player-panel')):buttons(),active=document.activeElement as HTMLElement;
+   const modal=continueMenu?'.continue-menu':confirmSignOut?'.sign-out-confirm':playing&&document.querySelector('.player-panel')?'.player-panel':!playing&&document.querySelector('.episode-action-panel')?'.episode-action-panel':null;
+   const items=modal?buttons().filter(x=>x.closest(modal)):buttons(),active=document.activeElement as HTMLElement;
    const dest=active&&items.includes(active)?nextFocus(rect(active),items.map(rect),dir):items[0]?.id;
    if(dest)focus(dest);
   };
@@ -202,8 +204,8 @@ function App({profile,token,namespace,onSwitch,onSignOut,onExpired,lenders}:{pro
   {!showSearch&&shelf!=='Discover'&&visible.length>rowLimit&&<Btn id="more-rows" onClick={()=>setRowLimit(x=>x+6)}>Show more catalogues</Btn>}
   <footer>Tarn webOS · Direct playback development build.</footer></>}
  </main>:<main className="page"><Btn id="back" onClick={back}>‹ Back</Btn>
- {route.kind==='diagnostics'?<Diagnostics/>:route.kind==='addons'?<AddonManager collection={collection} owner={profile.mode==='stremio'} catalogs={catalogs} layout={layout} onLayout={saveLayout}/>:route.kind==='settings'?<section><h1>Settings</h1><div className="profile-edit-preview"><Portrait profile={profile}/><div><h2>{profile.name}</h2><p>{profile.mode==='local'?'Local profile · shared streaming account':'Stremio profile · linked account'}</p></div></div><div className="controls"><Btn id="settings-profiles" onClick={onSwitch}>Switch or manage profiles</Btn>{profile.mode==='stremio'&&<Btn id="sign-out" onClick={()=>setConfirmSignOut(true)}>Sign out of Stremio</Btn>}</div>
- {confirmSignOut&&<section className="playback-preview"><h2>Sign out of this account?</h2><p>Your profile and local history will remain. Local profiles using this account will need it relinked.</p><Btn id="cancel-sign-out" onClick={()=>setConfirmSignOut(false)}>Cancel</Btn><Btn id="confirm-sign-out" onClick={onSignOut}>Sign out</Btn></section>}
+ {route.kind==='diagnostics'?<Diagnostics/>:route.kind==='addons'?<AddonManager collection={collection} owner={profile.mode==='stremio'} catalogs={catalogs} layout={layout} onLayout={saveLayout}/>:route.kind==='settings'?<section><h1>Settings</h1><div className="profile-edit-preview"><Portrait profile={profile}/><div><h2>{profile.name}</h2><p>{profile.mode==='local'?'Local profile · shared streaming account':'Stremio profile · linked account'}</p></div></div><div className="controls"><Btn id="settings-profiles" onClick={onSwitch}>Switch or manage profiles</Btn>{profile.mode==='stremio'&&<Btn id="sign-out" onClick={()=>{setConfirmSignOut(true);setPending('cancel-sign-out');}}>Sign out of Stremio</Btn>}</div>
+ {confirmSignOut&&<section className="playback-preview sign-out-confirm" role="dialog" aria-label="Confirm sign out"><h2>Sign out of this account?</h2><p>Your profile and local history will remain. Local profiles using this account will need it relinked.</p><Btn id="cancel-sign-out" onClick={()=>{setConfirmSignOut(false);setPending('sign-out');}}>Cancel</Btn><Btn id="confirm-sign-out" onClick={onSignOut}>Sign out</Btn></section>}
  <h2>Home and navigation</h2><HomePreferences value={home} onChange={updateHome}/>{homeNote&&<p role="status">{homeNote}</p>}<h2>Add-ons and catalogues</h2><p>Manage the linked account’s add-ons and this profile’s catalogue layout.</p><Btn id="settings-addons" onClick={()=>go('#addons')}>My add-ons</Btn><h2>Playback preferences</h2><PlayerPreferences prefs={prefs} onChange={updatePrefs}/><h2>About and updates</h2><UpdatePanel model={updates}/><h2>Local storage</h2><p>{storage}</p><p>Launch count: {state.visits}</p><p className="muted">Playback progress and source memory are separate for each profile. Stremio profiles sync their library; local profiles never send library changes to Stremio.</p></section>:activeDetail?<TitleDetails key={titleKey(activeDetail)} title={activeDetail} loading={detailLoading} blurThumbnails={home.blurThumbnails} onPlay={(intent,startOver)=>startPlayer(intent,activeDetail,startOver)} inList={!!library.row(activeDetail)?.list} onList={()=>library.act({kind:'list',title:activeDetail,on:!library.row(activeDetail)?.list})} isWatched={id=>library.watched(activeDetail,id)} onWatched={(id,on)=>library.act({kind:on?'watched':'unwatch',title:activeDetail,videoId:id})} resumeAt={intent=>library.position(activeDetail,intent)} preferredEpisodeId={(()=>{const r=library.row(activeDetail);return r&&!r.hidden&&(r.next||r.position>0)?r.videoId:undefined;})()}/>:<p>{loading?'Loading catalogues…':'Title not available. Return to Home and refresh.'}</p>}
  </main>}
  </div>{playing&&<Player viewingSession={viewingSession} key={playing.account+'|'+playing.intent.type+'|'+playing.intent.videoId} title={playing.title} nextIntent={upcomingIntent} nextEpisode={upcomingEpisode} prepared={playing.prepared} onAdvance={(next,prepared,origin)=>{setPlaying(p=>p&&p.intent.videoId===playing.intent.videoId?{intent:next,account:p.account,title:p.title,startAt:0,prepared,origin}:p);setPending('player-back');}} intent={playing.intent} addons={addons} lenders={lenders} account={playing.account} startAt={playing.startAt} prefs={prefs} onPrefs={updatePrefs} onProgress={(position,duration,played,ended)=>library.act({kind:'progress',title:playing.title,videoId:playing.intent.videoId,position,duration,played,ended})} onExit={closePlayer}/>}</>;
@@ -216,24 +218,25 @@ function Diagnostics(){
  const [media,setMedia]=useState('Select a public sample.');
  const [url,setUrl]=useState('https://v3-cinemeta.strem.io/manifest.json');
  const selected=useRef('');
- const alive=useRef(true);
- useEffect(()=>{alive.current=true;if(video.current)setReport(capabilities(video.current));return()=>{alive.current=false;};},[]);
+ const alive=useRef(true),probe=useRef<AbortController|null>(null),mediaGeneration=useRef(0);
+ useEffect(()=>{alive.current=true;const v=video.current;if(v)setReport(capabilities(v));return()=>{alive.current=false;probe.current?.abort();mediaGeneration.current++;if(v){v.pause();v.removeAttribute('src');v.load();}};},[]);
  const run=async()=>{
   setRunning(true);setResults([]);
   let endpoint:string;
   try{endpoint=endpointForManifest(url);}catch{setResults([{label:'Add-on manifest',ok:false,detail:'Enter a valid HTTP(S) manifest.json URL'}]);setRunning(false);return;}
+  probe.current?.abort();const c=new AbortController();probe.current=c;
   const checks=await Promise.all([
-   probeJson('Stremio public link API','https://link.stremio.com/api/v2/read?type=Read&code=000000'),
-   probeJson('Stremio API POST','https://api.strem.io/api/addonCollectionGet',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'AddonCollectionGet',authKey:'',update:false})}),
-   probeJson('Add-on manifest',endpoint),
-   probeJson('Public Cinemeta catalogue','https://v3-cinemeta.strem.io/catalog/movie/top.json')
+   probeJson('Stremio public link API','https://link.stremio.com/api/v2/read?type=Read&code=000000',undefined,c.signal),
+   probeJson('Stremio API POST','https://api.strem.io/api/addonCollectionGet',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'AddonCollectionGet',authKey:'',update:false})},c.signal),
+   probeJson('Add-on manifest',endpoint,undefined,c.signal),
+   probeJson('Public Cinemeta catalogue','https://v3-cinemeta.strem.io/catalog/movie/top.json',undefined,c.signal)
   ]);
-  if(alive.current){setResults(checks);setRunning(false);if(document.activeElement===document.body)requestAnimationFrame(()=>focus('network'));}
+  if(alive.current&&!c.signal.aborted){setResults(checks);setRunning(false);if(document.activeElement===document.body)requestAnimationFrame(()=>focus('network'));}
  };
  const play=(name:string,url:string)=>{
   const v=video.current;if(!v)return;
-  selected.current=name;setMedia('Loading '+name+'…');v.src=url;v.load();
-  const promise=v.play();if(promise)promise.catch(()=>setMedia('Playback could not start; inspect media error.'));
+  const gen=++mediaGeneration.current;selected.current=name;setMedia('Loading '+name+'…');v.src=url;v.load();
+  const promise=v.play();if(promise)promise.catch(()=>{if(alive.current&&gen===mediaGeneration.current)setMedia('Playback could not start; inspect media error.');});
  };
  return <section className="diagnostics"><h1>Device diagnostics</h1><p>Public endpoints and media only. No credentials are sent. A JSON response proves connectivity, not sign-in.</p>
  <div className="diagnostic-grid"><div>
@@ -245,7 +248,7 @@ function Diagnostics(){
  <div className="controls">{mediaSamples.map((s,i)=><Btn key={s.name} id={'sample-'+i} onClick={()=>play(s.name,s.url)}>{s.name}</Btn>)}
  <Btn id="pause" onClick={()=>{const v=video.current;if(v){if(v.paused)v.play()?.catch(()=>setMedia('Resume failed'));else v.pause();}}}>Play / pause</Btn>
  <Btn id="seek" onClick={()=>{const v=video.current;if(v&&Number.isFinite(v.duration))v.currentTime=Math.min(v.duration,v.currentTime+10);}}>+10 sec</Btn>
- <Btn id="stop" onClick={()=>{const v=video.current;if(v){v.pause();v.removeAttribute('src');v.load();setMedia('Stopped');}}}>Stop</Btn></div>
+ <Btn id="stop" onClick={()=>{const v=video.current;if(v){mediaGeneration.current++;v.pause();v.removeAttribute('src');v.load();setMedia('Stopped');}}}>Stop</Btn></div>
  <p aria-live="polite">{media}</p><p className="muted">Browser and simulator results do not guarantee TV decoder compatibility.</p>
  </div></div></section>;
 }
