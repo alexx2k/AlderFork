@@ -29,7 +29,7 @@ export function resourceUrl(addon,resource,intent){
 export function parseSubtitles(raw,provider){
  return arr(raw).map(x=>{
   const s=obj(x),url=httpUrl(s.url);
-  return url?{url,lang:str(s.lang)||'und',label:str(s.lang)||'Unknown',provider}:null;
+  return url?{url,id:str(s.id)||undefined,lang:str(s.lang)||'und',label:str(s.lang)||'Unknown',provider}:null;
  }).filter(Boolean);
 }
 export function parseStreams(raw,provider,providerId=provider){

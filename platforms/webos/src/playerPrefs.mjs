@@ -14,12 +14,14 @@ export function prefsKey(namespace){return 'tarn.playerprefs.v1:'+encodeURICompo
 export function trackKey(namespace,title){return prefsKey(namespace)+':track:'+encodeURIComponent(title);}
 export function cleanChoice(raw){
  const r=raw&&typeof raw==='object'?raw:{},safe=x=>typeof x==='string'?x.slice(0,100):'';
- const track=x=>x&&typeof x==='object'?{lang:language(x.lang),label:safe(x.label),provider:safe(x.provider)}:undefined;
+ const track=x=>x&&typeof x==='object'?{lang:language(x.lang),label:safe(x.label),provider:safe(x.provider),key:/^[a-f0-9]{1,8}$/.test(x.key)?x.key:undefined}:undefined;
  return {audio:track(r.audio),subtitle:r.subtitle==='off'?'off':track(r.subtitle)};
 }
+export function trackFingerprint(value){let hash=2166136261;for(const c of String(value||''))hash=Math.imul(hash^c.charCodeAt(0),16777619);return (hash>>>0).toString(16);}
 export function matchTrack(tracks,wanted){
  if(!wanted)return -1;
  const w=language(wanted.lang);
+ if(wanted.key){const index=tracks.findIndex(t=>t.key===wanted.key&&(!wanted.provider||t.provider===wanted.provider));if(index>=0)return index;}
  const exact=tracks.findIndex(t=>((w&&language(t.lang)===w)||(!w&&!!wanted.label))&&(!wanted.label||t.label===wanted.label)&&(!wanted.provider||t.provider===wanted.provider));
  if(exact>=0)return exact;
  return w?tracks.findIndex(t=>language(t.lang)===w):-1;

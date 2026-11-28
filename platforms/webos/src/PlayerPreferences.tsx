@@ -10,7 +10,7 @@ export function PlayerPreferences({prefs,onChange,inPlayer=false}:{prefs:Prefs;o
  <p className="muted">Quality and audio compatibility affect the next source resolution. Resuming a saved source still takes priority.</p>
  {row('audio','Preferred audio language',languages as [string,string][],prefs.audioLanguage,v=>onChange({audioLanguage:v}))}
  {row('subs','Preferred subtitle language',[['off','Off'],...languages.slice(1)] as [string,string][],prefs.subtitleLanguage,v=>onChange({subtitleLanguage:v}))}
- {inPlayer&&<p className="muted">Explicit audio/subtitle selections for this title take precedence over these defaults.</p>}
+ {inPlayer&&<p className="muted">Explicit audio/subtitle selections for this title take precedence over these defaults. Language changes apply on the next source.</p>}
  {row('size','Subtitle size',[[80,'Small'],[100,'Medium'],[130,'Large'],[160,'Extra large']],prefs.size,v=>onChange({size:v}))}
  {row('color','Subtitle colour',Object.keys(colors).map(c=>[c,c.replace('_',' ')]),prefs.color,v=>onChange({color:v}))}
  {row('background','Subtitle background',[[true,'On'],[false,'Off']],prefs.background,v=>onChange({background:v}))}

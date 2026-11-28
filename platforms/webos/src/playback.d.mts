@@ -1,7 +1,7 @@
 import type {AudioCodec,Prefs} from './playerPrefs.mjs';
 import type {PlaybackIntent} from './liveCatalogue.ts';
 export type Source={url:string;provider:string;providerId:string;filename:string;size:number;name:string;description:string;height:number;hevc:boolean;av1:boolean;hdr:boolean;riskyAudio:boolean;audioCodec?:AudioCodec;subtitles:Subtitle[]};
-export type Subtitle={url:string;lang:string;label:string;provider:string};
+export type Subtitle={url:string;id?:string;lang:string;label:string;provider:string};
 export type DeviceCapabilities={height:number;hevc:boolean;av1:boolean;hdr:boolean;audio?:Partial<Record<AudioCodec,boolean>>};
 export type Excluded={torrent:number;headers:number;external:number;other:number};
 export type Resolution={sources:Source[];excluded:Excluded;failures:number;providers:number};
